@@ -15,7 +15,8 @@
 
     const TIMING = {
         HINT_TEXT_DURATION: 4000, FPS_UPDATE_INTERVAL: 500, CPS_UPDATE_INTERVAL: 250,
-        CPS_WINDOW: 1000, PING_UPDATE_INTERVAL: 2000, SAVE_DEBOUNCE: 2000, STATS_UPDATE_INTERVAL: 10000
+        CPS_WINDOW: 1000, PING_UPDATE_INTERVAL: 2000, SAVE_DEBOUNCE: 2000, STATS_UPDATE_INTERVAL: 10000,
+        TOAST_DURATION: 3000
     };
 
     const SETTINGS_KEY = 'waddle_settings';
@@ -25,15 +26,6 @@
     const SCRIPT_VERSION = '4.2';
     const GITHUB_REPO = 'TheM1ddleM1n/NovaCoreX';
     const DEFAULT_COLOR = '#00ffff';
-
-    const splashMessages = [
-        "Waddle Time! 🐧",
-        "Penguin Power ⚡",
-        "Flippers Ready 🚀",
-        "Ice Cold Performance 🔥",
-        "Waddle Activated ✨"
-    ];
-    const randomSplashMsg = splashMessages[Math.floor(Math.random() * splashMessages.length)];
 
     const stateData = {
         fpsShown: false, cpsShown: false, realTimeShown: false, pingShown: false, antiAfkEnabled: false, sessionTimerShown: false,
@@ -210,14 +202,9 @@
 @keyframes counterSlideIn { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes slideInDown { 0% { opacity: 0; transform: translateY(-40px); } 100% { opacity: 1; transform: translateY(0); } }
 @keyframes slideInUp { 0% { opacity: 0; transform: translateY(40px); } 100% { opacity: 1; transform: translateY(0); } }
+@keyframes toastSlideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes toastSlideOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(20px); } }
 
-#waddle-splash-container { position: fixed; inset: 0; background: linear-gradient(135deg, #000000 0%, #001a33 100%); z-index: 999999; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'Segoe UI', sans-serif; transition: opacity 0.8s ease; }
-#waddle-splash-branding { text-align: center; margin-bottom: 30px; position: relative; z-index: 2; }
-#waddle-splash-logo { width: 120px; height: 120px; border-radius: 20px; border: 3px solid #00ffff; box-shadow: 0 0 30px rgba(0,255,255,0.6), inset 0 0 20px rgba(0,255,255,0.3); }
-#waddle-splash-title { color: #00ffff; font-size: 60px; margin: 20px 0; letter-spacing: 8px; font-weight: 900; }
-#waddle-splash-message { color: rgba(0,255,255,0.8); font-family: monospace; letter-spacing: 3px; text-transform: uppercase; margin-top: 15px; font-size: 14px; }
-#waddle-splash-play { background: rgba(0,0,0,0.6); border: 2px solid #00ffff; color: #00ffff; padding: 14px 32px; border-radius: 8px; cursor: pointer; font-weight: 700; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 2px; font-size: 0.9rem; box-shadow: 0 0 15px rgba(0,255,255,0.3); margin-top: 30px; font-family: Segoe UI, sans-serif; }
-#waddle-splash-play:hover { background: #00ffff; color: #000; transform: translateY(-3px) scale(1.05); box-shadow: 0 0 30px rgba(0,255,255,0.6), 0 8px 20px rgba(0,255,255,0.3); }
 #waddle-persistent-header { position: fixed; top: 10px; left: 10px; font-family: Segoe UI, sans-serif; font-weight: 900; font-size: 1.5rem; color: var(--waddle-primary); text-shadow: 0 0 8px var(--waddle-shadow), 0 0 20px var(--waddle-shadow); user-select: none; z-index: 100000000; pointer-events: none; opacity: 0; transition: opacity 0.5s ease; contain: layout style paint; }
 #waddle-persistent-header.visible { opacity: 1; animation: slideInDown 0.6s ease; }
 #waddle-menu-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(15px); z-index: 10000000; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 40px; opacity: 0; pointer-events: none; transition: opacity 0.35s ease; user-select: none; contain: strict; }
@@ -232,7 +219,6 @@
 .waddle-tab-content.active { display: flex; flex-direction: column; gap: 12px; animation: slideInUp 0.4s ease; }
 .waddle-menu-btn { background: rgba(0, 0, 0, 0.8); border: 2px solid var(--waddle-primary); color: var(--waddle-primary); font-family: Segoe UI, sans-serif; font-weight: 700; padding: 16px 20px; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; user-select: none; will-change: transform; position: relative; overflow: hidden; }
 .waddle-menu-btn:hover { background: var(--waddle-primary); color: #000; transform: translateY(-3px); box-shadow: 0 5px 20px rgba(0,255,255,0.4); }
-#waddle-hint-text { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: Consolas, monospace; color: var(--waddle-primary); font-size: 1.25rem; text-shadow: 0 0 4px var(--waddle-shadow), 0 0 10px var(--waddle-shadow); user-select: none; opacity: 0; pointer-events: none; z-index: 9999999; white-space: nowrap; text-align: center; }
 .counter { position: fixed; background: rgba(0, 255, 255, 0.9); color: #000; font-family: Segoe UI, sans-serif; font-weight: 700; font-size: 1.25rem; padding: 8px 14px; border-radius: 12px; box-shadow: 0 0 15px rgba(0, 255, 255, 0.7), inset 0 0 10px rgba(0,255,255,0.2); user-select: none; cursor: grab; z-index: 999999999; width: max-content; transition: all 0.2s ease; will-change: transform; animation: counterSlideIn 0.5s ease-out; contain: layout style paint; border: 1px solid rgba(0,255,255,0.5); }
 .counter.dragging { cursor: grabbing; transform: scale(1.08); box-shadow: 0 0 25px rgba(0, 255, 255, 0.9), inset 0 0 20px rgba(0,255,255,0.3); }
 .counter:hover:not(.dragging) { transform: scale(1.05); box-shadow: 0 0 20px rgba(0, 255, 255, 0.8); }
@@ -242,43 +228,35 @@
 .color-picker-input:hover { box-shadow: 0 0 15px rgba(0, 255, 255, 0.6); transform: scale(1.02); }
 .keybind-input { width: 100%; background: rgba(0, 0, 0, 0.8); border: 2px solid var(--waddle-primary); color: var(--waddle-primary); font-family: Segoe UI, sans-serif; font-weight: 700; font-size: 1rem; padding: 8px 12px; border-radius: 8px; text-align: center; transition: all 0.3s ease; }
 .keybind-input:focus { outline: none; box-shadow: 0 0 15px rgba(0, 255, 255, 0.6); background: rgba(0, 255, 255, 0.15); transform: scale(1.02); }
+
+#waddle-toast { position: fixed; bottom: 60px; right: 50px; background: rgba(0, 0, 0, 0.95); border: 2px solid var(--waddle-primary); color: var(--waddle-primary); padding: 16px 24px; border-radius: 12px; font-family: Segoe UI, sans-serif; font-weight: 700; font-size: 1rem; z-index: 10000001; box-shadow: 0 0 20px rgba(0, 255, 255, 0.5), inset 0 0 10px rgba(0, 255, 255, 0.2); animation: toastSlideIn 0.4s ease; pointer-events: none; max-width: 280px; text-align: center; }
+#waddle-toast.hide { animation: toastSlideOut 0.4s ease forwards; }
 `;
     document.head.appendChild(style);
 
-    function showTooltip(tooltip, element) {
-        const existing = document.getElementById('waddle-tooltip-popup');
+    function showToast(message) {
+        const existing = document.getElementById('waddle-toast');
         if (existing) existing.remove();
 
-        const rect = element.getBoundingClientRect();
-        const popup = document.createElement('div');
-        popup.id = 'waddle-tooltip-popup';
-        popup.style.cssText = `
-            position: fixed;
-            left: ${rect.left}px;
-            top: ${rect.bottom + 10}px;
-            background: rgba(0, 0, 0, 0.95);
-            color: var(--waddle-primary);
-            padding: 12px 16px;
-            border-radius: 8px;
-            border: 2px solid var(--waddle-primary);
-            font-family: Segoe UI, sans-serif;
-            font-weight: 700;
-            font-size: 0.95rem;
-            z-index: 9999999;
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
-            white-space: nowrap;
-            pointer-events: none;
-            animation: slideInUp 0.3s ease;
-        `;
-        popup.textContent = tooltip;
-        document.body.appendChild(popup);
+        const toast = document.createElement('div');
+        toast.id = 'waddle-toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
 
-        const timeout = setTimeout(() => popup.remove(), 3000);
+        const timeout = setTimeout(() => {
+            toast.classList.add('hide');
+            const removeTimeout = setTimeout(() => {
+                if (toast.parentElement) toast.remove();
+            }, 400);
+            trackTimeout(removeTimeout);
+        }, TIMING.TOAST_DURATION);
         trackTimeout(timeout);
+
+        return toast;
     }
 
     function createCounterElement(config) {
-        const { id, counterType, initialText, tooltip, position = { left: '50px', top: '50px' }, isDraggable = true } = config;
+        const { id, counterType, initialText, position = { left: '50px', top: '50px' }, isDraggable = true } = config;
         const counter = document.createElement('div');
         counter.id = id;
         counter.className = 'counter';
@@ -289,19 +267,6 @@
         textSpan.textContent = initialText;
         counter.appendChild(textSpan);
         document.body.appendChild(counter);
-
-        if (tooltip) {
-            counter.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                showTooltip(tooltip, counter);
-            });
-
-            counter.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 2) {
-                    showTooltip(tooltip, counter);
-                }
-            }, { passive: true });
-        }
 
         if (isDraggable && counterType) {
             state.cleanupFunctions[counterType] = setupDragging(counter, counterType);
@@ -348,38 +313,6 @@
         }
     }
 
-    function createSplashScreen() {
-        const container = document.createElement('div');
-        container.id = 'waddle-splash-container';
-
-        const logo = document.createElement('div');
-        logo.id = 'waddle-splash-logo';
-        logo.style.fontSize = '80px';
-        logo.style.display = 'flex';
-        logo.style.alignItems = 'center';
-        logo.style.justifyContent = 'center';
-        logo.textContent = '🐧';
-        container.appendChild(logo);
-
-        const title = document.createElement('div');
-        title.id = 'waddle-splash-title';
-        title.textContent = '🐧 Waddle';
-        container.appendChild(title);
-
-        const message = document.createElement('div');
-        message.id = 'waddle-splash-message';
-        message.textContent = randomSplashMsg;
-        container.appendChild(message);
-
-        const button = document.createElement('button');
-        button.id = 'waddle-splash-play';
-        button.textContent = 'LAUNCH';
-        container.appendChild(button);
-
-        document.body.appendChild(container);
-        return container;
-    }
-
     function createPersistentHeader() {
         const header = document.createElement('div');
         header.id = 'waddle-persistent-header';
@@ -387,15 +320,6 @@
         document.body.appendChild(header);
         cachedElements.header = header;
         return header;
-    }
-
-    function createHintText() {
-        const hint = document.createElement('div');
-        hint.id = 'waddle-hint-text';
-        hint.textContent = `Press ${state.menuKey} To Open Menu!`;
-        document.body.appendChild(hint);
-        cachedElements.hint = hint;
-        return hint;
     }
 
     function setupDragging(element, counterType) {
@@ -430,7 +354,7 @@
 
     function createFPSCounter() {
         const counter = createCounterElement({
-            id: 'fps-counter', counterType: 'fps', initialText: 'FPS: 0', tooltip: 'Frames Per Second',
+            id: 'fps-counter', counterType: 'fps', initialText: 'FPS: 0',
             position: { left: '50px', top: '80px' }, isDraggable: true
         });
         state.counters.fps = counter;
@@ -452,7 +376,7 @@
 
     function createCPSCounter() {
         const counter = createCounterElement({
-            id: 'cps-counter', counterType: 'cps', initialText: 'CPS: 0', tooltip: 'Clicks Per Second',
+            id: 'cps-counter', counterType: 'cps', initialText: 'CPS: 0',
             position: { left: '50px', top: '150px' }, isDraggable: true
         });
         state.counters.cps = counter;
@@ -501,7 +425,7 @@
 
     function createRealTimeCounter() {
         const counter = createCounterElement({
-            id: 'real-time-counter', counterType: null, initialText: '00:00:00 AM', tooltip: 'Shows time without exiting fullscreen',
+            id: 'real-time-counter', counterType: null, initialText: '00:00:00 AM',
             position: { left: '50px', top: '50px' }, isDraggable: false
         });
         state.counters.realTime = counter;
@@ -534,7 +458,7 @@
 
     function createPingCounter() {
         const counter = createCounterElement({
-            id: 'ping-counter', counterType: 'ping', initialText: 'PING: 0ms', tooltip: 'Network Latency',
+            id: 'ping-counter', counterType: 'ping', initialText: 'PING: 0ms',
             position: { left: '50px', top: '220px' }, isDraggable: true
         });
         state.counters.ping = counter;
@@ -586,7 +510,7 @@
 
     function createAntiAfkCounter() {
         const counter = createCounterElement({
-            id: 'anti-afk-counter', counterType: 'antiAfk', initialText: '🐧 Jumping in 5s', tooltip: 'Anti-AFK - Auto jumps to prevent kick',
+            id: 'anti-afk-counter', counterType: 'antiAfk', initialText: '🐧 Jumping in 5s',
             position: { left: '50px', top: '290px' }, isDraggable: true
         });
         state.counters.antiAfk = counter;
@@ -629,7 +553,7 @@
 
     function createSessionTimerCounter() {
         const counter = createCounterElement({
-            id: 'session-timer-counter', counterType: null, initialText: '⏱️ 00:00:00', tooltip: 'Session Time',
+            id: 'session-timer-counter', counterType: null, initialText: '⏱️ 00:00:00',
             position: { left: '50px', top: '360px' }, isDraggable: false
         });
         state.counters.sessionTimer = counter;
@@ -666,168 +590,6 @@
         const minutes = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
         const seconds = String(elapsed % 60).padStart(2, '0');
         display.textContent = `⏱️ ${hours}:${minutes}:${seconds}`;
-    }
-
-    const CHANGELOG = {
-        '4.2': [
-            '✨ Ultra animations with particle effects',
-            '🐧 Penguin-themed UI overhaul',
-            '💫 Enhanced glow and shimmer effects',
-            '🎬 Smooth slide-in animations for menu',
-            '⚡ Performance-optimized particle system',
-            '🐧 Waddle splash screen design'
-        ],
-        '4.1': [
-            '✨ Premium splash screen animation',
-            '🎬 GreasyClient-style intro sequence',
-            '💎 Enhanced visual effects and glow',
-            '🚀 Dynamic splash messages'
-        ],
-        '4.0': [
-            '📝 Updated to V4',
-            '📚 Github Readme Updated',
-            '👥 Avatars and clickable links for authors added to credits!',
-            '🔜 More features coming soon!'
-        ],
-        '3.6': [
-            '🔧 Fixed critical memory leaks in timeout/interval tracking',
-            '🛡️ Added null-safety checks throughout codebase',
-            '✅ Fixed DOM element removal race conditions',
-            '🎯 Prevented zombie event listeners from accumulating',
-            '⚡ Optimized cleanup functions for proper garbage collection',
-            '🔌 Added timeout/interval tracking system',
-            '📋 Changelog Viewer - displays update history',
-            '📑 Tabbed UI for better organization'
-        ],
-        '3.5': [
-            '✨ Custom color theme system implementation',
-            '💾 localStorage persistence for settings',
-            '🎨 Real-time theme color picker',
-            '📊 Session statistics tracking',
-            '🔄 Auto-save positions on drag'
-        ],
-        '3.4': [
-            '⚙️ Code refactoring and optimization',
-            '🎭 Unified counter UI system',
-            '🔋 Improved performance loop management'
-        ],
-        '3.0-v3.3': [
-            '🚀 Core feature implementation',
-            '🎮 Gaming-focused UI/UX',
-            '📈 Performance monitoring tools'
-        ],
-        '1.0-v2.9': [
-            '👶 Initial development phases',
-            '📝 Original repo by @Scripter132132'
-        ]
-    };
-
-    function createChangelogModal() {
-        const modal = document.createElement('div');
-        modal.id = 'waddle-changelog-modal';
-        modal.style.cssText = `
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(10px);
-            z-index: 10000001;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            animation: slideInUp 0.4s ease;
-        `;
-
-        const container = document.createElement('div');
-        container.style.cssText = `
-            background: rgba(17, 17, 17, 0.95);
-            border: 2px solid var(--waddle-primary);
-            border-radius: 16px;
-            max-width: 600px;
-            width: 100%;
-            max-height: 80vh;
-            overflow-y: auto;
-            padding: 30px;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
-        `;
-
-        const title = document.createElement('h2');
-        title.style.cssText = `
-            color: var(--waddle-primary);
-            text-align: center;
-            margin-bottom: 20px;
-            font-size: 2rem;
-            font-weight: 900;
-            animation: slideInDown 0.5s ease;
-        `;
-        title.textContent = '🐧 Waddle Changelog!';
-        container.appendChild(title);
-
-        Object.entries(CHANGELOG).forEach(([version, changes]) => {
-            const section = document.createElement('div');
-            section.style.cssText = `
-                margin-bottom: 24px;
-                padding-bottom: 16px;
-                border-bottom: 1px solid rgba(0, 255, 255, 0.2);
-                animation: slideInUp 0.5s ease;
-            `;
-
-            const versionTitle = document.createElement('h3');
-            versionTitle.style.cssText = `
-                color: var(--waddle-primary);
-                margin-bottom: 10px;
-                font-size: 1.3rem;
-                font-weight: 700;
-            `;
-            versionTitle.textContent = `v${version}`;
-            section.appendChild(versionTitle);
-
-            const list = document.createElement('ul');
-            list.style.cssText = `
-                list-style: none;
-                padding: 0;
-                margin: 0;
-                color: #ccc;
-            `;
-
-            changes.forEach(change => {
-                const item = document.createElement('li');
-                item.style.cssText = `
-                    padding: 6px 0;
-                    padding-left: 20px;
-                    font-size: 0.95rem;
-                    line-height: 1.4;
-                `;
-                item.textContent = change;
-                list.appendChild(item);
-            });
-
-            section.appendChild(list);
-            container.appendChild(section);
-        });
-
-        const closeBtn = document.createElement('button');
-        closeBtn.style.cssText = `
-            width: 100%;
-            margin-top: 20px;
-            background: var(--waddle-primary);
-            color: #000;
-            border: none;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        `;
-        closeBtn.textContent = 'Close';
-        closeBtn.onmouseover = () => closeBtn.style.transform = 'scale(1.02)';
-        closeBtn.onmouseout = () => closeBtn.style.transform = 'scale(1)';
-        closeBtn.onclick = () => modal.remove();
-        container.appendChild(closeBtn);
-
-        modal.appendChild(container);
-        modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
-        document.body.appendChild(modal);
     }
 
     function switchTab(tabName) {
@@ -879,53 +641,42 @@
         featuresContent.className = 'waddle-tab-content active';
         featuresContent.setAttribute('data-content', 'features');
 
-        const createButton = (text, onClick, tooltip) => {
+        const createButton = (text, onClick) => {
             const btn = document.createElement('button');
             btn.className = 'waddle-menu-btn';
             btn.textContent = text;
             btn.addEventListener('click', onClick);
-            if (tooltip) {
-                btn.addEventListener('contextmenu', (e) => {
-                    e.preventDefault();
-                    showTooltip(tooltip, btn);
-                });
-                btn.addEventListener('touchstart', (e) => {
-                    if (e.touches.length === 2) {
-                        showTooltip(tooltip, btn);
-                    }
-                }, { passive: true });
-            }
             return btn;
         };
 
         const fpsBtn = createButton('FPS Counter 🐧', () => {
-            if (state.fpsShown) { state.fpsShown = false; stopFPSCounter(); fpsBtn.textContent = 'FPS Counter 🐧'; }
-            else { state.fpsShown = true; startFPSCounter(); fpsBtn.textContent = 'Hide FPS Counter ✓'; }
-        }, 'Shows your current frames per second');
+            if (state.fpsShown) { state.fpsShown = false; stopFPSCounter(); fpsBtn.textContent = 'FPS Counter 🐧'; showToast('FPS Counter Disabled ✓'); }
+            else { state.fpsShown = true; startFPSCounter(); fpsBtn.textContent = 'Hide FPS Counter ✓'; showToast('FPS Counter Enabled ✓'); }
+        });
         featuresContent.appendChild(fpsBtn);
 
         const cpsBtn = createButton('CPS Counter 🐧', () => {
-            if (state.cpsShown) { stopCPSCounter(); cpsBtn.textContent = 'CPS Counter 🐧'; state.cpsShown = false; }
-            else { startCPSCounter(); cpsBtn.textContent = 'Hide CPS Counter ✓'; state.cpsShown = true; }
-        }, 'Shows your clicks per second');
+            if (state.cpsShown) { stopCPSCounter(); cpsBtn.textContent = 'CPS Counter 🐧'; state.cpsShown = false; showToast('CPS Counter Disabled ✓'); }
+            else { startCPSCounter(); cpsBtn.textContent = 'Hide CPS Counter ✓'; state.cpsShown = true; showToast('CPS Counter Enabled ✓'); }
+        });
         featuresContent.appendChild(cpsBtn);
 
         const realTimeBtn = createButton('Real Time 🐧', () => {
-            if (state.realTimeShown) { stopRealTimeCounter(); realTimeBtn.textContent = 'Real Time 🐧'; state.realTimeShown = false; }
-            else { startRealTimeCounter(); realTimeBtn.textContent = 'Hide Real Time ✓'; state.realTimeShown = true; }
-        }, 'Displays current time without fullscreen');
+            if (state.realTimeShown) { stopRealTimeCounter(); realTimeBtn.textContent = 'Real Time 🐧'; state.realTimeShown = false; showToast('Real Time Disabled ✓'); }
+            else { startRealTimeCounter(); realTimeBtn.textContent = 'Hide Real Time ✓'; state.realTimeShown = true; showToast('Real Time Enabled ✓'); }
+        });
         featuresContent.appendChild(realTimeBtn);
 
         const pingBtn = createButton('Ping Counter 🐧', () => {
-            if (state.pingShown) { stopPingCounter(); pingBtn.textContent = 'Ping Counter 🐧'; state.pingShown = false; }
-            else { startPingCounter(); pingBtn.textContent = 'Hide Ping Counter ✓'; state.pingShown = true; }
-        }, 'Shows your network latency');
+            if (state.pingShown) { stopPingCounter(); pingBtn.textContent = 'Ping Counter 🐧'; state.pingShown = false; showToast('Ping Counter Disabled ✓'); }
+            else { startPingCounter(); pingBtn.textContent = 'Hide Ping Counter ✓'; state.pingShown = true; showToast('Ping Counter Enabled ✓'); }
+        });
         featuresContent.appendChild(pingBtn);
 
         const antiAfkBtn = createButton('Anti-AFK 🐧', () => {
-            if (state.antiAfkEnabled) { stopAntiAfk(); antiAfkBtn.textContent = 'Anti-AFK 🐧'; state.antiAfkEnabled = false; }
-            else { startAntiAfk(); antiAfkBtn.textContent = 'Disable Anti-AFK ✓'; state.antiAfkEnabled = true; }
-        }, 'Auto-jumps every 5 seconds to prevent kick');
+            if (state.antiAfkEnabled) { stopAntiAfk(); antiAfkBtn.textContent = 'Anti-AFK 🐧'; state.antiAfkEnabled = false; showToast('Anti-AFK Disabled ✓'); }
+            else { startAntiAfk(); antiAfkBtn.textContent = 'Disable Anti-AFK ✓'; state.antiAfkEnabled = true; showToast('Anti-AFK Enabled ✓'); }
+        });
         featuresContent.appendChild(antiAfkBtn);
 
         const fullscreenBtn = createButton('Auto Fullscreen 🐧', () => {
@@ -935,7 +686,7 @@
             } else {
                 document.exitFullscreen();
             }
-        }, 'Toggle fullscreen mode');
+        });
         featuresContent.appendChild(fullscreenBtn);
 
         menuContent.appendChild(featuresContent);
@@ -955,7 +706,10 @@
         colorInput.type = 'color';
         colorInput.className = 'color-picker-input';
         colorInput.value = state.customColor;
-        colorInput.addEventListener('change', (e) => { applyTheme(e.target.value); });
+        colorInput.addEventListener('change', (e) => {
+            applyTheme(e.target.value);
+            showToast(`🎨 Theme changed to ${e.target.value.toUpperCase()}`);
+        });
         colorInput.addEventListener('input', (e) => {
             const color = e.target.value;
             document.documentElement.style.setProperty('--waddle-primary', color);
@@ -981,7 +735,6 @@
             if (e.key === 'Escape') { keybindInput.value = state.menuKey; keybindInput.blur(); return; }
             state.menuKey = e.key;
             keybindInput.value = e.key;
-            if (cachedElements.hint) cachedElements.hint.textContent = `Press ${state.menuKey} To Open Menu!`;
             keybindInput.blur();
         });
         keybindSection.appendChild(keybindInput);
@@ -1020,9 +773,6 @@
         aboutContent.className = 'waddle-tab-content';
         aboutContent.setAttribute('data-content', 'about');
         aboutContent.style.cssText = 'flex-direction: column; gap: 16px;';
-
-        const changelogBtn = createButton('📜 View Changelog', createChangelogModal, 'View all version updates and changes');
-        aboutContent.appendChild(changelogBtn);
 
         const creditsSection = document.createElement('div');
         creditsSection.style.cssText = `
@@ -1211,7 +961,6 @@
             const settings = JSON.parse(saved);
             if (settings.menuKey) {
                 state.menuKey = settings.menuKey;
-                if (cachedElements.hint) cachedElements.hint.textContent = `Press ${state.menuKey} To Open Menu!`;
             }
             if (settings.fpsShown) {
                 startFPSCounter();
@@ -1275,30 +1024,19 @@
         loadCustomColor();
         initSessionStats();
 
-        const splash = createSplashScreen();
         const header = createPersistentHeader();
-        const hint = createHintText();
         const menu = createMenu();
         setupKeyboardHandler();
+
+        // Show toast notification on startup
+        showToast(`Press ${state.menuKey} To Open Menu!`);
 
         // Update session display every second
         const sessionDisplayInterval = setInterval(updateSessionDisplay, 1000);
         trackInterval(sessionDisplayInterval);
 
-        document.getElementById('waddle-splash-play').onclick = () => {
-            const splash = document.getElementById('waddle-splash-container');
-            splash.style.opacity = '0';
-            const t = setTimeout(() => {
-                if (splash.parentElement) splash.remove();
-                header.classList.add('visible');
-                hint.style.opacity = '1';
-                const t3 = setTimeout(() => { hint.style.opacity = '0'; }, TIMING.HINT_TEXT_DURATION);
-                trackTimeout(t3);
-                restoreSavedState();
-                console.log('[Waddle] Initialization completed!');
-            }, 800);
-            trackTimeout(t);
-        };
+        restoreSavedState();
+        console.log('[Waddle] Initialization completed!');
     }
 
     if (document.readyState === 'loading') {
