@@ -1,10 +1,10 @@
 // ==UserScript==
-// @name         Waddle Enhanced
+// @name         WaddleClient4Miniblox
 // @namespace    M1ddleM1n and Scripter on top!
 // @version      4.2
 // @description  Waddle V4.2 - Ultra Animations + High Performance
 // @author       Scripter, TheM1ddleM1n
-// @icon         https://raw.githubusercontent.com/TheM1ddleM1n/NovaCoreX/refs/heads/main/NovaCoreX.png
+// @icon         https://raw.githubusercontent.com/TheM1ddleM1n/WaddleClient/refs/heads/main/WaddlePic.png
 // @match        https://miniblox.io/
 // @grant        none
 // ==/UserScript==
