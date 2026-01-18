@@ -1,4 +1,4 @@
-# 🐧 Waddle Client for Miniblox
+# 🐧 Waddle Client 4 Miniblox
 
 ![Version](https://img.shields.io/badge/version-4.4-00ffff?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-00ffff?style=for-the-badge)
