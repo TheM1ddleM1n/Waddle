@@ -1,6 +1,6 @@
 # 🐧 WaddleClient4Miniblox
 
-![Version](https://img.shields.io/badge/version-4.4-00ffff?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-4.7-00ffff?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-00ffff?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-00ffff?style=for-the-badge)
 
@@ -13,11 +13,11 @@ A premium enhancement client for Miniblox with a modern card-based UI, performan
 - **CPS Counter** - Clicks per second tracker
 - **Ping Counter** - Network latency display
 - **Real-Time Clock** - Live clock display with AM/PM
+- **KeyStrokes** - shows WASD space, left/right click (keys) with animations
 
 ### 🛠️ Utilities
 - **Anti-AFK** - Automatically prevents AFK timeout (jumps every 5 seconds)
 - **Fullscreen Toggle** - Quick fullscreen mode activation
-- **Session Timer** - Track your playtime with HH:MM:SS format
 
 ### 🎨 Customization
 - **Custom Theme Colors** - Choose any color for the UI
@@ -45,7 +45,7 @@ A premium enhancement client for Miniblox with a modern card-based UI, performan
 1. Install [Violentmonkey](https://violentmonkey.github.io/) for your browser
 2. Follow the same steps as Tampermonkey above
 
-### Method 3: Manual Installation
+### Method 3: Manual Installation (RECOMMENDED)
 1. Copy the entire script from `WaddleClient.js`
 2. Open your userscript manager
 3. Create a new script
@@ -146,12 +146,12 @@ Waddle saves your preferences in localStorage:
 - No unnecessary re-renders
 
 ### Compatibility
-- Works on all modern browsers
-- Chrome, Firefox, Edge, Opera, Safari
+- It works on all modern browsers!!
+- Chrome, Firefox, Edge, Opera, Safari etc
 - Requires ES6+ support
 - No external dependencies
 
-## 🐛 Troubleshooting
+## 🐛 Q&A
 
 ### Menu won't open
 - Check if another script uses the same keybind
@@ -160,7 +160,7 @@ Waddle saves your preferences in localStorage:
 - Check browser console for errors
 
 ### Counters not showing
-- Make sure the feature is enabled (has checkmark)
+- Make sure the feature is enabled (has a toast notification with the key default is \\)
 - Check if counters are off-screen - use Reset Positions
 - Refresh the page
 - Clear localStorage and reconfigure
@@ -179,7 +179,12 @@ Waddle saves your preferences in localStorage:
 
 ## 📝 Changelog
 
-### v4.4 (Latest)
+### v4.7 (Lastest)
+- New Keystrokes
+- Improved animations for Keystrokes
+- no bottlenecks now i hope..
+
+### v4.4
 - ✨ Complete UI redesign with card-based layout
 - 🎯 Better feature organization
 - 📊 2-column grid layouts
@@ -196,8 +201,8 @@ Waddle saves your preferences in localStorage:
 
 ### v4.2
 - Basic counter functionality
-- Menu system
-- Anti-AFK feature
+- NEW UI
+- Added new Anti-AFK feature
 
 ## 📄 License
 
@@ -248,7 +253,7 @@ This is a third-party enhancement script. Use at your own risk. The developers a
 ---
 
 <p align="center">
-  Made with 🐧 by the Waddle Team!
+  Made by the Waddle Team! 🐧 Enjoy!
 </p>
 
 <p align="center">
