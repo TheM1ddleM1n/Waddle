@@ -3,7 +3,6 @@
 ![Version](https://img.shields.io/badge/version-4.7-00ffff?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-00ffff?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-00ffff?style=for-the-badge)
-![Maintained](https://img.shields.io/badge/maintained-yes-LOL-00ffff?style=for-the-badge)
 
 > **A premium enhancement client for Miniblox featuring a modern card-based UI, real-time performance monitoring, and powerful quality-of-life features.**
 
