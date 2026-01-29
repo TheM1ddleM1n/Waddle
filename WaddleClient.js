@@ -2,7 +2,7 @@
 // @name         WaddleClient
 // @namespace    M1ddleM1n and Scripter on top
 // @version      5.0
-// @description  Waddle V5.0 - Crosshair + Dynamic Menu Hue
+// @description  Waddle V5.0 RELEASE!
 // @author       Scripter, TheM1ddleM1n
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/WaddleClient/refs/heads/main/WaddlePic.png
 // @match        https://miniblox.io/
@@ -280,97 +280,90 @@
         document.head.appendChild(style);
     }
 
-    // ==================== CROSSHAIR SYSTEM ====================
-    function createPermanentCrosshair() {
-        const crosshairContainer = document.createElement('div');
-        crosshairContainer.id = 'waddle-crosshair';
-        Object.assign(crosshairContainer.style, {
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            zIndex: '5000',
-            pointerEvents: 'none',
-            display: 'block'
-        });
-
-        const targetColor = hueToColor(state.ui.customHue);
-
-        // Center dot
-        const centerDot = document.createElement('div');
-        Object.assign(centerDot.style, {
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            width: '3px',
-            height: '3px',
-            backgroundColor: targetColor,
-            borderRadius: '50%',
-            transform: 'translate(-50%, -50%)',
-            zIndex: '1'
-        });
-        crosshairContainer.appendChild(centerDot);
-
-        // Top line
-        const topLine = document.createElement('div');
-        Object.assign(topLine.style, {
-            position: 'absolute',
-            top: 'calc(50% - 10px)',
-            left: '50%',
-            width: '1.5px',
-            height: '6px',
-            backgroundColor: targetColor,
-            transform: 'translateX(-50%)',
-            zIndex: '1'
-        });
-        crosshairContainer.appendChild(topLine);
-
-        // Bottom line
-        const bottomLine = document.createElement('div');
-        Object.assign(bottomLine.style, {
-            position: 'absolute',
-            top: 'calc(50% + 4px)',
-            left: '50%',
-            width: '1.5px',
-            height: '6px',
-            backgroundColor: targetColor,
-            transform: 'translateX(-50%)',
-            zIndex: '1'
-        });
-        crosshairContainer.appendChild(bottomLine);
-
-        // Left line
-        const leftLine = document.createElement('div');
-        Object.assign(leftLine.style, {
-            position: 'absolute',
-            left: 'calc(50% - 10px)',
-            top: '50%',
-            width: '6px',
-            height: '1.5px',
-            backgroundColor: targetColor,
-            transform: 'translateY(-50%)',
-            zIndex: '1'
-        });
-        crosshairContainer.appendChild(leftLine);
-
-        // Right line
-        const rightLine = document.createElement('div');
-        Object.assign(rightLine.style, {
-            position: 'absolute',
-            left: 'calc(50% + 4px)',
-            top: '50%',
-            width: '6px',
-            height: '1.5px',
-            backgroundColor: targetColor,
-            transform: 'translateY(-50%)',
-            zIndex: '1'
-        });
-        crosshairContainer.appendChild(rightLine);
-
-        document.body.appendChild(crosshairContainer);
-        state.counters.crosshair = crosshairContainer;
-        return crosshairContainer;
-    }
+   // ==================== CROSSHAIR SYSTEM ====================
+function createPermanentCrosshair() {
+    const crosshairContainer = document.createElement('div');
+    crosshairContainer.id = 'waddle-crosshair';
+    Object.assign(crosshairContainer.style, {
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        zIndex: '5000',
+        pointerEvents: 'none',
+        display: 'block'
+    });
+    const targetColor = hueToColor(state.ui.customHue);
+    // Center dot
+    const centerDot = document.createElement('div');
+    Object.assign(centerDot.style, {
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        width: '6px',
+        height: '6px',
+        backgroundColor: targetColor,
+        borderRadius: '50%',
+        transform: 'translate(-50%, -50%)',
+        zIndex: '1'
+    });
+    crosshairContainer.appendChild(centerDot);
+    // Top line
+    const topLine = document.createElement('div');
+    Object.assign(topLine.style, {
+        position: 'absolute',
+        top: 'calc(50% - 10px)',
+        left: '50%',
+        width: '3px',
+        height: '6px',
+        backgroundColor: targetColor,
+        transform: 'translateX(-50%)',
+        zIndex: '1'
+    });
+    crosshairContainer.appendChild(topLine);
+    // Bottom line
+    const bottomLine = document.createElement('div');
+    Object.assign(bottomLine.style, {
+        position: 'absolute',
+        top: 'calc(50% + 4px)',
+        left: '50%',
+        width: '3px',
+        height: '6px',
+        backgroundColor: targetColor,
+        transform: 'translateX(-50%)',
+        zIndex: '1'
+    });
+    crosshairContainer.appendChild(bottomLine);
+    // Left line
+    const leftLine = document.createElement('div');
+    Object.assign(leftLine.style, {
+        position: 'absolute',
+        left: 'calc(50% - 10px)',
+        top: '50%',
+        width: '6px',
+        height: '3px',
+        backgroundColor: targetColor,
+        transform: 'translateY(-50%)',
+        zIndex: '1'
+    });
+    crosshairContainer.appendChild(leftLine);
+    // Right line
+    const rightLine = document.createElement('div');
+    Object.assign(rightLine.style, {
+        position: 'absolute',
+        left: 'calc(50% + 4px)',
+        top: '50%',
+        width: '6px',
+        height: '3px',
+        backgroundColor: targetColor,
+        transform: 'translateY(-50%)',
+        zIndex: '1'
+    });
+    crosshairContainer.appendChild(rightLine);
+    document.body.appendChild(crosshairContainer);
+    state.counters.crosshair = crosshairContainer;
+    return crosshairContainer;
+}
 
     // ==================== COUNTER CREATION ====================
     function createCounterElement(config) {
