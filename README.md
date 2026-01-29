@@ -428,59 +428,15 @@ All settings are stored locally in your browser's localStorage:
 
 ---
 
+---
+
 ## 📝 Changelog
 
-### v5.0 (Latest) - January 2026 ⭐
+For detailed version history, see [CHANGELOG.md](CHANGELOG.md).
 
-**Major Features:**
-- 🎯 Added permanent Target crosshair at screen center
-- 🌈 Replaced color picker with dynamic hue slider (0-360°)
-- 🔄 Crosshair auto-syncs with theme hue
-- ✨ Improved visual feedback with hue preview
-- 👀 Crosshair is **bolder**
+**Latest Release:** [v5.0](https://github.com/TheM1ddleM1n/WaddleClient/releases/tag/v5.0)
 
-**Improvements:**
-- 🎨 Hue slider provides smooth spectrum control
-- 📊 Better color preview display
-- ⚡ Optimized crosshair rendering
-- 🔧 Consolidated hue management system
-
-### v4.9 - January 2026
-
-**Improvements:**
-- 🔧 Consolidated state management for cleaner code
-- ⚡ Performance optimizations and reduced overhead
-- 🐛 Various bug fixes and stability improvements
-
-### v4.7 - January 2026
-
-**Major Features:**
-- ✨ Added KeyStrokes display with WASD, Space, LMB, RMB
-- 🎨 Improved animations for key press feedback
-- ⚡ Optimized performance - removed bottlenecks
-
-### v4.4 - December 2025
-
-**UI Redesign:**
-- ✨ Complete card-based layout overhaul
-- 🎯 Better feature organization with tabs
-- 📊 2-column grid layouts for cleaner interface
-- ⏱️ Added session timer in About tab
-- 🔄 Added position reset button
-
-### v4.3 - November 2025
-
-**Customization:**
-- 🎨 Custom theme colors with color picker
-- ⌨️ Custom keybind support
-- 💾 Settings persistence with localStorage
-
-### v4.2 - October 2025
-
-**Initial Release:**
-- 📊 Core counter functionality
-- 🎨 Modern UI design
-- 🐧 Anti-AFK feature
+View all [releases on GitHub](https://github.com/TheM1ddleM1n/WaddleClient/releases)
 
 ---
 
