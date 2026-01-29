@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         WaddleClient4Miniblox
+// @name         WaddleClient
 // @namespace    M1ddleM1n and Scripter on top!
 // @version      4.7
 // @description  Waddle V4.7 with visual key display & modern UI++
@@ -11,7 +11,7 @@
 
 (function() {
     'use strict';
-    document.title = '🐧 𝙒𝙖𝙙𝙙𝙡𝙚 4 𝙈𝙞𝙣𝙞𝙗𝙡𝙤𝙭!';
+    document.title = '🐧 𝙒𝙖𝙙𝙙𝙡𝙚!';
 
     const TIMING = {
         HINT_TEXT_DURATION: 4000, FPS_UPDATE_INTERVAL: 500,
