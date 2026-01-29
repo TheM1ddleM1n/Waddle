@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 Documentation
+    url: https://github.com/TheM1ddleM1n/WaddleClient#readme
+    about: Check the README for guides and troubleshooting
+  - name: 💬 Discussions
+    url: https://github.com/TheM1ddleM1n/WaddleClient/discussions
+    about: Ask questions and share ideas with the community
