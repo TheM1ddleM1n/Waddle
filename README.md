@@ -432,11 +432,78 @@ All settings are stored locally in your browser's localStorage:
 
 ## 📝 Changelog
 
-For detailed version history, see [CHANGELOG.md](CHANGELOG.md).
+## [5.3.3] - 29/01/26
+- made a new .github/workflows structure with bump.yml
+- and bug/enhancement format
 
-**Latest Release:** [v5.0](https://github.com/TheM1ddleM1n/WaddleClient/releases/tag/v5.0)
+## [5.0] - 29/01/26
 
-View all [releases on GitHub](https://github.com/TheM1ddleM1n/WaddleClient/releases)
+### Added
+- 🎯 Permanent Target crosshair at screen center
+- 🌈 Dynamic hue slider (0-360°) for theme customization
+- ✨ Real-time crosshair color syncing with theme
+- 👀 Bolder crosshair design
+
+### Changed
+- 🎨 Replaced color picker with spectrum hue slider
+- ⚡ Optimized crosshair rendering performance
+- 🔧 Consolidated hue management system
+
+### Fixed
+- Fixed crosshair visibility on various resolutions
+
+---
+
+## [4.9] - January 2026
+
+### Changed
+- 🔧 Consolidated state management for cleaner code
+- ⚡ Performance optimizations and reduced overhead
+
+### Fixed
+- 🐛 Various bug fixes and stability improvements
+
+---
+
+## [4.7] - January 2026
+
+### Added
+- ✨ KeyStrokes display with WASD, Space, LMB, RMB
+- 🎨 Improved animations for key press feedback
+
+### Changed
+- ⚡ Optimized performance - removed bottlenecks
+
+---
+
+## [4.4] - December 2025
+
+### Added
+- ⏱️ Session timer in About tab
+- 🔄 Position reset button for counters
+
+### Changed
+- ✨ Complete card-based layout overhaul
+- 🎯 Better feature organization with tabs
+- 📊 2-column grid layouts for cleaner interface
+
+---
+
+## [4.3] - November 2025
+
+### Added
+- 🎨 Custom theme colors with color picker
+- ⌨️ Custom keybind support
+- 💾 Settings persistence with localStorage
+
+---
+
+## [4.2] - September 2025
+
+### Added
+- 📊 Core counter functionality (FPS, Ping, Clock)
+- 🎨 Modern UI design
+- 🐧 Anti-AFK feature
 
 ---
 
