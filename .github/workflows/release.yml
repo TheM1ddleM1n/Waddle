@@ -30,52 +30,42 @@ jobs:
           fi
           echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
 
-      - name: Verify version matches script
+      - name: Update version in all files
         run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          
+          # Update WaddleClient.js
+          sed -i "s/@version[[:space:]]*[0-9.]*/@version      ${VERSION}/" WaddleClient.js
+          
+          # Update README.md badge
+          sed -i "s/badge\/version-[0-9.]*-/badge\/version-${VERSION}-/" README.md
+          
+          # Update CHANGELOG.md header (if it exists)
+          if grep -q "## \[Unreleased\]" CHANGELOG.md; then
+            sed -i "s/## \[Unreleased\]/## [v${VERSION}] - $(date +"%B %d, %Y")\n\n## [Unreleased]/" CHANGELOG.md
+          fi
+
+      - name: Verify version consistency
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
           SCRIPT_VERSION=$(grep -oP '@version\s+\K[0-9.]+' WaddleClient.js)
-          if [ "${{ steps.version.outputs.VERSION }}" != "$SCRIPT_VERSION" ]; then
-            echo "Version ${{ steps.version.outputs.VERSION }} doesn't match script version ($SCRIPT_VERSION)"
-            echo "Update @version in WaddleClient.js first!"
+          README_VERSION=$(grep -oP 'badge/version-\K[0-9.]+' README.md)
+          
+          echo "Script version: $SCRIPT_VERSION"
+          echo "README version: $README_VERSION"
+          echo "Input version: $VERSION"
+          
+          if [ "$SCRIPT_VERSION" != "$VERSION" ] || [ "$README_VERSION" != "$VERSION" ]; then
+            echo "Version mismatch!"
             exit 1
           fi
 
-      - name: Update CHANGELOG.md
-        run: |
-          VERSION=${{ steps.version.outputs.VERSION }}
-          DATE=$(date +"%B %d, %Y")
-          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          
-          {
-            echo "# Changelog"
-            echo ""
-            echo "## [v${VERSION}] - ${DATE}"
-            echo ""
-            if [ -z "$PREV_TAG" ]; then
-              git log --pretty=format:"- %s (%h)" --reverse
-            else
-              git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%h)" --reverse
-            fi
-            echo ""
-            echo "---"
-            echo ""
-            if [ -f CHANGELOG.md ]; then
-              tail -n +2 CHANGELOG.md
-            fi
-          } > CHANGELOG.md.tmp
-          
-          mv CHANGELOG.md.tmp CHANGELOG.md
-
-      - name: Update README version badge
-        run: |
-          VERSION=${{ steps.version.outputs.VERSION }}
-          sed -i "s/badge\/version-[0-9.]*-/badge\/version-${VERSION}-/" README.md
-
-      - name: Commit updates
+      - name: Commit all updates
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add README.md CHANGELOG.md
-          git commit -m "docs: update version to v${{ steps.version.outputs.VERSION }}" || true
+          git add WaddleClient.js README.md CHANGELOG.md
+          git commit -m "chore: bump version to v${{ steps.version.outputs.VERSION }}" || true
           git push
 
       - name: Create Release Tag
