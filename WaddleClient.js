@@ -4,7 +4,7 @@
 // @version      5.0
 // @description  Waddle V5.0 RELEASE!
 // @author       Scripter, TheM1ddleM1n
-// @icon         https://raw.githubusercontent.com/TheM1ddleM1n/WaddleClient/refs/heads/main/WaddlePic.png
+// @icon         https://raw.githubusercontent.com/TheM1ddleM1n/WaddleClient/refs/heads/main/Penguin.png
 // @match        https://miniblox.io/
 // ==/UserScript==
 
