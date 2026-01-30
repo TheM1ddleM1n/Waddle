@@ -141,19 +141,28 @@
     }
 
     function applyTheme(hue) {
-        const color = hueToColor(hue);
-        document.documentElement.style.setProperty('--waddle-primary', color);
-        document.documentElement.style.setProperty('--waddle-shadow', color);
-        state.ui.customHue = hue;
+    const color = hueToColor(hue);
+    document.documentElement.style.setProperty('--waddle-primary', color);
+    document.documentElement.style.setProperty('--waddle-shadow', color);
+    state.ui.customHue = hue;
 
-        // Update crosshair color if it exists
-        if (state.counters.crosshair) {
-            const lines = state.counters.crosshair.querySelectorAll('div');
-            lines.forEach(line => line.style.backgroundColor = color);
+    // Update crosshair SVG elements
+    if (state.counters.crosshair) {
+        const svg = state.counters.crosshair.querySelector('svg');
+        if (svg) {
+            const elements = svg.querySelectorAll('circle, line');
+            elements.forEach(el => {
+                if (el.tagName === 'circle') {
+                    el.setAttribute('fill', color);
+                } else if (el.tagName === 'line') {
+                    el.setAttribute('stroke', color);
+                }
+            });
         }
-
-        try { localStorage.setItem(CUSTOM_HUE_KEY, hue.toString()); } catch (e) {}
     }
+
+    try { localStorage.setItem(CUSTOM_HUE_KEY, hue.toString()); } catch (e) {}
+}
 
     function loadCustomHue() {
         try {
@@ -280,7 +289,7 @@
         document.head.appendChild(style);
     }
 
-   // ==================== CROSSHAIR SYSTEM ====================
+  // ==================== CROSSHAIR SYSTEM ====================
 function createPermanentCrosshair() {
     const crosshairContainer = document.createElement('div');
     crosshairContainer.id = 'waddle-crosshair';
@@ -293,75 +302,73 @@ function createPermanentCrosshair() {
         pointerEvents: 'none',
         display: 'block'
     });
+
     const targetColor = hueToColor(state.ui.customHue);
+
+    // Create SVG crosshair
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '50');
+    svg.setAttribute('height', '50');
+    svg.setAttribute('viewBox', '0 0 50 50');
+    svg.setAttribute('style', 'display: block;');
+
     // Center dot
-    const centerDot = document.createElement('div');
-    Object.assign(centerDot.style, {
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        width: '6px',
-        height: '6px',
-        backgroundColor: targetColor,
-        borderRadius: '50%',
-        transform: 'translate(-50%, -50%)',
-        zIndex: '1'
-    });
-    crosshairContainer.appendChild(centerDot);
+    const centerDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    centerDot.setAttribute('cx', '25');
+    centerDot.setAttribute('cy', '25');
+    centerDot.setAttribute('r', '2.5');
+    centerDot.setAttribute('fill', targetColor);
+    svg.appendChild(centerDot);
+
     // Top line
-    const topLine = document.createElement('div');
-    Object.assign(topLine.style, {
-        position: 'absolute',
-        top: 'calc(50% - 10px)',
-        left: '50%',
-        width: '3px',
-        height: '6px',
-        backgroundColor: targetColor,
-        transform: 'translateX(-50%)',
-        zIndex: '1'
-    });
-    crosshairContainer.appendChild(topLine);
+    const topLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    topLine.setAttribute('x1', '25');
+    topLine.setAttribute('y1', '8');
+    topLine.setAttribute('x2', '25');
+    topLine.setAttribute('y2', '16');
+    topLine.setAttribute('stroke', targetColor);
+    topLine.setAttribute('stroke-width', '2');
+    topLine.setAttribute('stroke-linecap', 'round');
+    svg.appendChild(topLine);
+
     // Bottom line
-    const bottomLine = document.createElement('div');
-    Object.assign(bottomLine.style, {
-        position: 'absolute',
-        top: 'calc(50% + 4px)',
-        left: '50%',
-        width: '3px',
-        height: '6px',
-        backgroundColor: targetColor,
-        transform: 'translateX(-50%)',
-        zIndex: '1'
-    });
-    crosshairContainer.appendChild(bottomLine);
+    const bottomLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    bottomLine.setAttribute('x1', '25');
+    bottomLine.setAttribute('y1', '34');
+    bottomLine.setAttribute('x2', '25');
+    bottomLine.setAttribute('y2', '42');
+    bottomLine.setAttribute('stroke', targetColor);
+    bottomLine.setAttribute('stroke-width', '2');
+    bottomLine.setAttribute('stroke-linecap', 'round');
+    svg.appendChild(bottomLine);
+
     // Left line
-    const leftLine = document.createElement('div');
-    Object.assign(leftLine.style, {
-        position: 'absolute',
-        left: 'calc(50% - 10px)',
-        top: '50%',
-        width: '6px',
-        height: '3px',
-        backgroundColor: targetColor,
-        transform: 'translateY(-50%)',
-        zIndex: '1'
-    });
-    crosshairContainer.appendChild(leftLine);
+    const leftLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    leftLine.setAttribute('x1', '8');
+    leftLine.setAttribute('y1', '25');
+    leftLine.setAttribute('x2', '16');
+    leftLine.setAttribute('y2', '25');
+    leftLine.setAttribute('stroke', targetColor);
+    leftLine.setAttribute('stroke-width', '2');
+    leftLine.setAttribute('stroke-linecap', 'round');
+    svg.appendChild(leftLine);
+
     // Right line
-    const rightLine = document.createElement('div');
-    Object.assign(rightLine.style, {
-        position: 'absolute',
-        left: 'calc(50% + 4px)',
-        top: '50%',
-        width: '6px',
-        height: '3px',
-        backgroundColor: targetColor,
-        transform: 'translateY(-50%)',
-        zIndex: '1'
-    });
-    crosshairContainer.appendChild(rightLine);
+    const rightLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    rightLine.setAttribute('x1', '34');
+    rightLine.setAttribute('y1', '25');
+    rightLine.setAttribute('x2', '42');
+    rightLine.setAttribute('y2', '25');
+    rightLine.setAttribute('stroke', targetColor);
+    rightLine.setAttribute('stroke-width', '2');
+    rightLine.setAttribute('stroke-linecap', 'round');
+    svg.appendChild(rightLine);
+
+    crosshairContainer.appendChild(svg);
     document.body.appendChild(crosshairContainer);
     state.counters.crosshair = crosshairContainer;
+
+    console.log('[Waddle] Crosshair created successfully');
     return crosshairContainer;
 }
 
