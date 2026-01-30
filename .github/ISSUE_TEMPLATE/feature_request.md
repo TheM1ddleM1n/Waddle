@@ -23,7 +23,7 @@ Are there other ways to achieve this? What are the pros/cons?
 - Priority level (nice-to-have, important, critical)
 
 ## Example Use Case
-Describe a real scenario where this feature would help you.
+Describe a ingame scenario where this feature would help you.
 
 ## Checklist
 - [ ] This feature hasn't been requested before
