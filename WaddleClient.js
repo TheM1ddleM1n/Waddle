@@ -991,26 +991,26 @@ function createPermanentCrosshair() {
         const creditsCard = document.createElement('div');
         creditsCard.className = 'waddle-card';
         creditsCard.innerHTML = `
-            <div class="waddle-card-header">🐧 Credits</div>
+            <div class="waddle-card-header">Credits</div>
             <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <img src="https://avatars.githubusercontent.com/Scripter132132" width="32" height="32" style="border-radius: 50%; box-shadow: 0 0 8px rgba(0,255,255,0.35);">
                     <div style="flex: 1;">
-                        <div style="color: #00ffff; font-size: 0.75rem; font-weight: 600;">👨‍💻 Original Creator</div>
+                        <div style="color: #00ffff; font-size: 0.75rem; font-weight: 600;">Original Creator</div>
                         <a href="https://github.com/Scripter132132" target="_blank" style="color: #aaa; font-size: 0.85rem; text-decoration: none;">@Scripter132132</a>
                     </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <img src="https://avatars.githubusercontent.com/TheM1ddleM1n" width="32" height="32" style="border-radius: 50%; box-shadow: 0 0 8px rgba(243,156,18,0.35);">
                     <div style="flex: 1;">
-                        <div style="color: #f39c12; font-size: 0.75rem; font-weight: 600;">🐧 Enhanced By</div>
+                        <div style="color: #f39c12; font-size: 0.75rem; font-weight: 600;">Enhanced By</div>
                         <a href="https://github.com/TheM1ddleM1n" target="_blank" style="color: #aaa; font-size: 0.85rem; text-decoration: none;">@TheM1ddleM1n</a>
                     </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #00ffff, #0099ff); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 0 8px rgba(0,255,255,0.35);">🤖</div>
                     <div style="flex: 1;">
-                        <div style="color: #00ffff; font-size: 0.75rem; font-weight: 600;">🤖 Release Automation</div>
+                        <div style="color: #00ffff; font-size: 0.75rem; font-weight: 600;">🤖 Automation</div>
                         <span style="color: #aaa; font-size: 0.85rem;">🐧Bot</span>
                     </div>
                 </div>
@@ -1029,13 +1029,13 @@ function createPermanentCrosshair() {
 
         const suggestBtn = document.createElement('button');
         suggestBtn.className = 'waddle-menu-btn';
-        suggestBtn.textContent = '💡 Suggest';
+        suggestBtn.textContent = 'Suggest a Feature';
         suggestBtn.onclick = () => window.open(`https://github.com/TheM1ddleM1n/WaddleClient/issues/new?template=feature_request.md`, '_blank');
         linksGrid.appendChild(suggestBtn);
 
         const bugBtn = document.createElement('button');
         bugBtn.className = 'waddle-menu-btn';
-        bugBtn.textContent = '🐛 Report Bug';
+        bugBtn.textContent = 'Report a Bug';
         bugBtn.onclick = () => window.open(`https://github.com/TheM1ddleM1n/WaddleClient/issues/new?template=bug_report.md`, '_blank');
         linksGrid.appendChild(bugBtn);
 
