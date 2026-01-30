@@ -1023,7 +1023,7 @@ function createPermanentCrosshair() {
 
         const linksCard = document.createElement('div');
         linksCard.className = 'waddle-card';
-        linksCard.innerHTML = '<div class="waddle-card-header">🔗 Links</div>';
+        linksCard.innerHTML = '<div class="waddle-card-header">🔗 Github Templates</div>';
         const linksGrid = document.createElement('div');
         linksGrid.className = 'waddle-card-grid';
 
