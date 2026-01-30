@@ -22,9 +22,9 @@ What should happen?
 What actually happens?
 
 ## WaddleClient Information
-- **Version of Client:** (Check menu header: e.g., v4.8)
+- **Version of Client:** (Check menu header: e.g., v5.4)
 - **Browser Version:** (example: Chrome 144, Firefox 133)
-- **Operating System:** (Windows, macOS, Linux, etc.)
+- **Operating System:** (Windows, macOS, Linux, ChromeOS, etc)
 
 ## Affected Features?
 - [ ] FPS Counter
