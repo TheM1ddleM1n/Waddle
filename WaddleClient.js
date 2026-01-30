@@ -1016,7 +1016,7 @@ function createPermanentCrosshair() {
                 </div>
             </div>
             <div style="font-size: 0.7rem; color: #555; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(0, 255, 255, 0.15); text-align: center;">
-                v${SCRIPT_VERSION} • MIT License • Made with 🗣️🔥
+                v${SCRIPT_VERSION} • MIT License • Made by TheM1ddleM1n!
             </div>
         `;
         aboutContent.appendChild(creditsCard);
