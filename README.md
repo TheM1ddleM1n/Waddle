@@ -23,12 +23,12 @@
 
 ## 📖 Quick Navigation
 
-- [Installation](#-installation) - Get started in 2 minutes
+- [Installation](#-installation) - How to get started
 - [Usage Guide](#-usage-guide) - Learn the basics
 - [Features](#-features) - Detailed feature breakdown
 - [Customization](#-customization) - Personalize your experience
 - [Troubleshooting](#-troubleshooting) - Solutions to common issues
-- [Contributing](#-contributing) - Help improve Waddle
+- [Contributing](#-contributing) - Help improve Waddle!
 
 ---
 
