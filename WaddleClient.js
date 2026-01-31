@@ -10,7 +10,7 @@
 
 (function() {
     'use strict';
-    document.title = '𝙒𝙖𝙙𝙙𝙡𝙚';
+    document.title = 'Waddle Client For Miniblox!';
 
     const MENU_KEY = '\\';
     const SCRIPT_VERSION = '5.8';
