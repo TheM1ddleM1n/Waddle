@@ -1,21 +1,21 @@
 # 🐧 WaddleClient
 
-![Version](https://img.shields.io/badge/version-5.8-00ffff?style=for-the-badge)
-![License](https://img.shields.io/badge/license-MIT-00ffff?style=for-the-badge)
-![Platform](https://img.shields.io/badge/platform-Miniblox-00ffff?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-5.9-39ff14?style=for-the-badge)
+![License](https://img.shields.io/badge/license-MIT-39ff14?style=for-the-badge)
+![Platform](https://img.shields.io/badge/platform-Miniblox-39ff14?style=for-the-badge)
 
-> **A lightweight enhancement client for Miniblox featuring a permanent cyan crosshair, real-time FPS monitoring, and dual-theme customization.**
+> **A lightweight enhancement client for Miniblox featuring a permanent neon green crosshair, real-time FPS monitoring, and essential gaming utilities.**
 
 ---
 
 ## 🌟 Highlights
 
-- 🎯 **Permanent Cyan Crosshair** - Always-on target crosshair at screen center
+- 🎯 **Permanent Neon Green Crosshair** - Always-on target crosshair at screen center
 - 📊 **Real-Time FPS Monitoring** - Live performance tracking with instant visual feedback
 - ⌨️ **Visual Key Display** - See your WASD, Space, and mouse inputs in real-time
 - 🛠️ **Smart Anti-AFK** - Stay active in lobbies without manual input
-- 🎨 **Dual Theme System** - Choose between Cyan or Neon Green UI
-- ⚡ **Ultra Lightweight** - ~520 lines of code, minimal memory footprint, zero external dependencies
+- ⏱️ **Session Timer** - Track your gameplay time
+- ⚡ **Ultra Lightweight** - ~480 lines of code, minimal memory footprint, zero external dependencies
 - 💾 **Persistent Settings** - All preferences automatically saved to localStorage
 
 ---
@@ -25,7 +25,6 @@
 - [Installation](#-installation) - How to get started
 - [Usage](#-usage) - Learn the basics
 - [Features](#-features) - Detailed feature breakdown
-- [Customization](#-customization) - Personalize your experience
 - [Troubleshooting](#-troubleshooting) - Solutions to common issues
 - [Contributing](#-contributing) - Help improve Waddle!
 
@@ -72,31 +71,39 @@ If the auto-install doesn't work, follow these steps:
 | Toggle Menu | `\` (backslash) |
 | Close Menu | `ESC` or click outside |
 
+### Menu Tabs
+
+The Waddle menu has two main tabs:
+
+- **⚙️ Features** - Enable/disable counters and utilities
+- **ℹ️ About** - Credits, session timer, and links
+
 ### Enabling Features
 
 1. Press `\` to open Waddle
-2. Click any feature button to enable it
-3. Active features show a **✓** checkmark
-4. Counters appear on screen automatically
+2. Go to **⚙️ Features** tab
+3. Click any feature button to enable it
+4. Active features show a **✓** checkmark
+5. Counters appear on screen automatically
 
 ### Pro Tips
 
-- **Switch themes:** Settings tab → Choose Cyan or Neon Green
 - **Move counters:** Click and drag any counter to reposition it
-- **Reset layout:** Settings tab → "Reset Counter Positions" button
-- **Crosshair:** Always cyan for optimal aim precision
+- **Counters are draggable:** FPS, Key Display, and Anti-AFK can be repositioned
+- **Crosshair:** Always neon green for optimal aim precision
+- **Session Timer:** Check the About tab to see your play time
 
 ---
 
 ## ✨ Features
 
-### 🎯 Permanent Cyan Crosshair
+### 🎯 Permanent Neon Green Crosshair
 
-Always-visible crosshair at the center of your screen in clean cyan.
+Always-visible crosshair at the center of your screen in bright neon green.
 
 - **Style:** Target design with center dot and four directional lines
 - **Position:** Fixed at screen center (50%, 50%)
-- **Color:** Always cyan (never changes)
+- **Color:** Always neon green (#39ff14)
 - **Always On:** Persistent - no toggle needed
 - **Usage:** Improves aim precision and consistency
 
@@ -112,7 +119,7 @@ Real-time frames per second display for performance monitoring.
 - **Update Rate:** Every 500ms
 - **Usage:** Monitor performance and identify lag spikes
 - **Default Position:** Top-left (50px, 80px)
-- **Theme:** Matches your selected UI theme
+- **Color:** Neon green theme
 
 #### Real-Time Clock
 
@@ -122,7 +129,7 @@ Current time in 12-hour format with AM/PM indicator.
 - **Update Rate:** Every second
 - **Draggable:** ❌ No (fixed to bottom-right)
 - **Usage:** Quick time reference without clutter
-- **Theme:** Matches your selected UI theme
+- **Color:** Neon green theme
 
 #### KeyStrokes Display
 
@@ -133,7 +140,7 @@ Visual representation of your keyboard and mouse inputs.
 - **Draggable:** ✅ Yes
 - **Default Position:** Top-left (50px, 150px)
 - **Usage:** Perfect for streaming, recording, or input timing awareness
-- **Theme:** Matches your selected UI theme
+- **Color:** Neon green theme
 
 ---
 
@@ -149,50 +156,30 @@ Automatically prevents AFK timeout by simulating spacebar presses every 5 second
 - **Draggable:** ✅ Yes
 - **Default Position:** Top-left (50px, 290px)
 - **Usage:** Stay active in lobbies without manual input
-- **Theme:** Matches your selected UI theme
+- **Color:** Neon green theme
 
 ---
 
-## 🎨 Customization
+### ⏱️ Session Timer
 
-### Dual Theme System
+Track how long you've been playing in your current session.
 
-Choose between two vibrant, gaming-optimized themes:
+- **Format:** HH:MM:SS
+- **Location:** About tab
+- **Update Rate:** Every second
+- **Persistent:** Resets on page reload
+- **Color:** Neon green theme
 
-**🔵 Cyan Theme** (Default)
-- Clean, modern, sleek
-- Perfect for professional gameplay
-- High contrast on dark backgrounds
-- Cyberpunk aesthetic
+---
 
-**🟢 Neon Green Theme**
-- Retro-futuristic, arcade feel
-- Maximum visibility and energy
-- Intense gaming atmosphere
-- Hacker/matrix vibes
+## 🎨 Design
 
-**Switching Themes:**
-1. Open menu → **🎨 Settings** tab
-2. Click **Cyan** or **Neon** button
-3. Changes apply instantly to menu, buttons, and counters
-4. **Note:** Crosshair always remains cyan for optimal aim
+WaddleClient uses a sleek **Neon Green** theme throughout:
 
-### Counter Positioning
-
-All draggable counters remember their positions automatically.
-
-- Click and drag any counter to reposition it
-- Release to set the new position
-- Positions save automatically
-- Counters stay within viewport boundaries
-
-**Reset Positions:** Go to Settings → **Reset Counter Positions** to restore defaults.
-
-**Default Positions:**
-- FPS Counter: Top-left (50px, 80px)
-- Key Display: Top-left (50px, 150px)
-- Anti-AFK: Top-left (50px, 290px)
-- Real-Time Clock: Bottom-right (fixed)
+- **Primary Color:** #39ff14 (Neon Green)
+- **Dark Background:** Professional gaming aesthetic
+- **High Contrast:** Maximum visibility during gameplay
+- **Consistent Styling:** All UI elements use the same theme
 
 ---
 
@@ -205,7 +192,7 @@ WaddleClient is optimized for minimal overhead:
 - **Single RAF Loop:** Efficient FPS calculation
 - **Direct DOM Updates:** Only update when values change
 - **Memory Efficient:** Active cleanup on page unload
-- **Lightweight:** ~520 lines of code
+- **Lightweight:** ~480 lines of code
 - **No Dependencies:** Zero external libraries
 
 **Performance Benchmarks:**
@@ -224,14 +211,13 @@ All settings are stored locally in your browser's localStorage:
 **Storage Structure:**
 ```json
 {
-  "version": "5.8",
+  "version": "5.9",
   "features": {
     "fps": false,
     "realTime": false,
     "antiAfk": false,
     "keyDisplay": false
   },
-  "theme": "cyan",
   "positions": {
     "fps": { "left": "50px", "top": "80px" },
     "keyDisplay": { "left": "50px", "top": "150px" },
@@ -279,7 +265,7 @@ All settings are stored locally in your browser's localStorage:
 **Try these solutions:**
 
 1. Make sure the feature is enabled (look for ✓ in the menu)
-2. Use **Reset Counter Positions** in Settings to restore default positions
+2. Click and drag the counter back into view if it's off-screen
 3. Clear your browser cache and reconfigure the script
 4. Check if counters are hidden behind other game elements
 
@@ -298,7 +284,7 @@ All settings are stored locally in your browser's localStorage:
 3. Verify Miniblox game has loaded fully
 4. The crosshair is always enabled - no toggle needed
 
-**Note:** Crosshair is permanently cyan for consistent aim reference!
+**Note:** Crosshair is permanently neon green for consistent aim reference!
 
 ### Settings Not Saving
 
@@ -315,20 +301,20 @@ All settings are stored locally in your browser's localStorage:
 3. Find localhost in Storage
 4. Clear localStorage
 
-### Theme Not Changing
+### KeyStrokes Not Detecting
 
 **Try these solutions:**
 
-1. Click the theme button again
-2. Refresh the page
-3. Check console for JavaScript errors
-4. Ensure you're using a modern browser (ES6+ support)
+1. Close the menu (press `ESC`) - keys are ignored when menu is open
+2. Click on the game canvas to ensure focus
+3. Refresh the page
+4. Check for other scripts intercepting key events
 
-**Expected behavior:**
-- Menu header changes color immediately
-- All buttons update to new color
-- Counters update to new color
-- Theme preference saves automatically
+**Verify KeyDisplay is working:**
+- Enable the Key Display feature
+- Press any WASD key
+- You should see the key highlight in real-time
+- If not, refresh the page
 
 ### Performance Issues
 
@@ -345,24 +331,29 @@ All settings are stored locally in your browser's localStorage:
 - Key Display monitors events efficiently
 - Anti-AFK has negligible impact
 
-### KeyStrokes Not Detecting
-
-**Try these solutions:**
-
-1. Close the menu (press `ESC`) - keys are ignored when menu is open
-2. Click on the game canvas to ensure focus
-3. Refresh the page
-4. Check for other scripts intercepting key events
-
-**Verify KeyDisplay is working:**
-- Enable the Key Display feature
-- Press any WASD key
-- You should see the key highlight in real-time
-- If not, refresh the page
-
 ---
 
 ## 📝 Changelog
+
+### [5.9] - 31/01/26
+
+#### Removed
+- ✂️ Settings Tab - Removed theme customization and reset button
+- ✂️ Theme Selector - Locked to Neon Green for consistency
+- ✂️ All theme-related code - Simplified codebase
+
+#### Changed
+- ⚡ Reduced to ~480 lines of code
+- ⚡ Simplified menu to 2 tabs (Features & About)
+- ⚡ Cleaner, more focused UI
+
+#### Result
+- More streamlined experience
+- Focus on essential features
+- Neon Green locked in for consistent aesthetic
+- Faster menu navigation
+
+---
 
 ### [5.8] - 31/01/26
 
@@ -379,12 +370,6 @@ All settings are stored locally in your browser's localStorage:
 - ⚡ Reduced to ~520 lines of code
 - ⚡ Faster theme switching (no slider)
 - ⚡ Cleaner, more focused customization
-
-#### Result
-- More modern aesthetic with preset themes
-- Cyan crosshair always provides aim consistency
-- Neon Green UI option for arcade vibes
-- Simpler, faster customization
 
 ---
 
@@ -454,17 +439,17 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 A: Yes! The script is open source and runs only locally in your browser. No external data is sent anywhere.
 
-**Q: Why is the crosshair always cyan?**
+**Q: Why is the crosshair neon green?**
 
-A: Cyan provides optimal aim precision as your reference point. Your UI theme changes, but the crosshair stays consistent for gaming!
+A: Neon green provides optimal visibility and a sleek gaming aesthetic. It's locked in for consistency and performance.
 
-**Q: Can I customize the crosshair color?**
+**Q: Can I customize the theme?**
 
-A: No, the cyan crosshair is permanent for consistency. But you can change the entire UI theme to Cyan or Neon Green!
+A: The script now uses a single Neon Green theme for consistency. All UI elements match this vibrant aesthetic.
 
-**Q: Which theme is best?**
+**Q: Which features are most useful?**
 
-A: Both are great! Cyan = modern/professional, Neon Green = retro/arcade. Pick what feels right!
+A: All features complement each other! FPS counter for performance, Key Display for awareness, Anti-AFK for lobbies, and the Session Timer for tracking playtime.
 
 **Q: Can I modify the script?**
 
@@ -503,8 +488,4 @@ A: WaddleClient is specifically designed for Miniblox only.
 
 <p align="center">
   <b>Made by the Waddle Team. Enjoy!</b> ⭐
-</p>
-
-<p align="center">
-  <sub>Cyan 🔵 & Neon Green 🟢 - Pick Your Vibe</sub>
 </p>
