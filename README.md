@@ -1,6 +1,6 @@
 # 🐧 WaddleClient
 
-![Version](https://img.shields.io/badge/version-5.4-00ffff?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-5.5-00ffff?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-00ffff?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-00ffff?style=for-the-badge)
 
@@ -12,10 +12,10 @@
 
 - 🎯 **Permanent Target Crosshair** - Always-on target crosshair that matches your theme color
 - 🎨 **Beautiful Modern UI** - Sleek card-based design with smooth animations and intuitive tabbed interface
-- 📊 **Real-Time Monitoring** - FPS, Ping, CPS, and Clock displays with live performance tracking
+- 📊 **Real-Time FPS Monitoring** - Live performance tracking with instant visual feedback
 - ⌨️ **Visual Key Display** - See your WASD, Space, and mouse inputs in real-time with instant visual feedback
 - 🛠️ **Smart Utilities** - Anti-AFK protection and fullscreen toggle for uninterrupted gameplay
-- 🎨 **Fully Customizable** - Dynamic hue slider, drag counters anywhere, set custom keybinds, and persist all settings
+- 🎨 **Fully Customizable** - Dynamic hue slider, drag counters anywhere, and persist all settings
 - ⚡ **Optimized Performance** - Efficient RAF loops with minimal memory footprint and zero external dependencies
 - 💾 **Persistent Settings** - All your preferences automatically saved to localStorage
 
@@ -84,7 +84,6 @@ If the auto-install doesn't work, follow these steps:
 ### Pro Tips
 
 - **Customize theme:** Settings tab → Drag hue slider to your favorite color
-- **Change menu key:** Settings tab → Click keybind field → Press your new key
 - **Move counters:** Click and drag any counter to reposition it
 - **Reset layout:** Settings tab → "Reset Counter Positions" button
 - **Crosshair auto-colors:** Your crosshair always matches your selected theme hue
@@ -117,16 +116,6 @@ Shows your current frames per second for performance monitoring. Updates every 5
 - **Update Rate:** Every 500ms
 - **Technology:** RequestAnimationFrame loop
 - **Usage:** Monitor performance and identify lag spikes
-
-#### Ping Counter
-
-Measures your connection latency to the game server. Updates every 2 seconds via lightweight HEAD requests to monitor connection stability.
-
-- **Draggable:** ✅ Yes
-- **Display:** Milliseconds (ms)
-- **Update Rate:** Every 2 seconds
-- **Method:** HEAD request to origin
-- **Usage:** Track connection quality and detect lag spikes
 
 #### Real-Time Clock
 
@@ -197,7 +186,6 @@ Personalize your entire UI with a dynamic hue slider. Choose any color across th
 - Counter backgrounds and glows
 - Crosshair color
 - Tab active indicators
-- Input field borders
 
 **Popular hue values:**
 - `0°` = Red
@@ -209,19 +197,6 @@ Personalize your entire UI with a dynamic hue slider. Choose any color across th
 - `300°` = Magenta
 
 **Tip:** Hue slider provides smooth, real-time color transitions across the entire spectrum!
-
-### Custom Keybind
-
-Change the menu toggle key from the default backslash to any key you prefer.
-
-1. Open menu → **Settings** tab
-2. Click the **Menu Keybind** input field
-3. Press your desired key
-4. Changes save automatically
-
-**Tip:** Press `ESC` to cancel if needed.
-
-**Available keys:** Any single key on your keyboard (letters, numbers, symbols, function keys)
 
 ### Counter Positioning
 
@@ -237,7 +212,6 @@ All counters (except the clock) are fully draggable and will remember their posi
 **Default Positions:**
 - FPS Counter: Top-left (50px, 80px)
 - Key Display: Top-left (50px, 150px)
-- Ping Counter: Top-left (50px, 220px)
 - Anti-AFK: Top-left (50px, 290px)
 - Real-Time Clock: Bottom-right (fixed)
 
@@ -260,7 +234,6 @@ All settings are stored locally in your browser's localStorage:
 - Counter positions (for all draggable counters)
 - Enabled/disabled states for each feature
 - Custom theme hue (0-360)
-- Custom menu keybind
 - Settings version tracking
 
 **Storage Key:** `waddle_settings` (JSON format with version tracking)
@@ -268,20 +241,17 @@ All settings are stored locally in your browser's localStorage:
 **Storage Structure:**
 ```json
 {
-  "version": "5.0",
+  "version": "5.5",
   "features": {
     "fps": false,
-    "ping": false,
     "realTime": false,
     "antiAfk": false,
     "keyDisplay": false
   },
-  "menuKey": "\\",
   "customHue": 180,
   "positions": {
     "fps": { "left": "50px", "top": "80px" },
     "keyDisplay": { "left": "50px", "top": "150px" },
-    "ping": { "left": "50px", "top": "220px" },
     "antiAfk": { "left": "50px", "top": "290px" }
   }
 }
@@ -312,10 +282,9 @@ All settings are stored locally in your browser's localStorage:
 **Try these solutions:**
 
 1. Check browser console (F12) for errors
-2. Change the keybind in Settings (another script might use `\`)
-3. Refresh the page
-4. Ensure Tampermonkey is enabled for miniblox.io
-5. Verify the script is installed and active in your userscript manager
+2. Refresh the page
+3. Ensure Tampermonkey is enabled for miniblox.io
+4. Verify the script is installed and active in your userscript manager
 
 **Debug steps:**
 - Open Developer Tools (F12)
@@ -390,17 +359,17 @@ All settings are stored locally in your browser's localStorage:
 
 **Performance tips:**
 - FPS counter has minimal impact
-- Ping counter uses simple intervals (very lightweight)
 - Key Display monitors events efficiently
+- Anti-AFK has negligible impact
+- Crosshair is extremely lightweight
 - Only enable features you actively use
 
 **Performance benchmarks:**
 - FPS Counter: ~0.1% CPU usage
-- Ping Counter: ~0.05% CPU usage
 - Key Display: ~0.2% CPU usage
 - Anti-AFK: ~0.01% CPU usage
 - Crosshair: ~0.02% CPU usage (negligible)
-- Total with all features: ~0.38% CPU usage (negligible)
+- Total with all features: ~0.35% CPU usage (negligible)
 
 ### KeyStrokes Not Detecting
 
@@ -428,80 +397,95 @@ All settings are stored locally in your browser's localStorage:
 
 ---
 
----
-
 ## 📝 Changelog
 
-## [5.4] - 29/01/26
+### [5.5] - 31/01/26
+
+#### Removed
+- ✂️ **Ping Counter** - Removed HEAD request-based ping monitoring (wasteful, Miniblox doesn't expose native ping)
+- ✂️ **Custom Keybind** - Locked menu key to backslash `\` (constant, not customizable)
+- ✂️ **Keybind UI** - Removed keybind input from Settings tab
+
+#### Changed
+- ⚡ Reduced codebase by ~150 lines (~8% reduction)
+- ⚡ Simplified localStorage structure (removed menuKey tracking)
+- ⚡ Faster initialization with fewer state checks
+
+#### Fixed
+- Fixed potential localStorage quota issues from saved keybind
+
+---
+
+### [5.4] - 29/01/26
 - made a new .github/workflows structure with bump.yml
 - and bug/enhancement format
 
-## [5.0] - 29/01/26
+### [5.0] - 29/01/26
 
-### Added
+#### Added
 - 🎯 Permanent Target crosshair at screen center
 - 🌈 Dynamic hue slider (0-360°) for theme customization
 - ✨ Real-time crosshair color syncing with theme
 - 👀 Bolder crosshair design
 
-### Changed
+#### Changed
 - 🎨 Replaced color picker with spectrum hue slider
 - ⚡ Optimized crosshair rendering performance
 - 🔧 Consolidated hue management system
 
-### Fixed
+#### Fixed
 - Fixed crosshair visibility on various resolutions
 
 ---
 
-## [4.9] - January 2026
+### [4.9] - January 2026
 
-### Changed
+#### Changed
 - 🔧 Consolidated state management for cleaner code
 - ⚡ Performance optimizations and reduced overhead
 
-### Fixed
+#### Fixed
 - 🐛 Various bug fixes and stability improvements
 
 ---
 
-## [4.7] - January 2026
+### [4.7] - January 2026
 
-### Added
+#### Added
 - ✨ KeyStrokes display with WASD, Space, LMB, RMB
 - 🎨 Improved animations for key press feedback
 
-### Changed
+#### Changed
 - ⚡ Optimized performance - removed bottlenecks
 
 ---
 
-## [4.4] - December 2025
+### [4.4] - December 2025
 
-### Added
+#### Added
 - ⏱️ Session timer in About tab
 - 🔄 Position reset button for counters
 
-### Changed
+#### Changed
 - ✨ Complete card-based layout overhaul
 - 🎯 Better feature organization with tabs
 - 📊 2-column grid layouts for cleaner interface
 
 ---
 
-## [4.3] - November 2025
+### [4.3] - November 2025
 
-### Added
+#### Added
 - 🎨 Custom theme colors with color picker
 - ⌨️ Custom keybind support
 - 💾 Settings persistence with localStorage
 
 ---
 
-## [4.2] - September 2025
+### [4.2] - September 2025
 
-### Added
-- 📊 Core counter functionality (FPS, Ping, Clock)
+#### Added
+- 📊 Core counter functionality (FPS, Clock)
 - 🎨 Modern UI design
 - 🐧 Anti-AFK feature
 
@@ -633,7 +617,7 @@ A: The crosshair is fixed to the center of your screen (50%, 50%) for precision 
 
 **Q: Will this affect my game performance?**
 
-A: WaddleClient has minimal performance impact (less than 0.38% CPU with all features enabled). Most players won't notice any difference in gameplay performance.
+A: WaddleClient has minimal performance impact (less than 0.35% CPU with all features enabled). Most players won't notice any difference in gameplay performance.
 
 **Q: Can I use this on other websites?**
 
@@ -645,7 +629,7 @@ A: We update regularly based on community feedback and bug reports. Major update
 
 **Q: How do I change the crosshair style?**
 
-A: v5.0 features a permanent Target-style crosshair. The design cannot be changed, but you can customize the color using the hue slider in Settings.
+A: v5.5 features a permanent Target-style crosshair. The design cannot be changed, but you can customize the color using the hue slider in Settings.
 
 **Q: Does the crosshair hide when I open the menu?**
 
