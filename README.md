@@ -1,6 +1,6 @@
 # 🐧 WaddleClient
 
-![Version](https://img.shields.io/badge/version-5.6-00ffff?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-5.7-00ffff?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-00ffff?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-00ffff?style=for-the-badge)
 
@@ -13,9 +13,9 @@
 - 🎯 **Permanent Target Crosshair** - Always-on target crosshair that matches your theme color
 - 📊 **Real-Time FPS Monitoring** - Live performance tracking with instant visual feedback
 - ⌨️ **Visual Key Display** - See your WASD, Space, and mouse inputs in real-time
-- 🛠️ **Smart Utilities** - Anti-AFK protection and fullscreen toggle
+- 🛠️ **Smart Anti-AFK** - Stay active in lobbies without manual input
 - 🎨 **Customizable Theme** - Dynamic hue slider (0-360°) to personalize your experience
-- ⚡ **Ultra Lightweight** - ~600 lines of code, minimal memory footprint, zero external dependencies
+- ⚡ **Ultra Lightweight** - ~550 lines of code, minimal memory footprint, zero external dependencies
 - 💾 **Persistent Settings** - All preferences automatically saved to localStorage
 
 ---
@@ -147,13 +147,6 @@ Automatically prevents AFK timeout by simulating spacebar presses every 5 second
 - **Default Position:** Top-left (50px, 290px)
 - **Usage:** Stay active in lobbies without manual input
 
-#### Fullscreen Toggle
-
-One-click fullscreen activation using the browser's native fullscreen API.
-
-- **Access:** Features tab → Fullscreen button
-- **Usage:** Toggle between windowed and fullscreen modes
-
 ---
 
 ## 🎨 Customization
@@ -212,7 +205,7 @@ WaddleClient is optimized for minimal overhead:
 - **Single RAF Loop:** Efficient FPS calculation
 - **Direct DOM Updates:** Only update when values change
 - **Memory Efficient:** Active cleanup on page unload
-- **Lightweight:** ~600 lines of code
+- **Lightweight:** ~550 lines of code
 - **No Dependencies:** Zero external libraries
 
 **Performance Benchmarks:**
@@ -231,7 +224,7 @@ All settings are stored locally in your browser's localStorage:
 **Storage Structure:**
 ```json
 {
-  "version": "5.6",
+  "version": "5.7",
   "features": {
     "fps": false,
     "realTime": false,
@@ -367,18 +360,25 @@ All settings are stored locally in your browser's localStorage:
 - You should see the key highlight in real-time
 - If not, refresh the page
 
-### Fullscreen Not Working
-
-**Try these solutions:**
-
-1. Make sure the browser allows fullscreen (check permissions)
-2. Fullscreen might be blocked by browser security policies
-3. Try again after clicking the game canvas
-4. Some browsers require user interaction before fullscreen is allowed
-
 ---
 
 ## 📝 Changelog
+
+### [5.7] - 31/01/26
+
+#### Removed
+- ✂️ Fullscreen Button - Redundant (use F11 instead)
+
+#### Changed
+- ⚡ Reduced to ~550 lines of code
+- ⚡ Removed unnecessary button handling
+- ⚡ Cleaner utilities section
+
+#### Result
+- Even more lightweight
+- Focus on essential features only
+
+---
 
 ### [5.6] - 31/01/26
 
@@ -401,12 +401,6 @@ All settings are stored locally in your browser's localStorage:
 - ⚡ **50% code reduction** (~1200 → ~600 lines)
 - ⚡ Faster initialization and execution
 
-#### Result
-- Ultra-lightweight codebase
-- Same functionality, less overhead
-- Minimal memory footprint
-- Instant performance
-
 ---
 
 ### [5.5] - 31/01/26
@@ -415,11 +409,6 @@ All settings are stored locally in your browser's localStorage:
 - ✂️ Ping Counter - Removed HEAD request-based ping monitoring
 - ✂️ Custom Keybind - Locked menu key to backslash `\`
 - ✂️ Keybind UI - Removed keybind input from Settings tab
-
-#### Changed
-- ⚡ Reduced codebase by ~150 lines (~8% reduction)
-- ⚡ Simplified localStorage structure
-- ⚡ Faster initialization with fewer state checks
 
 ---
 
@@ -432,61 +421,6 @@ All settings are stored locally in your browser's localStorage:
 #### Added
 - 🎯 Permanent Target crosshair at screen center
 - 🌈 Dynamic hue slider (0-360°) for theme customization
-- ✨ Real-time crosshair color syncing
-- 👀 Bolder crosshair design
-
-#### Changed
-- 🎨 Replaced color picker with spectrum hue slider
-- ⚡ Optimized crosshair rendering
-
----
-
-### [4.9] - January 2026
-
-#### Changed
-- 🔧 Consolidated state management
-- ⚡ Performance optimizations
-
----
-
-### [4.7] - January 2026
-
-#### Added
-- ✨ KeyStrokes display with WASD, Space, LMB, RMB
-- 🎨 Improved animations for key press feedback
-
-#### Changed
-- ⚡ Optimized performance
-
----
-
-### [4.4] - December 2025
-
-#### Added
-- ⏱️ Session timer in About tab
-- 🔄 Position reset button for counters
-
-#### Changed
-- ✨ Complete card-based layout overhaul
-- 🎯 Better feature organization with tabs
-
----
-
-### [4.3] - November 2025
-
-#### Added
-- 🎨 Custom theme colors
-- ⌨️ Custom keybind support
-- 💾 Settings persistence with localStorage
-
----
-
-### [4.2] - September 2025
-
-#### Added
-- 📊 Core counter functionality (FPS, Clock)
-- 🎨 Modern UI design
-- 🐧 Anti-AFK feature
 
 ---
 
@@ -501,36 +435,12 @@ All settings are stored locally in your browser's localStorage:
 **Special Thanks**
 - Miniblox community for feedback and testing
 - All contributors and bug reporters
-- Everyone who starred the repository ⭐
 
 ---
 
 ## 📄 License
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details. You're free to fork, modify, and distribute this project!
-```
-MIT License
-
-Copyright (c) 2026 Scripter & TheM1ddleM1n
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
 ---
 
@@ -540,35 +450,15 @@ SOFTWARE.
 
 [Create a bug report](https://github.com/TheM1ddleM1n/WaddleClient/issues/new?labels=bug&title=Bug%20Report)
 
-**What to include in bug reports:**
-- WaddleClient version (shown in menu header)
-- Browser and version
-- Steps to reproduce
-- Expected vs actual behavior
-- Browser console errors (if any)
-
 ### Have an Idea? 💡
 
 [Suggest a feature](https://github.com/TheM1ddleM1n/WaddleClient/issues/new?labels=enhancement&title=Enhancement%20Request)
-
-**What to include in feature requests:**
-- Clear description of the feature
-- Why it would be useful
-- Any mockups or ideas you have
-- How it relates to existing features
 
 ### Want to Contribute?
 
 - Fork the repository
 - Make your improvements
 - Submit a pull request
-- Help test and review
-
-**Development tips:**
-- Keep code clean and well-commented
-- Follow the existing code style
-- Test thoroughly in multiple browsers
-- Update the changelog with your changes
 
 ---
 
@@ -576,91 +466,55 @@ SOFTWARE.
 
 **Q: Is WaddleClient safe?**
 
-A: Yes! The script is open source and runs only locally in your browser. You can review the entire code yourself. No external data is sent anywhere - everything stays on your computer.
+A: Yes! The script is open source and runs only locally in your browser. No external data is sent anywhere.
 
 **Q: Does this work on mobile?**
 
-A: This script is designed for desktop browsers with userscript manager support. Mobile support is not currently available due to browser limitations and touchscreen interface differences.
+A: This script is designed for desktop browsers with userscript manager support.
 
 **Q: Can I modify the script?**
 
-A: Absolutely! It's MIT licensed - fork it, modify it, and share your improvements! We'd love to see what you create.
+A: Absolutely! It's MIT licensed - fork it and make improvements!
 
 **Q: How do I update?**
 
-A: Tampermonkey will notify you of updates automatically. Alternatively, reinstall from [GitHub](https://github.com/TheM1ddleM1n/WaddleClient).
+A: Tampermonkey will notify you of updates automatically.
 
 **Q: Where is my data stored?**
 
-A: All settings are stored locally in your browser's localStorage. Nothing is sent to external servers. Your data stays completely private.
-
-**Q: Why do counters sometimes disappear?**
-
-A: This usually happens when localStorage is cleared. Use "Reset Counter Positions" in Settings to restore them. You can also check if the feature is still enabled in the ⚙️ Features tab.
+A: All settings are stored locally in your browser's localStorage.
 
 **Q: Can I use multiple counters at once?**
 
-A: Yes! Enable as many features as you'd like. They'll all display simultaneously. You can customize the color and position of each counter independently.
-
-**Q: How do I report a bug?**
-
-A: Go to the [Issues page](https://github.com/TheM1ddleM1n/WaddleClient/issues) and create a new issue with the "bug" label. Include as much detail as possible about what went wrong.
-
-**Q: Can I customize the position of the clock?**
-
-A: The clock is fixed to the bottom-right corner to minimize gameplay interference. However, you can change its color along with other UI elements using the hue slider.
-
-**Q: Can I move the crosshair?**
-
-A: The crosshair is fixed to the center of your screen (50%, 50%) for precision aiming. It cannot be moved, but you can customize its color with the hue slider.
+A: Yes! Enable as many features as you'd like.
 
 **Q: Will this affect my game performance?**
 
-A: WaddleClient has minimal performance impact (less than 0.35% CPU with all features enabled). Most players won't notice any difference in gameplay performance.
+A: WaddleClient has minimal performance impact (less than 0.35% CPU).
 
 **Q: Can I use this on other websites?**
 
-A: WaddleClient is specifically designed for Miniblox. It will only run on miniblox.io and won't work on other websites.
+A: WaddleClient is specifically designed for Miniblox only.
 
-**Q: How often is this updated?**
+**Q: Can I move the crosshair?**
 
-A: We update regularly based on community feedback and bug reports. Major updates typically happen every 1-2 months, with hotfixes as needed.
-
-**Q: How do I change the crosshair style?**
-
-A: v5.6 features a permanent Target-style crosshair. The design cannot be changed, but you can customize the color using the hue slider in Settings.
-
-**Q: Does the crosshair hide when I open the menu?**
-
-A: No, the crosshair is permanent and stays visible at all times, even when the menu is open.
+A: No, the crosshair is fixed to the center for precision aiming. But you can customize its color!
 
 **Q: Why is the code so lean?**
 
-A: v5.6 removes all unnecessary bloat - no animations, no helper functions, no constants overhead. This keeps WaddleClient ultra-lightweight and fast while maintaining full functionality.
+A: v5.7 removes all unnecessary bloat. No animations, no helper functions, no constants overhead - just pure functionality.
 
 ---
 
 ## 🔗 Useful Links
 
-- **📦 [GitHub Repository](https://github.com/TheM1ddleM1n/WaddleClient)** - Source code and releases
-- **🐛 [Report Issues](https://github.com/TheM1ddleM1n/WaddleClient/issues)** - Bug reports and feature requests
-- **⭐ [Star on GitHub](https://github.com/TheM1ddleM1n/WaddleClient)** - Show your support
-- **🎮 [Miniblox](https://miniblox.io/)** - The game this client enhances
-- **📖 [Tampermonkey Docs](https://www.tampermonkey.net/faq.php)** - Learn more about userscripts
-- **📚 [Violentmonkey Guide](https://violentmonkey.github.io/get-it/)** - Alternative userscript manager
+- **📦 [GitHub Repository](https://github.com/TheM1ddleM1n/WaddleClient)** - Source code
+- **🐛 [Report Issues](https://github.com/TheM1ddleM1n/WaddleClient/issues)** - Bug reports
+- **🎮 [Miniblox](https://miniblox.io/)** - The game this enhances
+- **📖 [Tampermonkey Docs](https://www.tampermonkey.net/faq.php)** - Userscript help
 
 ---
 
 <p align="center">
-  <b>Made by the Waddle Team</b>
-</p>
-
-<p align="center">
-  <sub>If you found this helpful, consider giving it a ⭐ on GitHub!</sub>
-</p>
-
-<p align="center">
-  <a href="https://github.com/TheM1ddleM1n/WaddleClient">
-    <img src="https://img.shields.io/github/stars/TheM1ddleM1n/WaddleClient?style=social" alt="GitHub stars">
-  </a>
+  <b>Made by the Waddle Team</b> ⭐
 </p>
