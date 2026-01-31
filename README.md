@@ -22,7 +22,6 @@
 
 ### What To Add to Waddle? (Roadmap)
 -  [ ] Cords (via miniblox will need Scripter's assistance for this cause he knows the API better than me)
-I can do these now!
 -  [ ] AutoSprint/AutoCrouch
 -  [ ] BHop
 -  [ ] FPSBooster
