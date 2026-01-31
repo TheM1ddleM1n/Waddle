@@ -20,6 +20,12 @@
 
 ---
 
+### What To Add to Waddle? (Roadmap)
+-  [ ] Cords
+-  [ ] AutoSprint/AutoCrouch
+-  [ ] BHop
+-  [ ] FPSBooster
+
 ## 📖 Quick Navigation
 
 - [Installation](#-installation) - How to get started
