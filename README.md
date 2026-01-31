@@ -502,7 +502,7 @@ A: WaddleClient is specifically designed for Miniblox only.
 ---
 
 <p align="center">
-  <b>Made by the Waddle Team</b> ⭐
+  <b>Made by the Waddle Team. Enjoy!</b> ⭐
 </p>
 
 <p align="center">
