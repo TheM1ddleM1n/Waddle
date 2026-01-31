@@ -131,6 +131,44 @@
         listeners: {},
         dragListeners: new WeakMap()
     };
+     // welcome message for the user who uses waddle lol -jouda
+      (function() {
+    'use strict';
+
+    const gameRef = {
+        _game: null,
+        get game() {
+            if (this._game) return this._game;
+
+            const reactRoot = document.querySelector("#react");
+            if (!reactRoot) return null;
+
+            try {
+                const fiber = Object.values(reactRoot)[0];
+                const game = fiber?.updateQueue?.baseState?.element?.props?.game;
+                if (game) this._game = game;
+                return game;
+            } catch (e) {
+                console.warn("[WaddleClient] Not In A Game Yet:", e);
+                return null;
+            }
+        }
+    };
+
+    const waitForGame = setInterval(() => {
+        const game = gameRef.game;
+        if (game && game.chat && typeof game.chat.addChat === "function") {
+            clearInterval(waitForGame);
+
+            game.chat.addChat({
+                text: "\\#00FFFF\\[WaddleClient]\\reset\\ Hello Thank You For Using The Waddle Client."
+            });
+
+            console.log("[WaddleClient] Sent Welcome Message");
+        }
+    }, 500);
+
+})();
 
     // Simplified settings - queries DOM instead of manually mapping
     function saveSettings() {
