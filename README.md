@@ -22,7 +22,6 @@
 
 ### What To Add to Waddle? (Roadmap)
 -  [ ] Cords (via miniblox will need Scripter's assistance for this cause he knows the API better than me ie. access to game.chat)
--  [ ] AutoSprint
 
 ## 📖 Quick Navigation
 
