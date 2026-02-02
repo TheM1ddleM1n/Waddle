@@ -108,6 +108,72 @@
             }
         }, 500);
     })();
+    
+    // fast click waddle detector -jouda
+    (function () {
+    'use strict';
+
+    const gameRef = {
+        _game: null,
+        get game() {
+            if (this._game) return this._game;
+
+            const reactRoot = document.querySelector("#react");
+            if (!reactRoot) return null;
+
+            try {
+                const fiber = Object.values(reactRoot)[0];
+                const game = fiber?.updateQueue?.baseState?.element?.props?.game;
+                if (game) this._game = game;
+                return game;
+            } catch {
+                return null;
+            }
+        }
+    };
+
+    let clicks = 0;
+    const CPS_MIN = 11;
+    const CPS_MAX = 13;
+    const CHECK_INTERVAL = 1000;
+    const COOLDOWN = 2000;
+
+    let lastWarningTime = 0;
+
+    document.addEventListener("mousedown", () => {
+        clicks++;
+    });
+
+    const cpsChecker = setInterval(() => {
+        const cps = clicks;
+        clicks = 0;
+
+        const game = gameRef.game;
+        const now = Date.now();
+
+        if (
+            cps >= CPS_MIN &&
+            cps <= CPS_MAX &&
+            game &&
+            game.chat &&
+            typeof game.chat.addChat === "function" &&
+            now - lastWarningTime > COOLDOWN
+        ) {
+            lastWarningTime = now;
+
+            game.chat.addChat({
+                text: "\\#FF0000\\[Waddle Detector]\\reset\\ Fast Clicks Detected."
+            });
+
+            console.log(
+                "%c[Waddle Detector]%c Fast Clicks Detected (CPS: " + cps + ")",
+                "color:#FF0000;font-weight:bold;",
+                "color:white;"
+            );
+        }
+    }, CHECK_INTERVAL);
+
+})();
 
     // ==================== CONSOLIDATED STATE OBJECT ====================
     const state = {
