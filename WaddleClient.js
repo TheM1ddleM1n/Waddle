@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WaddleClient
 // @namespace    https://github.com/TheM1ddleM1n/WaddleClient
-// @version      5.8
+// @version      5.9
 // @description  M1ddleM1n and Scripter on top
 // @author       Scripter, TheM1ddleM1n
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/WaddleClient/refs/heads/main/Penguin.png
@@ -12,190 +12,156 @@
     'use strict';
     document.title = 'Waddle Client For Miniblox!';
 
-    const MENU_KEY = '\\';
-    const SCRIPT_VERSION = '5.8';
+    // ==================== CONSTANTS ====================
+    const TIMING = Object.freeze({
+        HINT_TEXT_DURATION: 4000,
+        FPS_UPDATE_INTERVAL: 500,
+        PING_UPDATE_INTERVAL: 2000,
+        COORDS_UPDATE_INTERVAL: 100,
+        SAVE_DEBOUNCE: 500,
+        TOAST_DURATION: 3000,
+        KEY_HIGHLIGHT_DURATION: 150,
+        SESSION_UPDATE: 1000
+    });
+
     const SETTINGS_KEY = 'waddle_settings';
-    const NEON_GREEN = '#39ff14';
+    const DEFAULT_MENU_KEY = '\\';
+    const CUSTOM_HUE_KEY = 'waddle_custom_hue';
+    const SCRIPT_VERSION = '5.9';
+    const DEFAULT_HUE = 180; // Cyan
 
-    // Feature config - eliminates toggleFeature() if/else chains
-    const FEATURES = {
-        fps: {
-            id: 'fps-counter',
-            label: 'FPS',
-            icon: '🐧',
-            category: 'display',
-            position: { left: '50px', top: '80px' },
-            draggable: true,
-            create() {
-                const counter = createCounter(this.id, 'FPS: 0', this.position, this.draggable);
-                state.fpsActive = true;
-                startPerformanceLoop();
-                return counter;
-            },
-            destroy() {
-                stopPerformanceLoop();
-                removeElement(this.id);
-            }
+    const MESSAGES = Object.freeze({
+        ENABLED: (feature) => `${feature} Enabled ✓`,
+        DISABLED: (feature) => `${feature} Disabled ✓`,
+        POSITIONS_RESET: 'Positions Reset! 🐧',
+        MENU_PROMPT: (key) => `Press ${key} To Open Menu!`,
+        CLEANUP_START: '[Waddle] Cleaning up resources..',
+        CLEANUP_DONE: '[Waddle] Cleanup complete!',
+        INIT_START: `[Waddle] Initializing v${SCRIPT_VERSION}...`,
+        INIT_DONE: '[Waddle] Initialization completed!',
+        STORAGE_ERROR: '[Waddle] Storage quota exceeded'
+    });
+
+    const DEFAULT_POSITIONS = Object.freeze({
+        fps: { left: '50px', top: '80px' },
+        keyDisplay: { left: '50px', top: '150px' },
+        ping: { left: '50px', top: '220px' },
+        coords: { left: '50px', top: '360px' },
+        antiAfk: { left: '50px', top: '290px' }
+    });
+
+    const COUNTER_CONFIGS = Object.freeze({
+        fps: { id: 'fps-counter', text: 'FPS: 0', pos: DEFAULT_POSITIONS.fps, icon: '🐧', draggable: true },
+        ping: { id: 'ping-counter', text: 'PING: 0ms', pos: DEFAULT_POSITIONS.ping, icon: '🐧', draggable: true },
+        coords: { id: 'coords-counter', text: '📍 X: 0 Y: 0 Z: 0', pos: DEFAULT_POSITIONS.coords, icon: '🐧', draggable: true },
+        realTime: { id: 'real-time-counter', text: '00:00:00 AM', pos: null, icon: '🐧', draggable: false },
+        antiAfk: { id: 'anti-afk-counter', text: '🐧 Jumping in 5s', pos: DEFAULT_POSITIONS.antiAfk, icon: '🐧', draggable: true }
+    });
+
+    const FEATURE_CARDS = Object.freeze([
+        {
+            title: '📊 Display Counters',
+            features: [
+                { label: 'FPS', feature: 'fps', icon: '🐧' },
+                { label: 'Ping', feature: 'ping', icon: '🐧' },
+                { label: 'Coords', feature: 'coords', icon: '🐧' },
+                { label: 'Clock', feature: 'realTime', icon: '🐧' },
+                { label: 'Key Display', feature: 'keyDisplay', icon: '🐧' }
+            ]
         },
-        realTime: {
-            id: 'real-time-counter',
-            label: 'Clock',
-            icon: '🐧',
-            category: 'display',
-            position: { left: 'auto', top: 'auto', right: '30px', bottom: '30px' },
-            draggable: false,
-            create() {
-                const counter = createCounter(this.id, '00:00:00 AM', { left: '0px', top: '0px' }, false);
-                counter.style.left = 'auto';
-                counter.style.top = 'auto';
-                counter.style.right = '30px';
-                counter.style.bottom = '30px';
-                counter.style.background = 'transparent';
-                counter.style.boxShadow = 'none';
-                counter.style.border = 'none';
-                counter.style.textShadow = '0 0 8px var(--waddle-primary), 0 0 15px var(--waddle-primary)';
-                counter.style.fontSize = '1.5rem';
-                counter.style.padding = '0';
-                updateRealTime();
-                state.intervals.realTime = setInterval(updateRealTime, 1000);
-                return counter;
-            },
-            destroy() {
-                clearInterval(state.intervals.realTime);
-                removeElement(this.id);
-            }
-        },
-        antiAfk: {
-            id: 'anti-afk-counter',
-            label: 'Anti-AFK',
-            icon: '🐧',
-            category: 'utilities',
-            position: { left: '50px', top: '290px' },
-            draggable: true,
-            create() {
-                const counter = createCounter(this.id, '🐧 Jumping in 5s', this.position, this.draggable);
-                state.antiAfkCountdown = 5;
-                state.intervals.antiAfk = setInterval(() => {
-                    state.antiAfkCountdown--;
-                    const el = document.getElementById(this.id);
-                    if (el) el._textSpan.textContent = `🐧 Jumping in ${state.antiAfkCountdown}s`;
-                    if (state.antiAfkCountdown <= 0) {
-                        pressSpace();
-                        state.antiAfkCountdown = 5;
-                    }
-                }, 1000);
-                return counter;
-            },
-            destroy() {
-                clearInterval(state.intervals.antiAfk);
-                removeElement(this.id);
-            }
-        },
-        keyDisplay: {
-            id: 'key-display-container',
-            label: 'Key Display',
-            icon: '🐧',
-            category: 'display',
-            position: { left: '50px', top: '150px' },
-            draggable: true,
-            create() {
-                createKeyDisplay();
-                setupKeyDisplayListeners();
-                return document.getElementById(this.id);
-            },
-            destroy() {
-                removeKeyDisplayListeners();
-                removeElement(this.id);
-                Object.keys(state.keys).forEach(key => { state.keys[key] = false; });
-            }
+        {
+            title: '🛠️ Utilities',
+            features: [
+                { label: 'Anti-AFK', feature: 'antiAfk', icon: '🐧' },
+                { label: 'Fullscreen', feature: 'fullscreen', icon: '🐧', special: true }
+            ]
         }
-    };
+    ]);
 
-    const state = {
-        fps: false,
-        realTime: false,
-        antiAfk: false,
-        keyDisplay: false,
-        activeTab: 'features',
-        menuOverlay: null,
-        tabButtons: {},
-        tabContent: {},
-        crosshair: null,
-        rafId: null,
-        fpsActive: false,
-        intervals: {},
-        keyboardHandler: null,
-        startTime: Date.now(),
-        antiAfkCountdown: 5,
-        keys: { w: false, a: false, s: false, d: false, space: false, lmb: false, rmb: false },
-        listeners: {},
-        dragListeners: new WeakMap()
-    };
-     // welcome message for the user who uses waddle lol -jouda
-      (function() {
-    'use strict';
-
+    // ==================== GAME OBJECT ACCESS ====================
     const gameRef = {
         _game: null,
         get game() {
             if (this._game) return this._game;
-
             const reactRoot = document.querySelector("#react");
             if (!reactRoot) return null;
-
             try {
                 const fiber = Object.values(reactRoot)[0];
                 const game = fiber?.updateQueue?.baseState?.element?.props?.game;
                 if (game) this._game = game;
                 return game;
             } catch (e) {
-                console.warn("[WaddleClient] Not In A Game Yet:", e);
                 return null;
             }
         }
     };
 
-    const waitForGame = setInterval(() => {
-        const game = gameRef.game;
-        if (game && game.chat && typeof game.chat.addChat === "function") {
-            clearInterval(waitForGame);
+    // Welcome message
+    (function() {
+        const waitForGame = setInterval(() => {
+            const game = gameRef.game;
+            if (game && game.chat && typeof game.chat.addChat === "function") {
+                clearInterval(waitForGame);
+                game.chat.addChat({
+                    text: "\\#00FFFF\\[WaddleClient]\\reset\\ Hello Thank You For Using The Waddle Client."
+                });
+            }
+        }, 500);
+    })();
 
-            game.chat.addChat({
-                text: "\\#00FFFF\\[WaddleClient]\\reset\\ Hello Thank You For Using The Waddle Client."
-            });
-
-            console.log("[WaddleClient] Sent Welcome Message");
+    // ==================== CONSOLIDATED STATE OBJECT ====================
+    const state = {
+        features: {
+            fps: false,
+            ping: false,
+            coords: false,
+            realTime: false,
+            antiAfk: false,
+            keyDisplay: false
+        },
+        ui: {
+            menuKey: DEFAULT_MENU_KEY,
+            customHue: DEFAULT_HUE,
+            activeTab: 'features',
+            menuOverlay: null,
+            tabElements: { buttons: {}, content: {} }
+        },
+        performance: {
+            rafId: null,
+            activeRAFFeatures: new Set(),
+            intervals: {}
+        },
+        counters: {
+            fps: null,
+            realTime: null,
+            ping: null,
+            coords: null,
+            antiAfk: null,
+            keyDisplay: null,
+            crosshair: null
+        },
+        input: {
+            keys: { w: false, a: false, s: false, d: false, space: false, lmb: false, rmb: false },
+            listeners: {}
+        },
+        session: {
+            keyboardHandler: null,
+            startTime: Date.now(),
+            antiAfkCountdown: 5,
+            pingStats: { currentPing: 0 }
         }
-    }, 500);
+    };
 
-})();
-
-    // Simplified settings - queries DOM instead of manually mapping
-    function saveSettings() {
-        try {
-            const positions = {};
-            const draggableIds = ['fps-counter', 'anti-afk-counter', 'key-display-container'];
-            draggableIds.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    positions[id] = { left: el.style.left, top: el.style.top };
-                }
-            });
-
-            localStorage.setItem(SETTINGS_KEY, JSON.stringify({
-                version: SCRIPT_VERSION,
-                features: {
-                    fps: state.fps,
-                    realTime: state.realTime,
-                    antiAfk: state.antiAfk,
-                    keyDisplay: state.keyDisplay
-                },
-                positions
-            }));
-        } catch (e) {}
+    // ==================== UTILITY FUNCTIONS ====================
+    function debounce(func, delay) {
+        let timeoutId;
+        return function(...args) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => func.apply(this, args), delay);
+        };
     }
 
-    function showToast(message, duration = 3000) {
+    function showToast(message, duration = TIMING.TOAST_DURATION) {
         document.getElementById('waddle-toast')?.remove();
         const toast = document.createElement('div');
         toast.id = 'waddle-toast';
@@ -207,66 +173,151 @@
         }, duration);
     }
 
-    function removeElement(id) {
-        const el = document.getElementById(id);
-        if (el) {
-            const listeners = state.dragListeners.get(el);
-            if (listeners) {
-                el.removeEventListener('mousedown', listeners.mouseDown);
-                window.removeEventListener('mouseup', listeners.mouseUp);
-                window.removeEventListener('mousemove', listeners.mouseMove);
-                if (listeners.rafId) cancelAnimationFrame(listeners.rafId);
-            }
-            el.remove();
+    function hueToColor(hue) {
+        return `hsl(${hue}, 100%, 50%)`;
+    }
+
+    function applyTheme(hue) {
+        const color = hueToColor(hue);
+        document.documentElement.style.setProperty('--waddle-primary', color);
+        document.documentElement.style.setProperty('--waddle-shadow', color);
+        state.ui.customHue = hue;
+
+        // Update crosshair color if it exists
+        if (state.counters.crosshair) {
+            const lines = state.counters.crosshair.querySelectorAll('div');
+            lines.forEach(line => line.style.backgroundColor = color);
+        }
+
+        try { localStorage.setItem(CUSTOM_HUE_KEY, hue.toString()); } catch (e) {}
+    }
+
+    function loadCustomHue() {
+        try {
+            const savedHue = localStorage.getItem(CUSTOM_HUE_KEY);
+            const hueValue = savedHue ? parseInt(savedHue) : DEFAULT_HUE;
+            state.ui.customHue = hueValue;
+            applyTheme(hueValue);
+        } catch (e) {
+            applyTheme(DEFAULT_HUE);
         }
     }
 
+    function formatSessionTime() {
+        const elapsed = Math.floor((Date.now() - state.session.startTime) / 1000);
+        const hours = Math.floor(elapsed / 3600);
+        const minutes = Math.floor((elapsed % 3600) / 60);
+        const seconds = elapsed % 60;
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function updateSessionTimer() {
+        const timerElement = document.getElementById('waddle-session-timer');
+        if (timerElement) timerElement.textContent = formatSessionTime();
+    }
+
+    function saveSettings() {
+        try {
+            const settings = {
+                version: SCRIPT_VERSION,
+                features: state.features,
+                menuKey: state.ui.menuKey,
+                customHue: state.ui.customHue,
+                positions: Object.fromEntries(
+                    Object.entries(state.counters)
+                        .filter(([_, counter]) => counter)
+                        .map(([type, counter]) => [
+                            type,
+                            { left: counter.style.left, top: counter.style.top }
+                        ])
+                )
+            };
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+        } catch (e) {
+            if (e.name === 'QuotaExceededError') console.error(MESSAGES.STORAGE_ERROR);
+        }
+    }
+
+    const debouncedSave = debounce(saveSettings, TIMING.SAVE_DEBOUNCE);
+
+    // ==================== DOM & STYLING ====================
     function injectStyles() {
         const style = document.createElement('style');
         style.textContent = `
-:root { --waddle-primary: ${NEON_GREEN}; --waddle-shadow: ${NEON_GREEN}; }
+:root { --waddle-primary: #00ffff; --waddle-shadow: #00ffff; --waddle-bg-dark: #000000; }
+@keyframes counterSlideIn { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slideInDown { 0% { opacity: 0; transform: translateY(-40px); } 100% { opacity: 1; transform: translateY(0); } }
+@keyframes slideInUp { 0% { opacity: 0; transform: translateY(40px); } 100% { opacity: 1; transform: translateY(0); } }
+@keyframes toastSlideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes toastSlideOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(20px); } }
+@media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
 
-.css-xhoozx, [class*="crosshair"], img[src*="crosshair"] { display: none !important; }
+/* Hide default Miniblox crosshair */
+.css-xhoozx, [class*="crosshair"], img[src*="crosshair"] {
+    display: none !important;
+}
 
-#waddle-menu-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.9); z-index: 10000000; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 40px; opacity: 0; pointer-events: none; transition: opacity 0.3s; user-select: none; }
+#waddle-menu-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(15px); z-index: 10000000; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 40px; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; user-select: none; }
 #waddle-menu-overlay.show { opacity: 1; pointer-events: auto; }
-#waddle-menu-header { font-family: Segoe UI, sans-serif; font-size: 3rem; font-weight: 900; color: var(--waddle-primary); text-shadow: 0 0 8px var(--waddle-shadow), 0 0 20px var(--waddle-shadow); margin-bottom: 30px; }
-#waddle-tabs { display: flex; gap: 12px; margin-bottom: 20px; border-bottom: 2px solid rgba(57, 255, 20, 0.2); }
-.waddle-tab-btn { background: transparent; border: none; color: #999; font-family: Segoe UI, sans-serif; font-weight: 700; padding: 12px 20px; cursor: pointer; transition: color 0.2s; border-bottom: 3px solid transparent; font-size: 1rem; }
-.waddle-tab-btn.active { color: var(--waddle-primary); border-bottom-color: var(--waddle-primary); }
-#waddle-menu-content { width: 600px; background: rgba(17, 17, 17, 0.9); border-radius: 16px; padding: 24px; color: white; font-size: 1rem; box-shadow: 0 0 20px rgba(57, 255, 20, 0.4); display: flex; flex-direction: column; gap: 20px; max-height: 70vh; overflow-y: auto; border: 1px solid rgba(57, 255, 20, 0.3); }
+#waddle-menu-header { font-family: Segoe UI, sans-serif; font-size: 3rem; font-weight: 900; color: var(--waddle-primary); text-shadow: 0 0 8px var(--waddle-shadow), 0 0 20px var(--waddle-shadow); margin-bottom: 30px; animation: slideInDown 0.4s ease; }
+#waddle-tabs { display: flex; gap: 12px; margin-bottom: 20px; border-bottom: 2px solid rgba(0, 255, 255, 0.2); animation: slideInDown 0.4s ease 0.1s backwards; }
+.waddle-tab-btn { background: transparent; border: none; color: #999; font-family: Segoe UI, sans-serif; font-weight: 700; padding: 12px 20px; cursor: pointer; transition: color 0.2s ease, border-color 0.2s ease; border-bottom: 3px solid transparent; font-size: 1rem; position: relative; }
+.waddle-tab-btn:hover { color: var(--waddle-primary); }
+.waddle-tab-btn.active { color: var(--waddle-primary); border-bottom-color: var(--waddle-primary); box-shadow: 0 2px 10px rgba(0,255,255,0.3); }
+#waddle-menu-content { width: 600px; background: rgba(17, 17, 17, 0.9); border-radius: 16px; padding: 24px; color: white; font-size: 1rem; box-shadow: 0 0 20px rgba(0, 255, 255, 0.4), inset 0 0 20px rgba(0, 255, 255, 0.1); display: flex; flex-direction: column; gap: 20px; max-height: 70vh; overflow-y: auto; border: 1px solid rgba(0, 255, 255, 0.3); animation: slideInUp 0.4s ease; }
 .waddle-tab-content { display: none; }
-.waddle-tab-content.active { display: flex; flex-direction: column; gap: 16px; }
+.waddle-tab-content.active { display: flex; flex-direction: column; gap: 16px; animation: slideInUp 0.3s ease; }
 
-.waddle-card { background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(57, 255, 20, 0.2); border-radius: 12px; padding: 16px; }
-.waddle-card-header { font-size: 1.1rem; font-weight: 700; color: var(--waddle-primary); margin-bottom: 12px; }
+.waddle-card { background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(0, 255, 255, 0.2); border-radius: 12px; padding: 16px; transition: all 0.3s ease; }
+.waddle-card:hover { border-color: rgba(0, 255, 255, 0.4); box-shadow: 0 0 15px rgba(0, 255, 255, 0.15); }
+.waddle-card-header { font-size: 1.1rem; font-weight: 700; color: var(--waddle-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
 .waddle-card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-.waddle-menu-btn { background: rgba(0, 0, 0, 0.8); border: 2px solid var(--waddle-primary); color: var(--waddle-primary); font-family: Segoe UI, sans-serif; font-weight: 700; padding: 12px 16px; border-radius: 10px; cursor: pointer; transition: all 0.2s; font-size: 0.95rem; }
-.waddle-menu-btn:hover { background: var(--waddle-primary); color: #000; }
-.waddle-menu-btn.active { background: rgba(57, 255, 20, 0.2); }
+.waddle-menu-btn { background: rgba(0, 0, 0, 0.8); border: 2px solid var(--waddle-primary); color: var(--waddle-primary); font-family: Segoe UI, sans-serif; font-weight: 700; padding: 12px 16px; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; user-select: none; position: relative; overflow: hidden; font-size: 0.95rem; }
+.waddle-menu-btn:hover { background: var(--waddle-primary); color: #000; transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,255,255,0.4); }
+.waddle-menu-btn.active { background: rgba(0, 255, 255, 0.2); border-color: var(--waddle-primary); }
 
-.counter { position: fixed; background: rgba(57, 255, 20, 0.9); color: #000; font-family: Segoe UI, sans-serif; font-weight: 700; font-size: 1.25rem; padding: 8px 14px; border-radius: 12px; box-shadow: 0 0 15px rgba(57, 255, 20, 0.7); user-select: none; cursor: grab; z-index: 999999999; width: max-content; border: 1px solid rgba(57, 255, 20, 0.5); }
-.counter.dragging { cursor: grabbing; transform: scale(1.08); }
+.counter { position: fixed; background: rgba(0, 255, 255, 0.9); color: #000; font-family: Segoe UI, sans-serif; font-weight: 700; font-size: 1.25rem; padding: 8px 14px; border-radius: 12px; box-shadow: 0 0 15px rgba(0, 255, 255, 0.7), inset 0 0 10px rgba(0,255,255,0.2); user-select: none; cursor: grab; z-index: 999999999; width: max-content; transition: box-shadow 0.15s ease; animation: counterSlideIn 0.4s ease-out; border: 1px solid rgba(0,255,255,0.5); }
+.counter.dragging { cursor: grabbing; transform: scale(1.08); box-shadow: 0 0 25px rgba(0, 255, 255, 0.9), inset 0 0 20px rgba(0,255,255,0.3); }
+.counter:hover:not(.dragging) { transform: scale(1.05); box-shadow: 0 0 20px rgba(0, 255, 255, 0.8); }
 
-.key-display-container { position: fixed; cursor: grab; z-index: 999999999; user-select: none; }
+.key-display-container { position: fixed; cursor: grab; z-index: 999999999; animation: counterSlideIn 0.4s ease-out; user-select: none; }
 .key-display-container.dragging { cursor: grabbing; }
 .key-display-grid { display: grid; gap: 6px; }
 
-.key-box { background: rgba(80, 80, 80, 0.8); border: 3px solid rgba(150, 150, 150, 0.6); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: 'Segoe UI', sans-serif; font-weight: 900; font-size: 1.1rem; color: #ddd; width: 50px; height: 50px; }
-.key-box.active { background: var(--waddle-primary); border-color: var(--waddle-primary); color: #000; }
+.key-box { background: rgba(80, 80, 80, 0.8); border: 3px solid rgba(150, 150, 150, 0.6); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: 'Segoe UI', sans-serif; font-weight: 900; font-size: 1.1rem; color: #ddd; transition: all 0.1s ease; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.1); width: 50px; height: 50px; }
+.key-box.active { background: var(--waddle-primary); border-color: var(--waddle-primary); color: #000; box-shadow: 0 0 20px var(--waddle-shadow), 0 0 30px var(--waddle-shadow), inset 0 2px 8px rgba(255, 255, 255, 0.3); transform: scale(0.95); }
 
-.mouse-box { width: 70px; }
+.mouse-box { width: 70px; height: 50px; font-size: 0.85rem; }
 .space-box { grid-column: 1 / -1; width: 100%; height: 40px; font-size: 0.9rem; }
 
-#waddle-toast { position: fixed; bottom: 60px; right: 50px; background: rgba(0, 0, 0, 0.95); border: 2px solid var(--waddle-primary); color: var(--waddle-primary); padding: 16px 24px; border-radius: 12px; font-family: Segoe UI, sans-serif; font-weight: 700; z-index: 10000001; box-shadow: 0 0 20px rgba(57, 255, 20, 0.5); pointer-events: none; max-width: 280px; text-align: center; }
-#waddle-toast.hide { opacity: 0; }
+.settings-label { font-size: 0.9rem; color: var(--waddle-primary); margin-bottom: 10px; display: block; font-weight: 600; }
 
+.hue-slider { width: 100%; height: 8px; border-radius: 5px; background: linear-gradient(to right,
+    hsl(0,100%,50%), hsl(30,100%,50%), hsl(60,100%,50%), hsl(90,100%,50%), hsl(120,100%,50%),
+    hsl(150,100%,50%), hsl(180,100%,50%), hsl(210,100%,50%), hsl(240,100%,50%), hsl(270,100%,50%),
+    hsl(300,100%,50%), hsl(330,100%,50%), hsl(360,100%,50%));
+    cursor: pointer; margin: 8px 0; appearance: none; -webkit-appearance: none; outline: none; }
+.hue-slider::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: white; border: 3px solid var(--waddle-primary); cursor: pointer; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+.hue-slider::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: white; border: 3px solid var(--waddle-primary); cursor: pointer; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+
+.hue-display { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.hue-color-preview { width: 40px; height: 40px; border-radius: 8px; border: 2px solid var(--waddle-primary); box-shadow: 0 0 10px rgba(0,255,255,0.5); }
+.hue-value-text { color: var(--waddle-primary); font-weight: 700; font-family: 'Courier New', monospace; font-size: 0.9rem; }
+
+.keybind-input { width: 100%; background: rgba(0, 0, 0, 0.8); border: 2px solid var(--waddle-primary); color: var(--waddle-primary); font-family: Segoe UI, sans-serif; font-weight: 700; font-size: 1rem; padding: 8px 12px; border-radius: 8px; text-align: center; transition: box-shadow 0.2s ease; }
+.keybind-input:focus { outline: none; box-shadow: 0 0 15px rgba(0, 255, 255, 0.6); background: rgba(0, 255, 255, 0.15); }
+
+#waddle-toast { position: fixed; bottom: 60px; right: 50px; background: rgba(0, 0, 0, 0.95); border: 2px solid var(--waddle-primary); color: var(--waddle-primary); padding: 16px 24px; border-radius: 12px; font-family: Segoe UI, sans-serif; font-weight: 700; font-size: 1rem; z-index: 10000001; box-shadow: 0 0 20px rgba(0, 255, 255, 0.5), inset 0 0 10px rgba(0, 255, 255, 0.2); animation: toastSlideIn 0.3s ease; pointer-events: none; max-width: 280px; text-align: center; }
+#waddle-toast.hide { animation: toastSlideOut 0.3s ease forwards; }
+
+/* Crosshair styling */
 #waddle-crosshair { display: block !important; z-index: 5000 !important; }
 `;
         document.head.appendChild(style);
     }
 
+    // ==================== CROSSHAIR SYSTEM ====================
     function createPermanentCrosshair() {
         const crosshairContainer = document.createElement('div');
         crosshairContainer.id = 'waddle-crosshair';
@@ -279,65 +330,154 @@
             pointerEvents: 'none',
             display: 'block'
         });
-
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('width', '50');
-        svg.setAttribute('height', '50');
-        svg.setAttribute('viewBox', '0 0 50 50');
-        svg.setAttribute('style', 'display: block;');
-
-        svg.innerHTML = `
-            <circle cx="25" cy="25" r="2.5" fill="${NEON_GREEN}"/>
-            <line x1="25" y1="8" x2="25" y2="16" stroke="${NEON_GREEN}" stroke-width="2" stroke-linecap="round"/>
-            <line x1="25" y1="34" x2="25" y2="42" stroke="${NEON_GREEN}" stroke-width="2" stroke-linecap="round"/>
-            <line x1="8" y1="25" x2="16" y2="25" stroke="${NEON_GREEN}" stroke-width="2" stroke-linecap="round"/>
-            <line x1="34" y1="25" x2="42" y2="25" stroke="${NEON_GREEN}" stroke-width="2" stroke-linecap="round"/>
-        `;
-
-        crosshairContainer.appendChild(svg);
+        const targetColor = hueToColor(state.ui.customHue);
+        // Center dot
+        const centerDot = document.createElement('div');
+        Object.assign(centerDot.style, {
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            width: '6px',
+            height: '6px',
+            backgroundColor: targetColor,
+            borderRadius: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: '1'
+        });
+        crosshairContainer.appendChild(centerDot);
+        // Top line
+        const topLine = document.createElement('div');
+        Object.assign(topLine.style, {
+            position: 'absolute',
+            top: 'calc(50% - 10px)',
+            left: '50%',
+            width: '3px',
+            height: '6px',
+            backgroundColor: targetColor,
+            transform: 'translateX(-50%)',
+            zIndex: '1'
+        });
+        crosshairContainer.appendChild(topLine);
+        // Bottom line
+        const bottomLine = document.createElement('div');
+        Object.assign(bottomLine.style, {
+            position: 'absolute',
+            top: 'calc(50% + 4px)',
+            left: '50%',
+            width: '3px',
+            height: '6px',
+            backgroundColor: targetColor,
+            transform: 'translateX(-50%)',
+            zIndex: '1'
+        });
+        crosshairContainer.appendChild(bottomLine);
+        // Left line
+        const leftLine = document.createElement('div');
+        Object.assign(leftLine.style, {
+            position: 'absolute',
+            left: 'calc(50% - 10px)',
+            top: '50%',
+            width: '6px',
+            height: '3px',
+            backgroundColor: targetColor,
+            transform: 'translateY(-50%)',
+            zIndex: '1'
+        });
+        crosshairContainer.appendChild(leftLine);
+        // Right line
+        const rightLine = document.createElement('div');
+        Object.assign(rightLine.style, {
+            position: 'absolute',
+            left: 'calc(50% + 4px)',
+            top: '50%',
+            width: '6px',
+            height: '3px',
+            backgroundColor: targetColor,
+            transform: 'translateY(-50%)',
+            zIndex: '1'
+        });
+        crosshairContainer.appendChild(rightLine);
         document.body.appendChild(crosshairContainer);
-        state.crosshair = crosshairContainer;
+        state.counters.crosshair = crosshairContainer;
         return crosshairContainer;
     }
 
-    // Factory function for counter creation (consolidates counter creation)
-    function createCounter(id, text, position, isDraggable = true) {
+    // ==================== COUNTER CREATION ====================
+    function createCounterElement(config) {
+        const { id, counterType, initialText, position = { left: '50px', top: '50px' }, isDraggable = true } = config;
         const counter = document.createElement('div');
         counter.id = id;
         counter.className = 'counter';
         counter.style.left = position.left;
         counter.style.top = position.top;
-
         const textSpan = document.createElement('span');
-        textSpan.textContent = text;
+        textSpan.className = 'counter-time-text';
+        textSpan.textContent = initialText;
         counter.appendChild(textSpan);
         counter._textSpan = textSpan;
-
         document.body.appendChild(counter);
 
-        if (isDraggable) setupDragging(counter);
+        if (isDraggable && counterType) setupDragging(counter, counterType);
         return counter;
     }
 
-    function setupDragging(element) {
-        let rafId = null;
+    function createCounter(type) {
+        const config = COUNTER_CONFIGS[type];
+        if (!config) return null;
 
+        let counter;
+        if (type === 'realTime') {
+            counter = createCounterElement({
+                id: config.id,
+                counterType: null,
+                initialText: config.text,
+                position: { left: '0px', top: '0px' },
+                isDraggable: false
+            });
+            counter.style.left = 'auto';
+            counter.style.top = 'auto';
+            counter.style.right = '30px';
+            counter.style.bottom = '30px';
+            counter.style.background = 'transparent';
+            counter.style.boxShadow = 'none';
+            counter.style.border = 'none';
+            counter.style.textShadow = '0 0 8px var(--waddle-primary), 0 0 15px var(--waddle-primary)';
+            counter.style.fontSize = '1.5rem';
+            counter.style.padding = '0';
+        } else {
+            counter = createCounterElement({
+                id: config.id,
+                counterType: type,
+                initialText: config.text,
+                position: config.pos,
+                isDraggable: config.draggable
+            });
+        }
+
+        state.counters[type] = counter;
+        return counter;
+    }
+
+    function updateCounterText(counterType, text) {
+        state.counters[counterType]?._textSpan && (state.counters[counterType]._textSpan.textContent = text);
+    }
+
+    function setupDragging(element, counterType) {
+        let rafId = null;
         const onMouseDown = (e) => {
             element._dragging = true;
             element._offsetX = e.clientX - element.getBoundingClientRect().left;
             element._offsetY = e.clientY - element.getBoundingClientRect().top;
             element.classList.add('dragging');
         };
-
         const onMouseUp = () => {
             if (element._dragging) {
                 element._dragging = false;
                 element.classList.remove('dragging');
                 if (rafId) cancelAnimationFrame(rafId);
-                saveSettings();
+                debouncedSave();
             }
         };
-
         const onMouseMove = (e) => {
             if (element._dragging && element.parentElement) {
                 element._pendingX = e.clientX;
@@ -354,62 +494,97 @@
                 }
             }
         };
-
-        element.addEventListener('mousedown', onMouseDown);
-        window.addEventListener('mouseup', onMouseUp);
-        window.addEventListener('mousemove', onMouseMove);
-
-        // Store listeners in WeakMap for cleanup (replaces _dragCleanup)
-        state.dragListeners.set(element, { mouseDown: onMouseDown, mouseUp: onMouseUp, mouseMove: onMouseMove, rafId });
+        element.addEventListener('mousedown', onMouseDown, { passive: true });
+        window.addEventListener('mouseup', onMouseUp, { passive: true });
+        window.addEventListener('mousemove', onMouseMove, { passive: true });
+        element._dragCleanup = () => {
+            element.removeEventListener('mousedown', onMouseDown);
+            window.removeEventListener('mouseup', onMouseUp);
+            window.removeEventListener('mousemove', onMouseMove);
+            if (rafId) cancelAnimationFrame(rafId);
+        };
     }
 
+    // ==================== PERFORMANCE LOOP ====================
     function startPerformanceLoop() {
-        if (state.rafId) return;
+        if (state.performance.rafId) return;
         let lastFpsUpdate = performance.now(), frameCount = 0, lastFps = 0;
         const loop = (currentTime) => {
-            if (!state.fpsActive) {
-                state.rafId = null;
+            if (state.performance.activeRAFFeatures.size === 0) {
+                state.performance.rafId = null;
                 return;
             }
             frameCount++;
             const elapsed = currentTime - lastFpsUpdate;
-            if (elapsed >= 500) {
-                const fpsCounter = document.getElementById('fps-counter');
-                if (fpsCounter) {
-                    const fps = Math.round((frameCount * 1000) / elapsed);
-                    if (fps !== lastFps) {
-                        fpsCounter._textSpan.textContent = `FPS: ${fps}`;
-                        lastFps = fps;
-                    }
+            if (elapsed >= TIMING.FPS_UPDATE_INTERVAL && state.counters.fps) {
+                const fps = Math.round((frameCount * 1000) / elapsed);
+                if (fps !== lastFps) {
+                    updateCounterText('fps', `FPS: ${fps}`);
+                    lastFps = fps;
                 }
                 frameCount = 0;
                 lastFpsUpdate = currentTime;
             }
-            state.rafId = requestAnimationFrame(loop);
+            state.performance.rafId = requestAnimationFrame(loop);
         };
-        state.rafId = requestAnimationFrame(loop);
+        state.performance.rafId = requestAnimationFrame(loop);
     }
 
     function stopPerformanceLoop() {
-        state.fpsActive = false;
-        if (state.rafId) {
-            cancelAnimationFrame(state.rafId);
-            state.rafId = null;
+        state.performance.activeRAFFeatures.delete('fps');
+        if (state.performance.activeRAFFeatures.size === 0 && state.performance.rafId) {
+            cancelAnimationFrame(state.performance.rafId);
+            state.performance.rafId = null;
         }
     }
 
+    // ==================== REAL-TIME & PING ====================
     function updateRealTime() {
-        const realTimeCounter = document.getElementById('real-time-counter');
-        if (!realTimeCounter) return;
+        if (!state.counters.realTime) return;
         const now = new Date();
         let hours = now.getHours();
         const minutes = now.getMinutes().toString().padStart(2, '0');
         const seconds = now.getSeconds().toString().padStart(2, '0');
         const ampm = hours >= 12 ? 'PM' : 'AM';
         hours = hours % 12 || 12;
-        realTimeCounter._textSpan.textContent = `${hours}:${minutes}:${seconds} ${ampm}`;
+        updateCounterText('realTime', `${hours}:${minutes}:${seconds} ${ampm}`);
     }
 
+    function measurePing() {
+        return new Promise((resolve) => {
+            const startTime = performance.now();
+            fetch(window.location.origin + '/', {
+                method: 'HEAD',
+                cache: 'no-cache',
+                mode: 'no-cors'
+            }).then(() => {
+                resolve(Math.round(performance.now() - startTime));
+            }).catch(() => {
+                resolve(0);
+            });
+        });
+    }
+
+    function updatePingCounter() {
+        measurePing().then(ping => {
+            state.session.pingStats.currentPing = ping;
+            updateCounterText('ping', `PING: ${ping}ms`);
+        });
+    }
+
+    // ==================== COORDINATES ====================
+    function updateCoordinates() {
+        const game = gameRef.game;
+        if (!game || !game.player) return;
+
+        const pos = game.player.pos;
+        if (pos) {
+            const coordText = `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`;
+            updateCounterText('coords', coordText);
+        }
+    }
+
+    // ==================== ANTI-AFK ====================
     function pressSpace() {
         const down = new KeyboardEvent("keydown", { key: " ", code: "Space", keyCode: 32, which: 32, bubbles: true });
         const up = new KeyboardEvent("keyup", { key: " ", code: "Space", keyCode: 32, which: 32, bubbles: true });
@@ -417,12 +592,17 @@
         setTimeout(() => window.dispatchEvent(up), 50);
     }
 
+    function updateAntiAfkCounter() {
+        updateCounterText('antiAfk', `🐧 Jumping in ${state.session.antiAfkCountdown}s`);
+    }
+
+    // ==================== KEY DISPLAY ====================
     function createKeyDisplay() {
         const container = document.createElement('div');
         container.id = 'key-display-container';
         container.className = 'key-display-container';
-        container.style.left = '50px';
-        container.style.top = '150px';
+        container.style.left = DEFAULT_POSITIONS.keyDisplay.left;
+        container.style.top = DEFAULT_POSITIONS.keyDisplay.top;
 
         const grid = document.createElement('div');
         grid.className = 'key-display-grid';
@@ -480,91 +660,215 @@
         document.body.appendChild(container);
 
         container._keyBoxes = keyBoxes;
-        setupDragging(container);
+        setupDragging(container, 'keyDisplay');
+        state.counters.keyDisplay = container;
         return container;
     }
 
     function updateKeyDisplay(key, isPressed) {
-        const container = document.getElementById('key-display-container');
-        if (container?._keyBoxes?.[key]) {
-            container._keyBoxes[key].classList.toggle('active', isPressed);
-        }
+        state.counters.keyDisplay?._keyBoxes?.[key]?.classList.toggle('active', isPressed);
     }
 
     function setupKeyDisplayListeners() {
         const keyDownListener = (e) => {
-            if (state.menuOverlay?.classList.contains('show')) return;
+            if (state.ui.menuOverlay?.classList.contains('show')) return;
             const key = e.key.toLowerCase();
-            if (key in state.keys) {
-                state.keys[key] = true;
+            if (key in state.input.keys) {
+                state.input.keys[key] = true;
                 updateKeyDisplay(key, true);
             }
         };
 
         const keyUpListener = (e) => {
             const key = e.key.toLowerCase();
-            if (key in state.keys) {
-                state.keys[key] = false;
+            if (key in state.input.keys) {
+                state.input.keys[key] = false;
                 updateKeyDisplay(key, false);
             }
         };
 
         const mouseDownListener = (e) => {
             if (e.button === 0) {
-                state.keys.lmb = true;
+                state.input.keys.lmb = true;
                 updateKeyDisplay('lmb', true);
             } else if (e.button === 2) {
-                state.keys.rmb = true;
+                state.input.keys.rmb = true;
                 updateKeyDisplay('rmb', true);
             }
         };
 
         const mouseUpListener = (e) => {
             if (e.button === 0) {
-                state.keys.lmb = false;
+                state.input.keys.lmb = false;
                 updateKeyDisplay('lmb', false);
             } else if (e.button === 2) {
-                state.keys.rmb = false;
+                state.input.keys.rmb = false;
                 updateKeyDisplay('rmb', false);
             }
         };
 
-        window.addEventListener('keydown', keyDownListener);
-        window.addEventListener('keyup', keyUpListener);
-        window.addEventListener('mousedown', mouseDownListener);
-        window.addEventListener('mouseup', mouseUpListener);
+        window.addEventListener('keydown', keyDownListener, { passive: true });
+        window.addEventListener('keyup', keyUpListener, { passive: true });
+        window.addEventListener('mousedown', mouseDownListener, { passive: true });
+        window.addEventListener('mouseup', mouseUpListener, { passive: true });
 
-        state.listeners = { keyDownListener, keyUpListener, mouseDownListener, mouseUpListener };
+        state.input.listeners = { keyDownListener, keyUpListener, mouseDownListener, mouseUpListener };
     }
 
     function removeKeyDisplayListeners() {
-        const { keyDownListener, keyUpListener, mouseDownListener, mouseUpListener } = state.listeners;
+        const { keyDownListener, keyUpListener, mouseDownListener, mouseUpListener } = state.input.listeners;
         if (keyDownListener) window.removeEventListener('keydown', keyDownListener);
         if (keyUpListener) window.removeEventListener('keyup', keyUpListener);
         if (mouseDownListener) window.removeEventListener('mousedown', mouseDownListener);
         if (mouseUpListener) window.removeEventListener('mouseup', mouseUpListener);
-        state.listeners = {};
+        state.input.listeners = {};
     }
 
-    // Simplified toggleFeature using FEATURES config
+    // ==================== FEATURE MANAGERS ====================
+    const featureManager = {
+        fps: {
+            start: () => {
+                if (!state.counters.fps) createCounter('fps');
+                state.performance.activeRAFFeatures.add('fps');
+                if (!state.performance.rafId) startPerformanceLoop();
+            },
+            stop: () => stopPerformanceLoop(),
+            cleanup: () => {
+                state.counters.fps?._dragCleanup?.();
+                if (state.counters.fps) { state.counters.fps.remove(); state.counters.fps = null; }
+            }
+        },
+
+        ping: {
+            start: () => {
+                if (!state.counters.ping) createCounter('ping');
+                updatePingCounter();
+                state.performance.intervals.ping = setInterval(updatePingCounter, TIMING.PING_UPDATE_INTERVAL);
+            },
+            stop: () => {
+                clearInterval(state.performance.intervals.ping);
+                state.performance.intervals.ping = null;
+            },
+            cleanup: () => {
+                state.counters.ping?._dragCleanup?.();
+                if (state.counters.ping) { state.counters.ping.remove(); state.counters.ping = null; }
+            }
+        },
+
+        coords: {
+            start: () => {
+                if (!state.counters.coords) createCounter('coords');
+                updateCoordinates();
+                state.performance.intervals.coords = setInterval(updateCoordinates, TIMING.COORDS_UPDATE_INTERVAL);
+            },
+            stop: () => {
+                clearInterval(state.performance.intervals.coords);
+                state.performance.intervals.coords = null;
+            },
+            cleanup: () => {
+                state.counters.coords?._dragCleanup?.();
+                if (state.counters.coords) { state.counters.coords.remove(); state.counters.coords = null; }
+            }
+        },
+
+        realTime: {
+            start: () => {
+                if (!state.counters.realTime) createCounter('realTime');
+                updateRealTime();
+                state.performance.intervals.realTime = setInterval(updateRealTime, 1000);
+            },
+            stop: () => {
+                clearInterval(state.performance.intervals.realTime);
+                state.performance.intervals.realTime = null;
+            },
+            cleanup: () => {
+                if (state.counters.realTime) { state.counters.realTime.remove(); state.counters.realTime = null; }
+            }
+        },
+
+        antiAfk: {
+            start: () => {
+                if (!state.counters.antiAfk) createCounter('antiAfk');
+                state.session.antiAfkCountdown = 5;
+                updateAntiAfkCounter();
+                state.performance.intervals.antiAfk = setInterval(() => {
+                    state.session.antiAfkCountdown--;
+                    updateAntiAfkCounter();
+                    if (state.session.antiAfkCountdown <= 0) {
+                        pressSpace();
+                        state.session.antiAfkCountdown = 5;
+                    }
+                }, 1000);
+            },
+            stop: () => {
+                clearInterval(state.performance.intervals.antiAfk);
+                state.performance.intervals.antiAfk = null;
+            },
+            cleanup: () => {
+                state.counters.antiAfk?._dragCleanup?.();
+                if (state.counters.antiAfk) { state.counters.antiAfk.remove(); state.counters.antiAfk = null; }
+            }
+        },
+
+        keyDisplay: {
+            start: () => {
+                if (!state.counters.keyDisplay) createKeyDisplay();
+                setupKeyDisplayListeners();
+            },
+            stop: () => removeKeyDisplayListeners(),
+            cleanup: () => {
+                state.counters.keyDisplay?._dragCleanup?.();
+                if (state.counters.keyDisplay) { state.counters.keyDisplay.remove(); state.counters.keyDisplay = null; }
+                Object.keys(state.input.keys).forEach(key => { state.input.keys[key] = false; });
+            }
+        },
+
+        fullscreen: {
+            start: () => {
+                const elem = document.documentElement;
+                if (!document.fullscreenElement) {
+                    elem.requestFullscreen().catch(err => console.error(`Fullscreen error: ${err.message}`));
+                } else {
+                    document.exitFullscreen();
+                }
+            },
+            stop: () => {},
+            cleanup: () => {}
+        }
+    };
+
+    // ==================== FEATURE CONTROL ====================
     function toggleFeature(featureName) {
-        const feature = FEATURES[featureName];
-        if (!feature) return;
-
-        const newState = !state[featureName];
-        state[featureName] = newState;
-
-        if (newState) {
-            feature.create();
-        } else {
-            feature.destroy();
+        if (featureName === 'fullscreen') {
+            featureManager.fullscreen.start();
+            return;
         }
 
-        saveSettings();
+        const newState = !state.features[featureName];
+        state.features[featureName] = newState;
+
+        if (newState) {
+            featureManager[featureName]?.start();
+        } else {
+            featureManager[featureName]?.cleanup?.();
+            featureManager[featureName]?.stop?.();
+        }
+
+        debouncedSave();
         return newState;
     }
 
-    function createFeatureCard(title, featureKeys) {
+    function resetCounterPositions() {
+        Object.entries(DEFAULT_POSITIONS).forEach(([type, pos]) => {
+            const counter = state.counters[type];
+            if (counter) Object.assign(counter.style, pos);
+        });
+        saveSettings();
+        showToast(MESSAGES.POSITIONS_RESET);
+    }
+
+    // ==================== MENU SYSTEM ====================
+    function createFeatureCard(title, features) {
         const card = document.createElement('div');
         card.className = 'waddle-card';
         card.innerHTML = `<div class="waddle-card-header">${title}</div>`;
@@ -572,16 +876,19 @@
         const grid = document.createElement('div');
         grid.className = 'waddle-card-grid';
 
-        featureKeys.forEach(featureKey => {
-            const feature = FEATURES[featureKey];
+        features.forEach(({ label, feature, icon, special }) => {
             const btn = document.createElement('button');
             btn.className = 'waddle-menu-btn';
-            btn.textContent = `${feature.label} ${feature.icon}`;
+            btn.textContent = `${label} ${icon}`;
             btn.onclick = () => {
-                const enabled = toggleFeature(featureKey);
-                btn.textContent = `${feature.label} ${enabled ? '✓' : feature.icon}`;
+                if (special) {
+                    toggleFeature(feature);
+                    return;
+                }
+                const enabled = toggleFeature(feature);
+                btn.textContent = `${label} ${enabled ? '✓' : icon}`;
                 btn.classList.toggle('active', enabled);
-                showToast(`${feature.label} ${enabled ? 'Enabled' : 'Disabled'} ✓`);
+                showToast(MESSAGES[enabled ? 'ENABLED' : 'DISABLED'](label));
             };
             grid.appendChild(btn);
         });
@@ -591,22 +898,11 @@
     }
 
     function switchTab(tabName) {
-        state.activeTab = tabName;
-        Object.values(state.tabButtons).forEach(btn => btn.classList.remove('active'));
-        Object.values(state.tabContent).forEach(content => content.classList.remove('active'));
-        state.tabButtons[tabName].classList.add('active');
-        state.tabContent[tabName].classList.add('active');
-    }
-
-    function updateSessionTimer() {
-        const timerElement = document.getElementById('waddle-session-timer');
-        if (timerElement) {
-            const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
-            const hours = Math.floor(elapsed / 3600);
-            const minutes = Math.floor((elapsed % 3600) / 60);
-            const seconds = elapsed % 60;
-            timerElement.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
+        state.ui.activeTab = tabName;
+        Object.values(state.ui.tabElements.buttons).forEach(btn => btn.classList.remove('active'));
+        Object.values(state.ui.tabElements.content).forEach(content => content.classList.remove('active'));
+        state.ui.tabElements.buttons[tabName].classList.add('active');
+        state.ui.tabElements.content[tabName].classList.add('active');
     }
 
     function createMenu() {
@@ -623,6 +919,7 @@
 
         const tabConfigs = [
             { name: 'features', label: '⚙️ Features' },
+            { name: 'settings', label: '🎨 Settings' },
             { name: 'about', label: 'ℹ️ About' }
         ];
 
@@ -630,10 +927,11 @@
             const btn = document.createElement('button');
             btn.className = 'waddle-tab-btn';
             if (name === 'features') btn.classList.add('active');
+            btn.setAttribute('data-tab', name);
             btn.textContent = label;
             btn.onclick = () => switchTab(name);
             tabsContainer.appendChild(btn);
-            state.tabButtons[name] = btn;
+            state.ui.tabElements.buttons[name] = btn;
         });
 
         menuOverlay.appendChild(tabsContainer);
@@ -641,29 +939,117 @@
         const menuContent = document.createElement('div');
         menuContent.id = 'waddle-menu-content';
 
-        // Features Tab
+        // ==================== FEATURES TAB ====================
         const featuresContent = document.createElement('div');
         featuresContent.className = 'waddle-tab-content active';
+        featuresContent.setAttribute('data-content', 'features');
 
-        const displayCard = createFeatureCard('📊 Display Counters', ['fps', 'realTime', 'keyDisplay']);
-        featuresContent.appendChild(displayCard);
-
-        const utilCard = createFeatureCard('🛠️ Utilities', ['antiAfk']);
-        featuresContent.appendChild(utilCard);
+        FEATURE_CARDS.forEach(card => {
+            featuresContent.appendChild(createFeatureCard(card.title, card.features));
+        });
 
         menuContent.appendChild(featuresContent);
-        state.tabContent.features = featuresContent;
+        state.ui.tabElements.content.features = featuresContent;
 
-        // About Tab
+        // ==================== SETTINGS TAB ====================
+        const settingsContent = document.createElement('div');
+        settingsContent.className = 'waddle-tab-content';
+        settingsContent.setAttribute('data-content', 'settings');
+
+        const themeCard = document.createElement('div');
+        themeCard.className = 'waddle-card';
+        themeCard.innerHTML = '<div class="waddle-card-header">🎨 Theme</div>';
+
+        const hueLabel = document.createElement('label');
+        hueLabel.className = 'settings-label';
+        hueLabel.textContent = 'Menu & Crosshair Hue:';
+        themeCard.appendChild(hueLabel);
+
+        const hueSlider = document.createElement('input');
+        hueSlider.type = 'range';
+        hueSlider.className = 'hue-slider';
+        hueSlider.min = '0';
+        hueSlider.max = '360';
+        hueSlider.value = state.ui.customHue;
+        hueSlider.addEventListener('input', (e) => {
+            const hue = parseInt(e.target.value);
+            applyTheme(hue);
+            hueColorPreview.style.background = hueToColor(hue);
+            hueValueText.textContent = `${hue}°`;
+            debouncedSave();
+        });
+        themeCard.appendChild(hueSlider);
+
+        const hueDisplay = document.createElement('div');
+        hueDisplay.className = 'hue-display';
+        const hueColorPreview = document.createElement('div');
+        hueColorPreview.className = 'hue-color-preview';
+        hueColorPreview.style.background = hueToColor(state.ui.customHue);
+        hueDisplay.appendChild(hueColorPreview);
+        const hueValueText = document.createElement('span');
+        hueValueText.className = 'hue-value-text';
+        hueValueText.textContent = `${state.ui.customHue}°`;
+        hueDisplay.appendChild(hueValueText);
+        themeCard.appendChild(hueDisplay);
+
+        settingsContent.appendChild(themeCard);
+
+        const controlsCard = document.createElement('div');
+        controlsCard.className = 'waddle-card';
+        controlsCard.innerHTML = '<div class="waddle-card-header">⌨️ Controls</div>';
+        const keybindLabel = document.createElement('label');
+        keybindLabel.className = 'settings-label';
+        keybindLabel.textContent = 'Menu Keybind:';
+        controlsCard.appendChild(keybindLabel);
+        const keybindInput = document.createElement('input');
+        keybindInput.type = 'text';
+        keybindInput.className = 'keybind-input';
+        keybindInput.value = state.ui.menuKey;
+        keybindInput.readOnly = true;
+        keybindInput.placeholder = 'Press a key...';
+        keybindInput.addEventListener('keydown', (e) => {
+            e.preventDefault();
+            if (e.key === 'Escape') { keybindInput.value = state.ui.menuKey; keybindInput.blur(); return; }
+            state.ui.menuKey = e.key;
+            keybindInput.value = e.key;
+            keybindInput.blur();
+            saveSettings();
+        });
+        controlsCard.appendChild(keybindInput);
+        settingsContent.appendChild(controlsCard);
+
+        const layoutCard = document.createElement('div');
+        layoutCard.className = 'waddle-card';
+        layoutCard.innerHTML = '<div class="waddle-card-header">📐 Layout</div>';
+        const resetBtn = document.createElement('button');
+        resetBtn.className = 'waddle-menu-btn';
+        resetBtn.style.width = '100%';
+        resetBtn.textContent = '🔄 Reset Counter Positions';
+        resetBtn.addEventListener('click', resetCounterPositions);
+        layoutCard.appendChild(resetBtn);
+        settingsContent.appendChild(layoutCard);
+
+        menuContent.appendChild(settingsContent);
+        state.ui.tabElements.content.settings = settingsContent;
+
+        // ==================== ABOUT TAB ====================
         const aboutContent = document.createElement('div');
         aboutContent.className = 'waddle-tab-content';
+        aboutContent.setAttribute('data-content', 'about');
 
         const timerCard = document.createElement('div');
         timerCard.className = 'waddle-card';
         timerCard.style.textAlign = 'center';
         timerCard.innerHTML = `
             <div class="waddle-card-header" style="justify-content: center;">⏱️ Session Timer</div>
-            <div id="waddle-session-timer" style="font-size: 2.5rem; font-weight: 900; color: var(--waddle-primary); font-family: 'Courier New', monospace; text-shadow: 0 0 10px rgba(57,255,20,0.5); margin-top: 8px;">00:00:00</div>
+            <div id="waddle-session-timer" style="
+                font-size: 2.5rem;
+                font-weight: 900;
+                color: var(--waddle-primary);
+                font-family: 'Courier New', monospace;
+                text-shadow: 0 0 10px rgba(0,255,255,0.5);
+                margin-top: 8px;
+            ">00:00:00</div>
         `;
         aboutContent.appendChild(timerCard);
 
@@ -673,86 +1059,80 @@
             <div class="waddle-card-header">Credits</div>
             <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <img src="https://avatars.githubusercontent.com/Scripter132132" width="32" height="32" style="border-radius: 50%;">
+                    <img src="https://avatars.githubusercontent.com/Scripter132132" width="32" height="32" style="border-radius: 50%; box-shadow: 0 0 8px rgba(0,255,255,0.35);">
                     <div style="flex: 1;">
-                        <div style="color: #39ff14; font-size: 0.75rem; font-weight: 600;">Original Creator</div>
+                        <div style="color: #00ffff; font-size: 0.75rem; font-weight: 600;">Original Creator</div>
                         <a href="https://github.com/Scripter132132" target="_blank" style="color: #aaa; font-size: 0.85rem; text-decoration: none;">@Scripter132132</a>
                     </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <img src="https://avatars.githubusercontent.com/TheM1ddleM1n" width="32" height="32" style="border-radius: 50%;">
+                    <img src="https://avatars.githubusercontent.com/TheM1ddleM1n" width="32" height="32" style="border-radius: 50%; box-shadow: 0 0 8px rgba(243,156,18,0.35);">
                     <div style="flex: 1;">
                         <div style="color: #f39c12; font-size: 0.75rem; font-weight: 600;">Enhanced By</div>
                         <a href="https://github.com/TheM1ddleM1n" target="_blank" style="color: #aaa; font-size: 0.85rem; text-decoration: none;">@TheM1ddleM1n</a>
                     </div>
                 </div>
             </div>
-            <div style="font-size: 0.7rem; color: #555; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(57, 255, 20, 0.15); text-align: center;">
-                v${SCRIPT_VERSION} • MIT License
+            <div style="font-size: 0.7rem; color: #555; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(0, 255, 255, 0.15); text-align: center;">
+                v${SCRIPT_VERSION} • MIT License • Made by TheM1ddleM1n!
             </div>
         `;
         aboutContent.appendChild(creditsCard);
 
         const linksCard = document.createElement('div');
         linksCard.className = 'waddle-card';
-        linksCard.innerHTML = '<div class="waddle-card-header">🔗 Github Links</div>';
+        linksCard.innerHTML = '<div class="waddle-card-header">🔗 Github Templates</div>';
         const linksGrid = document.createElement('div');
         linksGrid.className = 'waddle-card-grid';
 
         const suggestBtn = document.createElement('button');
-suggestBtn.className = 'waddle-menu-btn';
-suggestBtn.textContent = 'Suggest Feature';
-suggestBtn.onclick = () => window.open(
-    'https://github.com/TheM1ddleM1n/WaddleClient/issues/new?template=feature_request.md',
-    '_blank'
-);
-linksGrid.appendChild(suggestBtn);
+        suggestBtn.className = 'waddle-menu-btn';
+        suggestBtn.textContent = 'Suggest a Feature';
+        suggestBtn.onclick = () => window.open(`https://github.com/TheM1ddleM1n/WaddleClient/issues/new?template=feature_request.md`, '_blank');
+        linksGrid.appendChild(suggestBtn);
 
-const bugBtn = document.createElement('button');
-bugBtn.className = 'waddle-menu-btn';
-bugBtn.textContent = 'Report Bug';
-bugBtn.onclick = () => window.open(
-    'https://github.com/TheM1ddleM1n/WaddleClient/issues/new?template=bug_report.md',
-    '_blank'
-);
-linksGrid.appendChild(bugBtn);
+        const bugBtn = document.createElement('button');
+        bugBtn.className = 'waddle-menu-btn';
+        bugBtn.textContent = 'Report a Bug';
+        bugBtn.onclick = () => window.open(`https://github.com/TheM1ddleM1n/WaddleClient/issues/new?template=bug_report.md`, '_blank');
+        linksGrid.appendChild(bugBtn);
 
         linksCard.appendChild(linksGrid);
         aboutContent.appendChild(linksCard);
 
         menuContent.appendChild(aboutContent);
-        state.tabContent.about = aboutContent;
+        state.ui.tabElements.content.about = aboutContent;
 
         menuOverlay.appendChild(menuContent);
         document.body.appendChild(menuOverlay);
         menuOverlay.addEventListener('click', (e) => { if (e.target === menuOverlay) closeMenu(); });
-        state.menuOverlay = menuOverlay;
+        state.ui.menuOverlay = menuOverlay;
         return menuOverlay;
     }
 
     function openMenu() {
-        if (state.menuOverlay) state.menuOverlay.classList.add('show');
+        if (state.ui.menuOverlay) state.ui.menuOverlay.classList.add('show');
     }
 
     function closeMenu() {
-        if (state.menuOverlay) state.menuOverlay.classList.remove('show');
+        if (state.ui.menuOverlay) state.ui.menuOverlay.classList.remove('show');
     }
 
     function toggleMenu() {
-        state.menuOverlay?.classList.toggle('show');
+        state.ui.menuOverlay?.classList.toggle('show');
     }
 
     function setupKeyboardHandler() {
-        state.keyboardHandler = (e) => {
-            if (e.key === MENU_KEY) {
+        state.session.keyboardHandler = (e) => {
+            if (e.key === state.ui.menuKey) {
                 e.preventDefault();
                 toggleMenu();
-            } else if (e.key === 'Escape' && state.menuOverlay?.classList.contains('show')) {
+            } else if (e.key === 'Escape' && state.ui.menuOverlay?.classList.contains('show')) {
                 e.preventDefault();
                 closeMenu();
             }
         };
-        window.addEventListener('keydown', state.keyboardHandler);
+        window.addEventListener('keydown', state.session.keyboardHandler);
     }
 
     function restoreSavedState() {
@@ -760,48 +1140,58 @@ linksGrid.appendChild(bugBtn);
             const saved = localStorage.getItem(SETTINGS_KEY);
             if (!saved) return;
             const settings = JSON.parse(saved);
-            if (settings.features) {
-                state.fps = settings.features.fps || false;
-                state.realTime = settings.features.realTime || false;
-                state.antiAfk = settings.features.antiAfk || false;
-                state.keyDisplay = settings.features.keyDisplay || false;
-            }
-        } catch (e) {}
+            if (settings.menuKey) state.ui.menuKey = settings.menuKey;
+            if (settings.customHue !== undefined) state.ui.customHue = settings.customHue;
+            if (settings.features) Object.assign(state.features, settings.features);
+        } catch (e) {
+            console.error('[Waddle] Failed to restore settings:', e);
+        }
     }
 
     function globalCleanup() {
-        Object.keys(state).forEach(key => {
-            if (state[key] && typeof state[key] === 'boolean' && key in FEATURES) {
-                if (state[key]) toggleFeature(key);
+        console.log(MESSAGES.CLEANUP_START);
+
+        Object.entries(state.features).forEach(([feature, enabled]) => {
+            if (enabled) {
+                featureManager[feature]?.cleanup?.();
+                featureManager[feature]?.stop?.();
             }
         });
 
-        if (state.keyboardHandler) {
-            window.removeEventListener('keydown', state.keyboardHandler);
+        if (state.session.keyboardHandler) {
+            window.removeEventListener('keydown', state.session.keyboardHandler);
         }
 
-        Object.values(state.intervals).forEach(clearInterval);
+        Object.values(state.performance.intervals).forEach(clearInterval);
+        state.performance.intervals = {};
+
+        if (state.performance.rafId) cancelAnimationFrame(state.performance.rafId);
+
+        console.log(MESSAGES.CLEANUP_DONE);
     }
 
     window.addEventListener('beforeunload', globalCleanup);
 
     function init() {
+        console.log(MESSAGES.INIT_START);
         injectStyles();
+        loadCustomHue();
         createPermanentCrosshair();
         createMenu();
         setupKeyboardHandler();
-        showToast(`Press ${MENU_KEY} To Open Menu!`);
+        showToast(MESSAGES.MENU_PROMPT(state.ui.menuKey));
 
         setTimeout(() => {
             restoreSavedState();
-            if (state.fps) toggleFeature('fps');
-            if (state.realTime) toggleFeature('realTime');
-            if (state.antiAfk) toggleFeature('antiAfk');
-            if (state.keyDisplay) toggleFeature('keyDisplay');
+            Object.entries(state.features).forEach(([feature, enabled]) => {
+                if (enabled) featureManager[feature]?.start();
+            });
         }, 100);
 
         updateSessionTimer();
-        state.intervals.sessionTimer = setInterval(updateSessionTimer, 1000);
+        state.performance.intervals.sessionTimer = setInterval(updateSessionTimer, TIMING.SESSION_UPDATE);
+
+        console.log(MESSAGES.INIT_DONE);
     }
 
     if (document.readyState === 'loading') {
