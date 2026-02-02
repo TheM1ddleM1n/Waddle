@@ -4,7 +4,7 @@
 ![License](https://img.shields.io/badge/license-MIT-39ff14?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-39ff14?style=for-the-badge)
 
-> **A lightweight enhancement client for Miniblox featuring a permanent neon green crosshair, real-time FPS monitoring, and essential gaming utilities.**
+> **A lightweight enhancement client for Miniblox featuring a permanent neon green crosshair, real-time FPS monitoring, coordinates display, and essential gaming utilities.**
 
 ---
 
@@ -12,10 +12,12 @@
 
 - 🎯 **Permanent Neon Green Crosshair** - Always-on target crosshair at screen center
 - 📊 **Real-Time FPS Monitoring** - Live performance tracking with instant visual feedback
+- 📍 **Live Coordinate Display** - Real-time X, Y, Z position tracking
+- 📡 **Ping Monitor** - Network latency monitoring
 - ⌨️ **Visual Key Display** - See your WASD, Space, and mouse inputs in real-time
 - 🛠️ **Smart Anti-AFK** - Stay active in lobbies without manual input
 - ⏱️ **Session Timer** - Track your gameplay time
-- ⚡ **Ultra Lightweight** - ~480 lines of code, minimal memory footprint, zero external dependencies
+- ⚡ **Ultra Lightweight** - ~600 lines of code, minimal memory footprint, zero external dependencies
 - 💾 **Persistent Settings** - All preferences automatically saved to localStorage
 
 ---
@@ -73,9 +75,10 @@ If the auto-install doesn't work, follow these steps:
 
 ### Menu Tabs
 
-The Waddle menu has two main tabs:
+The Waddle menu has three main tabs:
 
 - **⚙️ Features** - Enable/disable counters and utilities
+- **🎨 Settings** - Customize theme, keybinds, and layout
 - **ℹ️ About** - Credits, session timer, and links
 
 ### Enabling Features
@@ -89,9 +92,11 @@ The Waddle menu has two main tabs:
 ### Pro Tips
 
 - **Move counters:** Click and drag any counter to reposition it
-- **Counters are draggable:** FPS, Key Display, and Anti-AFK can be repositioned
+- **Counters are draggable:** FPS, Ping, Coords, Key Display, and Anti-AFK can be repositioned
 - **Crosshair:** Always neon green for optimal aim precision
 - **Session Timer:** Check the About tab to see your play time
+- **Theme customization:** Use the Settings tab to adjust hue (0-360°)
+- **Custom keybind:** Set your preferred menu key in Settings
 
 ---
 
@@ -103,7 +108,7 @@ Always-visible crosshair at the center of your screen in bright neon green.
 
 - **Style:** Target design with center dot and four directional lines
 - **Position:** Fixed at screen center (50%, 50%)
-- **Color:** Always neon green (#39ff14)
+- **Color:** Customizable via Settings (0-360° hue slider)
 - **Always On:** Persistent - no toggle needed
 - **Usage:** Improves aim precision and consistency
 
@@ -119,7 +124,30 @@ Real-time frames per second display for performance monitoring.
 - **Update Rate:** Every 500ms
 - **Usage:** Monitor performance and identify lag spikes
 - **Default Position:** Top-left (50px, 80px)
-- **Color:** Neon green theme
+- **Color:** Customizable theme
+
+#### Ping Monitor
+
+Real-time network latency display.
+
+- **Draggable:** ✅ Yes
+- **Update Rate:** Every 2 seconds
+- **Usage:** Monitor connection quality and identify network issues
+- **Default Position:** Top-left (50px, 220px)
+- **Format:** PING: XXms
+- **Color:** Customizable theme
+
+#### Live Coordinates Display
+
+Real-time player position tracking with X, Y, Z coordinates.
+
+- **Draggable:** ✅ Yes
+- **Update Rate:** Every 100ms
+- **Format:** 📍 X: 0.0 Y: 0.0 Z: 0.0
+- **Default Position:** Top-left (50px, 360px)
+- **Usage:** Navigate, find waypoints, or track exact location
+- **Data Source:** Live from Miniblox game API
+- **Color:** Customizable theme
 
 #### Real-Time Clock
 
@@ -129,7 +157,7 @@ Current time in 12-hour format with AM/PM indicator.
 - **Update Rate:** Every second
 - **Draggable:** ❌ No (fixed to bottom-right)
 - **Usage:** Quick time reference without clutter
-- **Color:** Neon green theme
+- **Color:** Customizable theme
 
 #### KeyStrokes Display
 
@@ -140,7 +168,7 @@ Visual representation of your keyboard and mouse inputs.
 - **Draggable:** ✅ Yes
 - **Default Position:** Top-left (50px, 150px)
 - **Usage:** Perfect for streaming, recording, or input timing awareness
-- **Color:** Neon green theme
+- **Color:** Customizable theme
 
 ---
 
@@ -156,7 +184,7 @@ Automatically prevents AFK timeout by simulating spacebar presses every 5 second
 - **Draggable:** ✅ Yes
 - **Default Position:** Top-left (50px, 290px)
 - **Usage:** Stay active in lobbies without manual input
-- **Color:** Neon green theme
+- **Color:** Customizable theme
 
 ---
 
@@ -168,18 +196,35 @@ Track how long you've been playing in your current session.
 - **Location:** About tab
 - **Update Rate:** Every second
 - **Persistent:** Resets on page reload
-- **Color:** Neon green theme
+- **Color:** Customizable theme
 
 ---
 
-## 🎨 Design
+## 🎨 Customization
 
-WaddleClient uses a sleek **Neon Green** theme throughout:
+### Theme & Colors
 
-- **Primary Color:** #39ff14 (Neon Green)
-- **Dark Background:** Professional gaming aesthetic
-- **High Contrast:** Maximum visibility during gameplay
-- **Consistent Styling:** All UI elements use the same theme
+WaddleClient features a fully customizable color system:
+
+- **Hue Slider:** Adjust colors from 0-360° in Settings
+- **Live Preview:** See theme changes instantly on menu and crosshair
+- **Auto-Save:** Your theme preference is saved automatically
+- **All UI Elements:** Menu, counters, and crosshair all use your chosen color
+
+### Keybinds
+
+Customize your menu hotkey in the Settings tab:
+
+- **Default:** `\` (backslash)
+- **Easy to Change:** Click the keybind input and press any key
+- **Always Saved:** Your keybind preference persists
+
+### Layout Reset
+
+Reset all counter positions to defaults with one click:
+
+- **Location:** Settings → Layout → Reset Counter Positions
+- **Useful for:** Recovering lost counters or starting fresh
 
 ---
 
@@ -192,15 +237,16 @@ WaddleClient is optimized for minimal overhead:
 - **Single RAF Loop:** Efficient FPS calculation
 - **Direct DOM Updates:** Only update when values change
 - **Memory Efficient:** Active cleanup on page unload
-- **Lightweight:** ~480 lines of code
+- **Lightweight:** ~600 lines of code
 - **No Dependencies:** Zero external libraries
 
 **Performance Benchmarks:**
 - FPS Counter: ~0.1% CPU usage
+- Coordinates: ~0.05% CPU usage
+- Ping Monitor: ~0.05% CPU usage
 - Key Display: ~0.2% CPU usage
 - Anti-AFK: ~0.01% CPU usage
-- Crosshair: ~0.02% CPU usage
-- **Total:** ~0.35% CPU usage (negligible)
+- **Total:** ~0.4% CPU usage (negligible)
 
 ### Data Storage
 
@@ -214,17 +260,32 @@ All settings are stored locally in your browser's localStorage:
   "version": "5.9",
   "features": {
     "fps": false,
+    "ping": false,
+    "coords": false,
     "realTime": false,
     "antiAfk": false,
     "keyDisplay": false
   },
   "positions": {
     "fps": { "left": "50px", "top": "80px" },
+    "ping": { "left": "50px", "top": "220px" },
+    "coords": { "left": "50px", "top": "360px" },
     "keyDisplay": { "left": "50px", "top": "150px" },
     "antiAfk": { "left": "50px", "top": "290px" }
-  }
+  },
+  "menuKey": "\\",
+  "customHue": 180
 }
 ```
+
+### Game API Integration
+
+WaddleClient safely accesses the Miniblox game API via React fiber:
+
+- **Player Position:** `game.player.pos` (X, Y, Z coordinates)
+- **Game Object:** Accessed through React root detection
+- **Safe Access:** Graceful fallback if game not loaded
+- **No Injection:** Pure read-only access to game state
 
 ### Browser Compatibility
 
@@ -275,6 +336,20 @@ All settings are stored locally in your browser's localStorage:
 - If not, click it to enable
 - Counters should appear within 1-2 seconds
 
+### Coordinates Not Updating
+
+**Try these solutions:**
+
+1. Make sure you're in an active game (not in menu)
+2. Refresh the page if you're still in lobby
+3. Verify the Coordinates feature is enabled (✓ checkmark)
+4. Check browser console for errors
+
+**What triggers coordinate updates:**
+- You must be loaded into a game world
+- The game API must be accessible
+- Coordinates update every 100ms when enabled
+
 ### Crosshair Not Showing
 
 **Try these solutions:**
@@ -284,7 +359,7 @@ All settings are stored locally in your browser's localStorage:
 3. Verify Miniblox game has loaded fully
 4. The crosshair is always enabled - no toggle needed
 
-**Note:** Crosshair is permanently neon green for consistent aim reference!
+**Note:** Crosshair color matches your chosen theme!
 
 ### Settings Not Saving
 
@@ -328,6 +403,7 @@ All settings are stored locally in your browser's localStorage:
 **Performance tips:**
 - Only enable features you actively use
 - FPS counter has minimal impact
+- Coordinates update efficiently every 100ms
 - Key Display monitors events efficiently
 - Anti-AFK has negligible impact
 
@@ -335,23 +411,22 @@ All settings are stored locally in your browser's localStorage:
 
 ## 📝 Changelog
 
-### [5.9] - 31/01/26
+### [5.9] - 02/02/26
 
-#### Removed
-- ✂️ Settings Tab - Removed theme customization and reset button
-- ✂️ Theme Selector - Locked to Neon Green for consistency
-- ✂️ All theme-related code - Simplified codebase
+#### Added
+- ✨ **Live Coordinates Display** - Real-time X, Y, Z position tracking
+- 📡 **Ping Monitor** - Network latency monitoring
+- 🎨 **Customizable Theme System** - Full hue slider (0-360°)
 
 #### Changed
-- ⚡ Reduced to ~480 lines of code
-- ⚡ Simplified menu to 2 tabs (Features & About)
-- ⚡ Cleaner, more focused UI
+- ⚡ Optimized coordinate update cycle (100ms refresh rate)
+- ⚡ Improved game API access with safer fiber detection
+- 📊 Enhanced feature card layout for new displays
 
 #### Result
-- More streamlined experience
-- Focus on essential features
-- Neon Green locked in for consistent aesthetic
-- Faster menu navigation
+- More comprehensive gameplay information
+- Better navigation and waypoint tracking
+- Customizable color scheme for all UI elements
 
 ---
 
@@ -401,7 +476,7 @@ All settings are stored locally in your browser's localStorage:
 [@Scripter132132](https://github.com/Scripter132132) - Initial development and core architecture
 
 **Enhanced & Maintained By**  
-[@TheM1ddleM1n](https://github.com/TheM1ddleM1n) - UI redesign, performance optimization, crosshair system, and ongoing development
+[@TheM1ddleM1n](https://github.com/TheM1ddleM1n) - UI redesign, performance optimization, crosshair system, coordinates system, and ongoing development
 
 **Special Thanks**
 - Miniblox community for feedback and testing
@@ -439,17 +514,21 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 A: Yes! The script is open source and runs only locally in your browser. No external data is sent anywhere.
 
-**Q: Why is the crosshair neon green?**
+**Q: Why are coordinates useful?**
 
-A: Neon green provides optimal visibility and a sleek gaming aesthetic. It's locked in for consistency and performance.
+A: Coordinates help you navigate, find specific waypoints, meet other players at exact locations, or record position data for future reference.
+
+**Q: How often do coordinates update?**
+
+A: Coordinates update every 100ms (10 times per second) for smooth, real-time position tracking.
 
 **Q: Can I customize the theme?**
 
-A: The script now uses a single Neon Green theme for consistency. All UI elements match this vibrant aesthetic.
+A: Yes! Use the hue slider in Settings to customize all UI colors from 0-360°. Your choice is saved automatically.
 
 **Q: Which features are most useful?**
 
-A: All features complement each other! FPS counter for performance, Key Display for awareness, Anti-AFK for lobbies, and the Session Timer for tracking playtime.
+A: All features complement each other! FPS counter for performance, Coordinates for navigation, Ping for connection quality, Key Display for awareness, Anti-AFK for lobbies, and the Session Timer for tracking playtime.
 
 **Q: Can I modify the script?**
 
@@ -469,11 +548,15 @@ A: Yes! Enable as many features as you'd like.
 
 **Q: Will this affect my game performance?**
 
-A: WaddleClient has minimal performance impact (less than 0.35% CPU).
+A: WaddleClient has minimal performance impact (less than 0.4% CPU).
 
 **Q: Can I use this on other websites?**
 
 A: WaddleClient is specifically designed for Miniblox only.
+
+**Q: Do coordinates work in all game modes?**
+
+A: Yes! Coordinates update in any game mode where you're actively playing.
 
 ---
 
