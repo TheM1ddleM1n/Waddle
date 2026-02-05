@@ -74,6 +74,7 @@
             title: '🛠️ Utilities',
             features: [
                 { label: 'Anti-AFK', feature: 'antiAfk', icon: '🐧' },
+                { label: 'Block Party RQ', feature: 'disablePartyRequests', icon: '🐧' },
                 { label: 'Fullscreen', feature: 'fullscreen', icon: '🐧', special: true }
             ]
         }
@@ -109,7 +110,7 @@
             }
         }, 500);
     })();
-    
+
     // fast click waddle detector -jouda
     (function () {
     'use strict';
@@ -165,7 +166,8 @@
             coords: false,
             realTime: false,
             antiAfk: false,
-            keyDisplay: false
+            keyDisplay: false,
+            disablePartyRequests: false
         },
         ui: {
             menuKey: DEFAULT_MENU_KEY,
@@ -557,18 +559,14 @@
     function startPerformanceLoop() {
         if (state.performance.rafId) return;
         let lastFpsUpdate = performance.now(), lastFps = "0";
-        /** @type {FrameRequestCallback} **/
         const loop = (currentTime) => {
             const elapsed = currentTime - lastFpsUpdate;
             if (elapsed >= TIMING.FPS_UPDATE_INTERVAL && state.counters.fps) {
                 const game = gameRef.game;
-                /** @type {number} **/
                 const fps = game.resourceMonitor.filteredFPS;
-                /** @type {boolean} **/
                 const inGame = game.inGame;
                 const thing = inGame ? Math.round(fps).toString() : "Only works in-game";
                 if (lastFps !== thing) {
-                    // the FPS doesn't get updated while in game
                     updateCounterText('fps', `FPS: ${thing}`);
                     lastFps = thing;
                 }
@@ -593,18 +591,15 @@
         let hours = now.getHours();
         const minutes = now.getMinutes().toString().padStart(2, '0');
         const seconds = now.getSeconds().toString().padStart(2, '0');
-        // 12 PM when the sun is shining down on me... doesn't sound right.
         const ampm = hours > 12 ? 'PM' : 'AM';
         hours = hours % 12 || 12;
         updateCounterText('realTime', `${hours}:${minutes}:${seconds} ${ampm}`);
     }
 
     function updatePingCounter() {
-        // do NOT use instantPing, it is never updated. use filteredPing instead.
         const game = gameRef.game;
         const inGame = game.inGame;
         const ping = Math.round(game.resourceMonitor.filteredPing);
-
         state.session.pingStats.currentPing = ping;
         updateCounterText('ping', `PING: ${ping}ms`);
     }
@@ -613,9 +608,7 @@
     function updateCoordinates() {
         const game = gameRef.game;
         if (!game || !game.player) return;
-
         const pos = game.player.pos;
-
         if (pos) {
             const coordText = `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`;
             updateCounterText('coords', coordText);
@@ -762,6 +755,51 @@
         state.input.listeners = {};
     }
 
+    // ==================== DISABLE PARTY REQUESTS ====================
+    function disablePartyRequestsSystem() {
+        try {
+            const game = gameRef.game;
+            if (!game) return;
+
+            if (game.party && !game.party._waddleOriginalInvoke) {
+                game.party._waddleOriginalInvoke = game.party.invoke;
+
+                game.party.invoke = function(method, ...args) {
+                    const blockedMethods = [
+                        'acceptPartyInvite',
+                        'rejectPartyInvite',
+                        'requestToJoinParty',
+                        'respondToPartyRequest',
+                        'inviteToParty'
+                    ];
+
+                    if (blockedMethods.includes(method)) {
+                        console.log(`[Waddle] Blocked party request: ${method}`);
+                        return;
+                    }
+
+                    return this._waddleOriginalInvoke?.(method, ...args);
+                };
+            }
+
+            console.log('[Waddle] Party requests disabled');
+        } catch (e) {
+            console.warn('[Waddle] Party blocking unavailable:', e.message);
+        }
+    }
+
+    function restorePartyRequests() {
+        try {
+            const game = gameRef.game;
+            if (game?.party?._waddleOriginalInvoke) {
+                game.party.invoke = game.party._waddleOriginalInvoke;
+                console.log('[Waddle] Party requests restored');
+            }
+        } catch (e) {
+            console.error('[Waddle] Error restoring party requests:', e);
+        }
+    }
+
     // ==================== FEATURE MANAGERS ====================
     const featureManager = {
         fps: {
@@ -858,6 +896,18 @@
                 state.counters.keyDisplay?._dragCleanup?.();
                 if (state.counters.keyDisplay) { state.counters.keyDisplay.remove(); state.counters.keyDisplay = null; }
                 Object.keys(state.input.keys).forEach(key => { state.input.keys[key] = false; });
+            }
+        },
+
+        disablePartyRequests: {
+            start: () => {
+                disablePartyRequestsSystem();
+            },
+            stop: () => {
+                restorePartyRequests();
+            },
+            cleanup: () => {
+                restorePartyRequests();
             }
         },
 
