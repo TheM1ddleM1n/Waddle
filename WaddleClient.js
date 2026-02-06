@@ -74,8 +74,7 @@
             title: '🛠️ Utilities',
             features: [
                 { label: 'Anti-AFK', feature: 'antiAfk', icon: '🐧' },
-                { label: 'Block Party RQ', feature: 'disablePartyRequests', icon: '🐧' },
-                { label: 'Fullscreen', feature: 'fullscreen', icon: '🐧', special: true }
+                { label: 'Block Party RQ', feature: 'disablePartyRequests', icon: '🐧' }
             ]
         }
     ]);
@@ -911,27 +910,10 @@
             }
         },
 
-        fullscreen: {
-            start: () => {
-                const elem = document.documentElement;
-                if (!document.fullscreenElement) {
-                    elem.requestFullscreen().catch(err => console.error(`Fullscreen error: ${err.message}`));
-                } else {
-                    document.exitFullscreen();
-                }
-            },
-            stop: () => {},
-            cleanup: () => {}
-        }
     };
 
     // ==================== FEATURE CONTROL ====================
     function toggleFeature(featureName) {
-        if (featureName === 'fullscreen') {
-            featureManager.fullscreen.start();
-            return;
-        }
-
         const newState = !state.features[featureName];
         state.features[featureName] = newState;
 
