@@ -18,7 +18,6 @@
 - 🛠️ **Smart Anti-AFK** - Stay active in lobbies without manual input
 - 🚫 **Block Party Requests** - Disable incoming party invites and requests
 - ⏱️ **Session Timer** - Track your gameplay time
-- ⚡ **Ultra Lightweight** - ~600 lines of code, minimal memory footprint, zero external dependencies
 - 💾 **Persistent Settings** - All preferences automatically saved to localStorage
 
 ---
