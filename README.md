@@ -1,24 +1,24 @@
 # 🐧 WaddleClient
 
-![Version](https://img.shields.io/badge/version-5.10-39ff14?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-5.12-39ff14?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-39ff14?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-39ff14?style=for-the-badge)
 
-> **A lightweight enhancement client for Miniblox featuring a permanent neon green crosshair, real-time FPS monitoring, coordinates display, and essential gaming utilities.**
+> **A lightweight enhancement client for Miniblox featuring real-time FPS/Ping monitoring, coordinate display, crosshair customization, and essential gaming utilities.**
 
 ---
 
 ## 🌟 Highlights
 
-- 🎯 **Permanent Neon Green Crosshair** - Always-on target crosshair at screen center (we will make it so it only shows ingame and not in the menu)
+- 🎯 **Cyan Crosshair System** - Always-on crosshair with F1/F5 toggle controls
 - 📊 **Real-Time FPS Monitoring** - Live performance tracking with instant visual feedback
+- 📡 **Ping Monitor** - Network latency monitoring with color-coded status
 - 📍 **Live Coordinate Display** - Real-time X, Y, Z position tracking
-- 📡 **Ping Monitor** - Network latency monitoring
 - ⌨️ **Visual Key Display** - See your WASD, Space, and mouse inputs in real-time
 - 🛠️ **Smart Anti-AFK** - Stay active in lobbies without manual input
 - 🚫 **Block Party Requests** - Disable incoming party invites and requests
 - ⏱️ **Session Timer** - Track your gameplay time
-- 💾 **Persistent Settings** - All preferences automatically saved to localStorage
+- 💾 **Persistent Settings** - All preferences automatically saved
 
 ---
 
@@ -27,8 +27,9 @@
 - [Installation](#-installation) - How to get started
 - [Usage](#-usage) - Learn the basics
 - [Features](#-features) - Detailed feature breakdown
+- [Controls](#-controls) - Keyboard shortcuts
+- [Customization](#-customization) - Personalize your experience
 - [Troubleshooting](#-troubleshooting) - Solutions to common issues
-- [Contributing](#-contributing) - Help improve Waddle!
 
 ---
 
@@ -44,7 +45,7 @@
 
 **Step 2:** Install WaddleClient
 
-- [Click here to auto-install](https://github.com/TheM1ddleM1n/WaddleClient/raw/main/WaddleClient.js) (opens install dialog in your userscript manager)
+Click here to auto-install (or copy the script from GitHub and paste into your userscript manager)
 
 **Step 3:** Start using
 
@@ -54,13 +55,12 @@
 
 ### Manual Installation
 
-If the auto-install doesn't work, follow these steps:
+If the auto-install doesn't work:
 
-1. Go to [WaddleClient.js](https://github.com/TheM1ddleM1n/WaddleClient/blob/main/WaddleClient.js)
-2. Copy the entire script code
-3. Open your userscript manager dashboard
-4. Create a new script and paste the code
-5. Save and refresh Miniblox
+1. Copy the WaddleClient.js code
+2. Open your userscript manager dashboard
+3. Create a new script and paste the code
+4. Save and refresh Miniblox
 
 ---
 
@@ -70,20 +70,20 @@ If the auto-install doesn't work, follow these steps:
 
 | Action | Key |
 |--------|-----|
-| Toggle Menu | `\` (backslash) |
-| Close Menu | `ESC` or click outside |
+| **Toggle Menu** | `\` (backslash) - *customizable* |
+| **Close Menu** | `ESC` or click outside |
 
-### Menu Tabs
+### Menu Navigation
 
 The Waddle menu has three main tabs:
 
 - **⚙️ Features** - Enable/disable counters and utilities
-- **🎨 Settings** - Customize theme, keybinds, and layout
-- **ℹ️ About** - Credits, session timer, and links
+- **🎨 Settings** - Customize keybinds and layout
+- **ℹ️ About** - Session timer, credits, and links
 
 ### Enabling Features
 
-1. Press `\` to open Waddle
+1. Press `\` to open Waddle menu
 2. Go to **⚙️ Features** tab
 3. Click any feature button to enable it
 4. Active features show a **✓** checkmark
@@ -92,25 +92,37 @@ The Waddle menu has three main tabs:
 ### Pro Tips
 
 - **Move counters:** Click and drag any counter to reposition it
-- **Counters are draggable:** FPS, Ping, Coords, Key Display, and Anti-AFK can be repositioned
-- **Crosshair:** Always neon green for optimal aim precision
-- **Session Timer:** Check the About tab to see your play time
-- **Theme customization:** Use the Settings tab to adjust hue (0-360°)
-- **Custom keybind:** Set your preferred menu key in Settings
+- **Draggable counters:** FPS, Ping, Coords, Key Display, and Anti-AFK
+- **Persistent positions:** Positions auto-save when you drag
+- **Session timer:** Check the About tab to see total playtime
+- **Theme consistency:** Everything uses cyan for a cohesive look
+
+---
+
+## ⌨️ Controls
+
+| Key | Action |
+|-----|--------|
+| `\` | Toggle menu (customizable) |
+| `ESC` | Close menu |
+| `F1` | Manual crosshair toggle |
+| `F5` | Cycle crosshair visibility (3 states) |
 
 ---
 
 ## ✨ Features
 
-### 🎯 Permanent Neon Green Crosshair
+### 🎯 Cyan Crosshair
 
-Always-visible crosshair at the center of your screen in bright neon green.
+Always-visible crosshair at the center of your screen in bright cyan.
 
-- **Style:** Target design with center dot and four directional lines
-- **Position:** Fixed at screen center (50%, 50%)
-- **Color:** Customizable via Settings (0-360° hue slider)
-- **Always On:** Persistent - no toggle needed
-- **Usage:** Improves aim precision and consistency
+- **Design:** Simple 4-line crosshair (+)
+- **Position:** Fixed at screen center
+- **Auto-Hide:** Hides in menus and pause screens
+- **Controls:**
+  - `F1` Toggle on/off manually
+  - `F5` Cycle through 3 visibility states
+- **Color:** Permanent cyan (#00FFFF)
 
 ---
 
@@ -124,51 +136,51 @@ Real-time frames per second display for performance monitoring.
 - **Update Rate:** Every 500ms
 - **Usage:** Monitor performance and identify lag spikes
 - **Default Position:** Top-left (50px, 80px)
-- **Color:** Customizable theme
+- **Shows:** "Only works in-game" when in menu
 
 #### Ping Monitor
 
-Real-time network latency display.
+Real-time network latency display with color-coded status.
 
 - **Draggable:** ✅ Yes
 - **Update Rate:** Every 2 seconds
-- **Usage:** Monitor connection quality and identify network issues
+- **Color Coding:**
+  - 🟢 **Green** (0-100ms) - Good
+  - 🟡 **Yellow** (101-200ms) - Warning
+  - 🔴 **Red** (200ms+) - Poor
 - **Default Position:** Top-left (50px, 220px)
-- **Format:** PING: XXms
-- **Color:** Customizable theme
+- **Format:** "PING: XXms"
 
 #### Live Coordinates Display
 
 Real-time player position tracking with X, Y, Z coordinates.
 
 - **Draggable:** ✅ Yes
-- **Update Rate:** Every 100ms
-- **Format:** 📍 X: 0.0 Y: 0.0 Z: 0.0
+- **Update Rate:** Every 100ms (10 times per second)
+- **Format:** "📍 X: 0.0 Y: 0.0 Z: 0.0"
 - **Default Position:** Top-left (50px, 360px)
 - **Usage:** Navigate, find waypoints, or track exact location
 - **Data Source:** Live from Miniblox game API
-- **Color:** Customizable theme
 
 #### Real-Time Clock
 
 Current time in 12-hour format with AM/PM indicator.
 
-- **Format:** HH:MM:SS AM/PM
+- **Format:** "HH:MM:SS AM/PM"
 - **Update Rate:** Every second
 - **Draggable:** ❌ No (fixed to bottom-right)
-- **Usage:** Quick time reference without clutter
-- **Color:** Customizable theme
+- **Usage:** Quick time reference without leaving fullscreen
 
 #### KeyStrokes Display
 
 Visual representation of your keyboard and mouse inputs.
 
-- **Keys shown:** W, A, S, D, Space, LMB (Left Mouse Button), RMB (Right Mouse Button)
-- **Real-time highlight:** Instant visual feedback on key press
+- **Keys shown:** W, A, S, D, Space, LMB, RMB
+- **Real-time highlight:** Instant visual feedback
 - **Draggable:** ✅ Yes
 - **Default Position:** Top-left (50px, 150px)
-- **Usage:** Perfect for streaming, recording, or input timing awareness
-- **Color:** Customizable theme
+- **Highlights:** Keys turn cyan when pressed
+- **Usage:** Perfect for streaming or input timing awareness
 
 ---
 
@@ -176,24 +188,31 @@ Visual representation of your keyboard and mouse inputs.
 
 #### Anti-AFK System
 
-Automatically prevents AFK timeout by simulating spacebar presses every 5 seconds.
+Automatically prevents AFK timeout by simulating spacebar presses.
 
-- **Action:** Simulates spacebar press
-- **Interval:** Every 5 seconds
+- **Action:** Simulates spacebar press every 5 seconds
 - **Display:** Live countdown timer
 - **Draggable:** ✅ Yes
 - **Default Position:** Top-left (50px, 290px)
+- **Format:** "🐧 Jumping in Xs"
 - **Usage:** Stay active in lobbies without manual input
-- **Color:** Customizable theme
 
 #### Block Party Requests
 
 Blocks incoming party invites and join requests.
 
 - **Action:** Silently rejects party requests
-- **Display:** Toggle on/off in Features menu
+- **Toggle:** On/off in Features menu
 - **Usage:** Avoid unwanted party invitations
-- **Status:** Shows in Features tab when enabled
+- **Log:** Blocked requests logged to console
+
+#### Auto Fullscreen
+
+Enter/exit fullscreen with one click.
+
+- **Toggle:** Special button (doesn't auto-enable)
+- **Usage:** Quick fullscreen toggle from menu
+- **Note:** Can also press F11 naturally
 
 ---
 
@@ -202,38 +221,34 @@ Blocks incoming party invites and join requests.
 Track how long you've been playing in your current session.
 
 - **Format:** HH:MM:SS
-- **Location:** About tab
+- **Location:** About tab in menu
 - **Update Rate:** Every second
 - **Persistent:** Resets on page reload
-- **Color:** Customizable theme
+- **Saves:** Automatically when you leave
 
 ---
 
 ## 🎨 Customization
 
-### Theme & Colors
+### Menu Keybind
 
-WaddleClient features a fully customizable color system:
-
-- **Hue Slider:** Adjust colors from 0-360° in Settings
-- **Live Preview:** See theme changes instantly on menu and crosshair
-- **Auto-Save:** Your theme preference is saved automatically
-- **All UI Elements:** Menu, counters, and crosshair all use your chosen color
-
-### Keybinds
-
-Customize your menu hotkey in the Settings tab:
+Change which key opens the Waddle menu.
 
 - **Default:** `\` (backslash)
-- **Easy to Change:** Click the keybind input and press any key
-- **Always Saved:** Your keybind preference persists
+- **How to Change:**
+  1. Open Waddle menu
+  2. Go to 🎨 Settings tab
+  3. Click on the keybind input
+  4. Press any key
+  5. Your choice is saved automatically
 
-### Layout Reset
+### Reset Counter Positions
 
-Reset all counter positions to defaults with one click:
+Restore all counters to default positions.
 
-- **Location:** Settings → Layout → Reset Counter Positions
-- **Useful for:** Recovering lost counters or starting fresh
+- **Location:** 🎨 Settings → Layout
+- **Button:** "🔄 Reset Counter Positions"
+- **Effect:** Returns FPS, Ping, Coords, Key Display, Anti-AFK to default positions
 
 ---
 
@@ -243,13 +258,13 @@ Reset all counter positions to defaults with one click:
 
 WaddleClient is optimized for minimal overhead:
 
-- **Single RAF Loop:** Efficient FPS calculation
-- **Direct DOM Updates:** Only update when values change
+- **Single RAF Loop:** Efficient coordinate and FPS updates
+- **Direct DOM Updates:** Only updates when values change
 - **Memory Efficient:** Active cleanup on page unload
-- **Lightweight:** ~600 lines of code
+- **Lightweight:** ~1500 lines of optimized code
 - **No Dependencies:** Zero external libraries
 
-**Performance Benchmarks:**
+**Performance Impact:**
 - FPS Counter: ~0.1% CPU usage
 - Coordinates: ~0.05% CPU usage
 - Ping Monitor: ~0.05% CPU usage
@@ -263,37 +278,49 @@ All settings are stored locally in your browser's localStorage:
 
 **Storage Key:** `waddle_settings` (JSON format)
 
-**Storage Structure:**
+**Stored Information:**
+- Enabled/disabled features
+- Custom menu keybind
+- Counter positions
+- Counter visibility states
+
+**Example Storage:**
 ```json
 {
-  "version": "5.9",
+  "version": "5.12",
   "features": {
-    "fps": false,
-    "ping": false,
-    "coords": false,
+    "fps": true,
+    "ping": true,
+    "coords": true,
     "realTime": false,
     "antiAfk": false,
-    "keyDisplay": false,
+    "keyDisplay": true,
     "disablePartyRequests": false
   },
+  "counterVisibility": {
+    "fps": true,
+    "ping": true,
+    "coords": true,
+    "keyDisplay": true,
+    "antiAfk": true
+  },
+  "menuKey": "\\",
   "positions": {
     "fps": { "left": "50px", "top": "80px" },
     "ping": { "left": "50px", "top": "220px" },
     "coords": { "left": "50px", "top": "360px" },
     "keyDisplay": { "left": "50px", "top": "150px" },
     "antiAfk": { "left": "50px", "top": "290px" }
-  },
-  "menuKey": "\\",
-  "customHue": 180
+  }
 }
 ```
 
 ### Game API Integration
 
-WaddleClient safely accesses the Miniblox game API via React fiber:
+WaddleClient safely accesses the Miniblox game API:
 
 - **Player Position:** `game.player.pos` (X, Y, Z coordinates)
-- **Game Object:** Accessed through React root detection
+- **Performance:** `game.resourceMonitor.filteredFPS` and `filteredPing`
 - **Safe Access:** Graceful fallback if game not loaded
 - **No Injection:** Pure read-only access to game state
 
@@ -319,28 +346,26 @@ WaddleClient safely accesses the Miniblox game API via React fiber:
 
 ### Menu Won't Open
 
-**Try these solutions:**
-
+**Solutions:**
 1. Check browser console (F12) for errors
 2. Refresh the page
 3. Ensure Tampermonkey is enabled for miniblox.io
-4. Verify the script is installed and active in your userscript manager
+4. Verify the script is installed and active
 
 **Debug steps:**
 - Open Developer Tools (F12)
-- Check the Console tab for any error messages
-- Check if the script is running
+- Check the Console tab for error messages
+- Verify script is running
 
 ### Counters Not Showing
 
-**Try these solutions:**
+**Solutions:**
+1. Make sure the feature is enabled (✓ checkmark in menu)
+2. Drag the counter back into view if it's off-screen
+3. Clear your browser cache
+4. Check if counters are hidden behind game elements
 
-1. Make sure the feature is enabled (look for ✓ in the menu)
-2. Click and drag the counter back into view if it's off-screen
-3. Clear your browser cache and reconfigure the script
-4. Check if counters are hidden behind other game elements
-
-**Check list:**
+**Checklist:**
 - Go to ⚙️ Features tab
 - Verify the feature has a ✓ checkmark
 - If not, click it to enable
@@ -348,63 +373,63 @@ WaddleClient safely accesses the Miniblox game API via React fiber:
 
 ### Coordinates Not Updating
 
-**Try these solutions:**
-
+**Solutions:**
 1. Make sure you're in an active game (not in menu)
 2. Refresh the page if you're still in lobby
-3. Verify the Coordinates feature is enabled (✓ checkmark)
+3. Verify Coordinates feature is enabled
 4. Check browser console for errors
 
-**What triggers coordinate updates:**
+**What triggers updates:**
 - You must be loaded into a game world
 - The game API must be accessible
-- Coordinates update every 100ms when enabled
+- Coordinates update every 100ms
 
 ### Crosshair Not Showing
 
-**Try these solutions:**
-
+**Solutions:**
 1. Refresh the page (Ctrl+R)
-2. Check if the crosshair is behind other UI elements
-3. Verify Miniblox game has loaded fully
-4. The crosshair is always enabled - no toggle needed
+2. Press F1 to toggle manually
+3. Press F5 to cycle visibility states
+4. Check if it's hidden behind menu
 
-**Note:** Crosshair color matches your chosen theme!
+**Remember:**
+- Crosshair is always on by default
+- F1 toggles it completely on/off
+- F5 cycles through 3 visibility states
+- Hides automatically in menus/pause screens
 
 ### Settings Not Saving
 
 **Possible causes & solutions:**
 
-1. **localStorage quota exceeded** → Clear some browser data
+1. **localStorage quota exceeded** → Clear browser data
 2. **Private/Incognito mode** → Disable and try again
 3. **Browser blocking storage** → Allow storage for miniblox.io
-4. **Check browser permissions** → Verify localStorage is enabled
+4. **Browser permissions** → Verify localStorage is enabled
 
 **How to clear localStorage:**
 1. Open Developer Tools (F12)
 2. Go to Application/Storage tab
 3. Find localhost in Storage
-4. Clear localStorage
+4. Click "Clear All"
 
 ### KeyStrokes Not Detecting
 
-**Try these solutions:**
-
-1. Close the menu (press `ESC`) - keys are ignored when menu is open
+**Solutions:**
+1. Close the menu (press `ESC`) - keys ignored when menu open
 2. Click on the game canvas to ensure focus
 3. Refresh the page
-4. Check for other scripts intercepting key events
+4. Check for conflicting scripts
 
-**Verify KeyDisplay is working:**
-- Enable the Key Display feature
+**Verify it's working:**
+- Enable Key Display feature
 - Press any WASD key
-- You should see the key highlight in real-time
+- Key should highlight instantly
 - If not, refresh the page
 
 ### Performance Issues
 
 **If you experience lag:**
-
 1. Disable unused counters (only enable what you need)
 2. Check for conflicting userscripts
 3. Close other browser tabs
@@ -413,87 +438,62 @@ WaddleClient safely accesses the Miniblox game API via React fiber:
 **Performance tips:**
 - Only enable features you actively use
 - FPS counter has minimal impact
-- Coordinates update efficiently every 100ms
+- Coordinates update efficiently
 - Key Display monitors events efficiently
-- Anti-AFK has negligible impact
+
+### Ping Shows "Only works in-game"
+
+This doesn't happen with ping, but if coordinate display shows this:
+
+**Solutions:**
+1. Make sure Coords feature is enabled
+2. Load into an actual game (not menu)
+3. Wait a moment for game API to load
+4. Refresh if stuck
 
 ---
 
 ## 📝 Changelog
 
-### [5.10] - 06/02/26
+### [5.12] - Current Version
 
-- Cleaned up code by roughly ≈39 lines
-- Rewrote the userscript header
+- ✨ Added NovaCore-style cyan crosshair system
+- 🎯 F1/F5 crosshair controls for toggle and cycling
+- 🔧 Consolidated RAF loop for better performance
+- 🛡️ Improved game API retry logic
+- 💾 Enhanced settings validation
+- 🎨 Simplified UI (crosshair design selection removed)
+- 📡 Ping color-coding (green/yellow/red)
+- 🧹 Better memory management and cleanup
+- 📊 Improved RAF consolidation for FPS & coords
 
-### [5.9] - 02/02/26
+### [5.11]
 
-#### Added
-- ✨ **Live Coordinates Display** - Real-time X, Y, Z position tracking
-- 📡 **Ping Monitor** - Network latency monitoring
-- 🎨 **Customizable Theme System** - Full hue slider (0-360°)
-- 🚫 **Block Party Requests** - Disable incoming party invites
+- Added safe game API access with retry logic
+- Debounced key display updates
+- Settings validation system
+- Enhanced toast notifications with severity levels
+- Counter visibility toggles
+- Improved interval cleanup
+- Better performance loop consolidation
 
-#### Changed
-- ⚡ Optimized coordinate update cycle (100ms refresh rate)
-- ⚡ Improved game API access with safer fiber detection
-- 📊 Enhanced feature card layout for new displays
+### [5.10]
 
-#### Result
-- More comprehensive gameplay information
-- Better navigation and waypoint tracking
-- Customizable color scheme for all UI elements
-- Control over unwanted party requests
-
----
-
-### [5.8] - 31/01/26
-
-#### Removed
-- ✂️ Hue slider - Removed continuous color customization
-- ✂️ Custom HUE storage - Simplified to preset themes only
-
-#### Added
-- 🔵 Dual Theme System (Cyan & Neon Green)
-- 🎨 Two-button theme selector in Settings
-- 🎯 Permanent cyan crosshair (never changes)
-
-#### Changed
-- ⚡ Reduced to ~520 lines of code
-- ⚡ Faster theme switching (no slider)
-- ⚡ Cleaner, more focused customization
-
----
-
-### [5.7] - 31/01/26
-
-#### Removed
-- ✂️ Fullscreen Button - Redundant (use F11 instead)
-
-#### Changed
-- ⚡ Reduced to ~550 lines of code
-
----
-
-### [5.6] - 31/01/26
-
-#### Removed
-- ✂️ All comments and Object.freeze()
-- ✂️ Console logs and error handling
-- ✂️ Debounce function and helper functions
-
-#### Changed
-- ⚡ **50% code reduction** (~1200 → ~600 lines)
+- Code optimization (~39 lines reduction)
+- Userscript header rewrite
 
 ---
 
 ## 👥 Credits
 
-**Original Creator**  
-[@Scripter132132](https://github.com/Scripter132132) - Initial development and core architecture
+**Original Creator**
+- [@Scripter132132](https://github.com/Scripter132132) - Initial development and core architecture
 
-**Enhanced & Maintained By**  
-[@TheM1ddleM1n](https://github.com/TheM1ddleM1n) - UI redesign, performance optimization, crosshair system, coordinates system, party blocking, and ongoing development
+**Enhanced & Maintained By**
+- [@TheM1ddleM1n](https://github.com/TheM1ddleM1n) - UI redesign, performance optimization, crosshair system, and ongoing development
+
+**Inspired By**
+- NovaCore team - Crosshair system inspiration
 
 **Special Thanks**
 - Miniblox community for feedback and testing
@@ -511,11 +511,11 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ### Found a Bug? 🐛
 
-[Create a bug report](https://github.com/TheM1ddleM1n/WaddleClient/issues/new?labels=bug&title=Bug%20Report)
+[Create a bug report](https://github.com/TheM1ddleM1n/WaddleClient/issues/new?labels=bug)
 
 ### Have an Idea? 💡
 
-[Suggest a feature](https://github.com/TheM1ddleM1n/WaddleClient/issues/new?labels=enhancement&title=Enhancement%20Request)
+[Suggest a feature](https://github.com/TheM1ddleM1n/WaddleClient/issues/new?labels=enhancement)
 
 ### Want to Contribute?
 
@@ -531,53 +531,53 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 A: Yes! The script is open source and runs only locally in your browser. No external data is sent anywhere.
 
-**Q: Why are coordinates useful?**
+**Q: Why use cyan for everything?**
 
-A: Coordinates help you navigate, find specific waypoints, meet other players at exact locations, or record position data for future reference.
+A: Cyan provides excellent visibility on both light and dark backgrounds while maintaining a cohesive, professional look throughout the client.
 
 **Q: How often do coordinates update?**
 
-A: Coordinates update every 100ms (10 times per second) for smooth, real-time position tracking.
+A: Every 100ms (10 times per second) for smooth, real-time position tracking.
 
-**Q: Can I customize the theme?**
+**Q: Can I change the menu key?**
 
-A: Yes! Use the hue slider in Settings to customize all UI colors from 0-360°. Your choice is saved automatically.
+A: Yes! Go to 🎨 Settings tab and click the keybind input to set your preferred key.
 
-**Q: Which features are most useful?**
+**Q: Which features work in menus?**
 
-A: All features complement each other! FPS counter for performance, Coordinates for navigation, Ping for connection quality, Key Display for awareness, Anti-AFK for lobbies, Block Party RQ to avoid invites, and Session Timer for tracking playtime.
+A: All counters work in menus. The crosshair automatically hides. To show it in menus, press F1.
 
-**Q: Can I modify the script?**
+**Q: Can I move the counters?**
 
-A: Absolutely! It's MIT licensed - fork it and make improvements!
+A: Yes! Click and drag any counter to reposition it. Positions auto-save.
 
-**Q: How do I update?**
+**Q: How do I reset counter positions?**
 
-A: Tampermonkey will notify you of updates automatically.
+A: Go to 🎨 Settings → Layout and click "Reset Counter Positions."
+
+**Q: Is there a performance impact?**
+
+A: Minimal (~0.4% CPU). WaddleClient is heavily optimized.
 
 **Q: Where is my data stored?**
 
-A: All settings are stored locally in your browser's localStorage.
+A: All settings are stored locally in your browser's localStorage. No cloud sync.
 
 **Q: Can I use multiple counters at once?**
 
 A: Yes! Enable as many features as you'd like.
 
-**Q: Will this affect my game performance?**
+**Q: Does this affect game performance?**
 
-A: WaddleClient has minimal performance impact (less than 0.4% CPU).
+A: No. WaddleClient runs in the browser layer and doesn't affect Miniblox performance.
 
 **Q: Can I use this on other websites?**
 
 A: WaddleClient is specifically designed for Miniblox only.
 
-**Q: Do coordinates work in all game modes?**
+**Q: Do I need an account?**
 
-A: Yes! Coordinates update in any game mode where you're actively playing.
-
-**Q: What does Block Party RQ do?**
-
-A: It silently rejects incoming party invites and join requests so you won't be bothered.
+A: No. WaddleClient works completely client-side.
 
 ---
 
@@ -591,5 +591,5 @@ A: It silently rejects incoming party invites and join requests so you won't be 
 ---
 
 <p align="center">
-  <b>Made by the Waddle Team. Enjoy!</b> ⭐
+  <b>Made by the Waddle Team. Enjoy! 🐧</b>
 </p>
