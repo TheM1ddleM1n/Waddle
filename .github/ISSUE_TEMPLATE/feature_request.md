@@ -1,31 +1,49 @@
 ---
 name: Feature Request
 about: Suggest an idea for WaddleClient
-title: '[Feature] '
+title: "[Feature] "
 labels: enhancement
-assignees: 'TheM1ddleM1n'
+assignees: TheM1ddleM1n
 ---
 
-## Description
-A clear and concise description of what you want to see in this client
+## 📌 Description
+Provide a clear and concise description of the feature you would like to see added to WaddleClient.
 
-## Why is this useful?
-Explain the problem this feature would solve or benefit.
+---
 
-## Proposed Solution
-How do you envision this feature working? (Optional but helpful!)
+## 🎯 Why Is This Useful?
+Explain the problem this feature would solve or the benefit it would provide to users.
 
-## Alternatives Considered
-Are there other ways to achieve this? What are the pros/cons?
+---
 
-## Additional Context
-- Related features or examples from other tools
-- Priority level (nice-to-have, important, critical)
+## 💡 Proposed Solution (Optional)
+Describe how you envision this feature working.  
+Include details such as:
+- How it would be activated
+- Any settings or customisation options
+- Expected behaviour in-game
 
-## Example Use Case
-Describe a ingame scenario where this feature would help you.
+---
 
-## Checklist
-- [ ] This feature hasn't been requested before
-- [ ] This aligns with WaddleClient's scope (via javascript and tampermonkey)
-- [ ] I've thought about how this would affect performance (WITH NO BOTTLENECKS)
+## 🔄 Alternatives Considered
+Have you considered other ways to achieve this?  
+List possible alternatives and their pros/cons.
+
+---
+
+## 🧩 Additional Context
+- Related features or examples from other tools/clients
+- Screenshots or mockups (if applicable)
+- Priority level: `Nice-to-have` / `Important` / `Critical`
+
+---
+
+## 🎮 Example Use Case
+Describe an in-game scenario where this feature would be helpful.
+
+---
+
+## ✅ Checklist
+- [ ] This feature has not been requested before
+- [ ] This aligns with Waddle’s scope (JavaScript / Tampermonkey / Games API)
+- [ ] I have considered performance impact (no bottlenecks introduced)
