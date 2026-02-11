@@ -375,7 +375,6 @@ const SCRIPT_VERSION = '5.14';
             counter.style.background = 'transparent';
             counter.style.boxShadow = 'none';
             counter.style.border = 'none';
-            counter.style.textShadow = '0 0 8px var(--waddle-primary), 0 0 15px var(--waddle-primary)';
             counter.style.fontSize = '1.5rem';
             counter.style.padding = '0';
         } else {
