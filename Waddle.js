@@ -1,17 +1,20 @@
 // ==UserScript==
-// @name         WaddleClient
-// @namespace    https://github.com/TheM1ddleM1n/WaddleClient
-// @version      5.12
+// @name         Waddle
+// @namespace    https://github.com/TheM1ddleM1n/Waddle
+// @version      5.14
 // @description  The ultimate Miniblox enhancement suite with advanced API features!
 // @author       The Dream Team! (Scripter & TheM1ddleM1n)
-// @icon         https://raw.githubusercontent.com/TheM1ddleM1n/WaddleClient/refs/heads/main/Penguin.png
+// @icon         https://raw.githubusercontent.com/TheM1ddleM1n/Waddle/refs/heads/main/Penguin.png
 // @match        https://miniblox.io/
 // @run-at       document-start
 // ==/UserScript==
 
-(function() {
+const SCRIPT_VERSION = '5.14';
+
+(function () {
     'use strict';
-    document.title = 'Waddle Client For Miniblox!';
+
+    document.title = `🐧 Waddle v${SCRIPT_VERSION} • Miniblox`;
 
     const TIMING = {
         HINT_TEXT_DURATION: 4000,
@@ -27,7 +30,6 @@
 
     const SETTINGS_KEY = 'waddle_settings';
     const DEFAULT_MENU_KEY = '\\';
-    const SCRIPT_VERSION = '5.12';
     const THEME_COLOR = "#00FFFF";
 
     const DEFAULT_POSITIONS = {
@@ -82,7 +84,7 @@
             if (game && game.chat && typeof game.chat.addChat === "function") {
                 clearInterval(waitForGame);
                 game.chat.addChat({
-                    text: `\\${THEME_COLOR}\\[WaddleClient]\\reset\\ Hello! Thank you for using Waddle Client v${SCRIPT_VERSION}!`
+                    text: `\\${THEME_COLOR}\\[WaddleClient]\\reset\\ Hello! Thank you for using Waddle v${SCRIPT_VERSION}!`
                 });
             }
         }, 500);
@@ -883,12 +885,12 @@
         const suggestBtn = document.createElement('button');
         suggestBtn.className = 'waddle-menu-btn';
         suggestBtn.textContent = 'Suggest Feature';
-        suggestBtn.onclick = () => window.open(`https://github.com/TheM1ddleM1n/WaddleClient/issues/new?labels=enhancement`, '_blank');
+        suggestBtn.onclick = () => window.open(`https://github.com/TheM1ddleM1n/Waddle/issues/new?labels=enhancement`, '_blank');
         linksGrid.appendChild(suggestBtn);
         const bugBtn = document.createElement('button');
         bugBtn.className = 'waddle-menu-btn';
         bugBtn.textContent = 'Report Bug';
-        bugBtn.onclick = () => window.open(`https://github.com/TheM1ddleM1n/WaddleClient/issues/new?labels=bug`, '_blank');
+        bugBtn.onclick = () => window.open(`https://github.com/TheM1ddleM1n/Waddle/issues/new?labels=bug`, '_blank');
         linksGrid.appendChild(bugBtn);
         linksCard.appendChild(linksGrid);
         aboutContent.appendChild(linksCard);
