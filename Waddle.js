@@ -17,7 +17,6 @@ const SCRIPT_VERSION = '5.15';
     document.title = `🐧 Waddle v${SCRIPT_VERSION} • Miniblox`;
 
     const TIMING = {
-        HINT_TEXT_DURATION: 4000,
         FPS_UPDATE_INTERVAL: 500,
         PING_UPDATE_INTERVAL: 2000,
         COORDS_UPDATE_INTERVAL: 100,
