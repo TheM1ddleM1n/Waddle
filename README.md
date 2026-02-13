@@ -8,7 +8,7 @@
 ![License](https://img.shields.io/badge/license-MIT-39ff14?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-39ff14?style=for-the-badge)
 
-**Real-time monitoring • Crosshair customization • Game utilities • Zero performance impact**
+**Real-time monitoring • Crosshair customization • Game utilities • Zero Bottlenecks**
 
 [Installation](#-quick-start) • [Features](#-core-features) • [Support](https://github.com/TheM1ddleM1n/Waddle/issues)
 
