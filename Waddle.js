@@ -20,9 +20,7 @@ const SCRIPT_VERSION = '5.15';
         FPS_UPDATE_INTERVAL: 500,
         PING_UPDATE_INTERVAL: 2000,
         COORDS_UPDATE_INTERVAL: 100,
-        SAVE_DEBOUNCE: 500,
         TOAST_DURATION: 3000,
-        KEY_HIGHLIGHT_DURATION: 150,
         SESSION_UPDATE: 1000,
         GAME_API_RETRY_INTERVAL: 500
     };
@@ -121,7 +119,6 @@ const SCRIPT_VERSION = '5.15';
     let state = {
         features: { fps: false, ping: false, coords: false, realTime: false, antiAfk: false, keyDisplay: false, disablePartyRequests: false },
         menuKey: DEFAULT_MENU_KEY,
-        activeTab: 'features',
         counters: { fps: null, realTime: null, ping: null, coords: null, antiAfk: null, keyDisplay: null },
         menuOverlay: null,
         tabButtons: {},
@@ -133,7 +130,6 @@ const SCRIPT_VERSION = '5.15';
         keyboardHandler: null,
         startTime: Date.now(),
         antiAfkCountdown: 5,
-        currentPing: 0,
         lastPingColor: '#00FF00',
         keys: { w: false, a: false, s: false, d: false, space: false, lmb: false, rmb: false },
         crosshairContainer: null,
@@ -331,7 +327,7 @@ const SCRIPT_VERSION = '5.15';
             console.error('[Waddle] Cannot create counter - document.body not ready');
             return null;
         }
-        const { id, counterType, initialText, position = { left: '50px', top: '50px' }, isDraggable = true } = config;
+        const { id, initialText, position = { left: '50px', top: '50px' }, isDraggable = true } = config;
         const counter = document.createElement('div');
         counter.id = id;
         counter.className = 'counter';
@@ -343,7 +339,7 @@ const SCRIPT_VERSION = '5.15';
         counter.appendChild(textSpan);
         counter._textSpan = textSpan;
         document.body.appendChild(counter);
-        if (isDraggable && counterType) setupDragging(counter, counterType);
+        if (isDraggable) setupDragging(counter);
         return counter;
     }
 
@@ -355,7 +351,6 @@ const SCRIPT_VERSION = '5.15';
         if (type === 'realTime') {
             counter = createCounterElement({
                 id: config.id,
-                counterType: null,
                 initialText: config.text,
                 position: { left: '0px', top: '0px' },
                 isDraggable: false
@@ -373,7 +368,6 @@ const SCRIPT_VERSION = '5.15';
         } else {
             counter = createCounterElement({
                 id: config.id,
-                counterType: type,
                 initialText: config.text,
                 position: config.pos,
                 isDraggable: config.draggable
@@ -388,7 +382,7 @@ const SCRIPT_VERSION = '5.15';
         state.counters[counterType]?._textSpan && (state.counters[counterType]._textSpan.textContent = text);
     }
 
-    function setupDragging(element, counterType) {
+    function setupDragging(element) {
         let rafId = null;
         const onMouseDown = (e) => {
             element._dragging = true;
@@ -480,7 +474,6 @@ const SCRIPT_VERSION = '5.15';
         const game = gameRef.game;
         if (!game) return;
         const ping = Math.round(game.resourceMonitor?.filteredPing || 0);
-        state.currentPing = ping;
 
         let pingColor = '#00FF00';
         if (ping > 100) pingColor = '#FFFF00';
@@ -564,7 +557,7 @@ const SCRIPT_VERSION = '5.15';
         container.appendChild(spaceBox);
         document.body.appendChild(container);
         container._keyBoxes = keyBoxes;
-        setupDragging(container, 'keyDisplay');
+        setupDragging(container);
         state.counters.keyDisplay = container;
         return container;
     }
@@ -774,7 +767,6 @@ const SCRIPT_VERSION = '5.15';
     }
 
     function switchTab(tabName) {
-        state.activeTab = tabName;
         Object.values(state.tabButtons).forEach(btn => btn.classList.remove('active'));
         Object.values(state.tabContent).forEach(content => content.classList.remove('active'));
         state.tabButtons[tabName].classList.add('active');
