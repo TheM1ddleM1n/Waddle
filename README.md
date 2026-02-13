@@ -463,6 +463,12 @@ Cyan (#00FFFF) is chosen because:
 
 ---
 
+## 📄 License
+
+WaddleClient is licensed under the **MIT License** — fully open-source and free to use, modify, and distribute.
+
+[📖 View License](https://github.com/TheM1ddleM1n/WaddleClient/blob/main/LICENSE)
+
 ## 🔗 Useful Links
 
 <div align="center">
