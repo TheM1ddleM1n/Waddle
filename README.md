@@ -4,7 +4,7 @@
 
 ### The Ultimate Miniblox Enhancement Suite
 
-![Version](https://img.shields.io/badge/version-5.15-39ff14?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-5.16-39ff14?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-39ff14?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-39ff14?style=for-the-badge)
 
@@ -21,12 +21,12 @@
 Transform your Miniblox experience with professional monitoring and utility features. Built by the Dream Team, optimized for performance, and professionally designed
 
 | Feature | Benefit |
-|---------|---------|
+|---------|----------|
 | 🎯 **Crosshair** | Lag-free aiming with full visibility control |
-| 📊 **Live Performance Metrics** | Monitor FPS, ping, and coordinates in real-time |
+| 📊 **Live Performance Metrics** | Monitor FPS & Ping together in real-time |
 | ⚡ **Minimal Overhead** | ~0.4% CPU usage — play without limits! |
 | 💾 **Auto-Saving Settings** | Your preferences are always remembered |
-| 🔧 **Zero Dependencies** | Lightweight script (~1023 lines, zero bloat) |
+| 🔧 **Zero Dependencies** | Lightweight script (~1009 lines, zero bloat) |
 
 ---
 
@@ -56,53 +56,49 @@ Choose your browser:
 <tr>
 <td width="50%">
 
-#### 🐧 FPS Counter
-- **Live performance tracking** with 500ms updates
-- **Instant lag detection** for competitive play
-- Draggable to any screen position
-- 🟢 Works in miniblox servers
+#### 📈 Performance Monitor (NEW!)
+- **Unified FPS & Ping display** in one counter
+- **Smart color-coding**:
+  - 🟢 Green: FPS 60+ & Ping <100ms
+  - 🟡 Yellow: FPS 30-59 or Ping 100-200ms
+  - 🔴 Red: FPS <30 or Ping >200ms
+- **Less screen clutter** — one counter instead of two
+- **Instant status** at a glance
 
 </td>
 <td width="50%">
 
-#### 📡 Ping Monitor
-- **Color-coded status** (Green/Yellow/Red)
-- **2-second updates** for accuracy
-- Real-time network diagnostics
-- Perfect for finding good servers
+#### 📍 Live Coordinates
+- **X, Y, Z position tracking** (10 updates/sec)
+- **Navigation aid** for waypoint hunting
+- **Precise location data** from the game API
+- **Ultra-responsive** updates
 
 </td>
 </tr>
 <tr>
 <td width="50%">
 
-#### 📍 Live Coordinates
-- **X, Y, Z position tracking** (10 updates/sec)
-- **Navigation aid** for waypoint hunting
-- Precise location data from the game API
-- Ultra-responsive updates
+#### 🕐 Real-Time Clock
+- **12-hour format** with AM/PM
+- **Bottom-right placement** (fixed, always visible)
+- **Never miss a beat** without alt-tabbing
+- **Perfect for content creators**
 
 </td>
 <td width="50%">
 
-#### 🕐 Real-Time Clock
-- **12-hour format** with AM/PM
-- **Bottom-right placement** (fixed, always visible)
-- Never miss a beat without alt-tabbing
-- Perfect for content creators
+#### ⌨️ Key Display
+- **WASD movement keys** with instant highlighting
+- **Mouse buttons** (LMB/RMB) detection
+- **Space bar** tracking
+- **Cyan highlight** on key press — perfect for streaming!
 
 </td>
 </tr>
 </table>
 
 ### 🎮 Input & Awareness Tools
-
-#### ⌨️ Key Display
-See your inputs in real-time with visual feedback:
-- **WASD movement keys** with instant highlighting
-- **Mouse buttons** (LMB/RMB) detection
-- **Space bar** tracking
-- Cyan highlight on key press — perfect for streaming!
 
 #### 🐧 Anti-AFK System
 Never get kicked for inactivity:
@@ -166,8 +162,7 @@ Simply **click and drag** any counter to move it. Positions auto-save when you r
 Enable exactly what you need:
 
 **Display Counters**
-- [ ] FPS Monitor
-- [ ] Ping Tracker
+- [ ] FPS & Ping (Unified)
 - [ ] Coordinates
 - [ ] Clock
 - [ ] Key Display
@@ -182,13 +177,12 @@ Enable exactly what you need:
 
 ### Incredibly Lightweight
 ```
-FPS Counter:    0.1% CPU
-Coordinates:    0.05% CPU
-Ping Monitor:   0.05% CPU
-Key Display:    0.2% CPU
-Anti-AFK:       0.01% CPU
-────────────────────────
-Total Impact:   ~0.4% CPU ⚡
+Performance Counter:  0.15% CPU
+Coordinates:          0.05% CPU
+Key Display:          0.2% CPU
+Anti-AFK:             0.01% CPU
+────────────────────────────
+Total Impact:         ~0.4% CPU ⚡
 ```
 
 ### Why So Fast?
@@ -196,7 +190,7 @@ Total Impact:   ~0.4% CPU ⚡
 - ✅ Direct DOM updates (only when values change)
 - ✅ Zero external dependencies
 - ✅ Aggressive memory cleanup
-- ✅ **~1023 lines of lean, optimized code** (zero dead code!)
+- ✅ **~1009 lines of lean, optimized code** (zero dead code!)
 
 ### Browser Compatibility
 
@@ -258,16 +252,16 @@ Total Impact:   ~0.4% CPU ⚡
 
 </details>
 
-### Problem: Coordinates Not Updating
+### Problem: Performance Counter Not Updating
 
 <details>
 <summary><b>💡 Solution</b></summary>
 
 ✅ **Requirements:**
 - You must be in an **active game** (not menu/lobby)
-- Coordinates feature must be **enabled** with a ✓ checkmark
+- Performance feature must be **enabled** with a ✓ checkmark
 - Game API must be accessible
-- Updates occur every 100ms when in-game
+- Updates occur every 500ms when in-game
 
 If still stuck: Refresh page → Try again
 
@@ -380,7 +374,7 @@ Cyan (#00FFFF) is chosen because:
 <details>
 <summary><b>Q: Which features work in menus?</b></summary>
 
-**All counters** (FPS, Ping, Coords, Clock, Key Display) work everywhere. The crosshair auto-hides in menus unless you press F1 to force show it.
+**All counters** (Performance, Coords, Clock, Key Display) work everywhere. The crosshair auto-hides in menus unless you press F1 to force show it.
 
 </details>
 
@@ -394,7 +388,7 @@ Cyan (#00FFFF) is chosen because:
 <details>
 <summary><b>Q: Does this affect Miniblox performance?</b></summary>
 
-❌ **No impact!** WaddleClient runs in the browser layer and doesn't touch the game engine. You get full FPS with or without it.
+❌ **No impact!** Waddle runs in the browser layer and doesn't touch the game engine. You get full FPS with or without it.
 
 </details>
 
@@ -409,6 +403,18 @@ Cyan (#00FFFF) is chosen because:
 <summary><b>Q: Do I need a Miniblox account?</b></summary>
 
 ❌ **No!** Waddle works 100% client-side. No account, login, or tracking needed.
+
+</details>
+
+<details>
+<summary><b>Q: What's different about the unified FPS & Ping counter?</b></summary>
+
+✅ **Better than separate counters:**
+- Single color indicator shows overall performance health
+- Less screen clutter — one draggable counter instead of two
+- Smart logic: Red if EITHER FPS is bad OR Ping is bad
+- Faster updates with single RAF loop
+- Still shows both metrics clearly: "FPS: 60 | PING: 45ms"
 
 </details>
 
@@ -432,13 +438,21 @@ Cyan (#00FFFF) is chosen because:
 
 ## 📝 Current Version
 
-### [5.15] - Code Optimization
-- ✨ Removed all dead code (unused properties & parameters)
-- 🎯 Reduced to ~1023 lines of pure functionality
-- ⚡ ~27% code reduction with zero performance impact
-- 🔧 Cleaned up state object and TIMING constants
-- 💾 Optimized function signatures
-- Simplifiction of css 
+### [5.16] - Unified Performance Counter
+- ✨ **Combined FPS & Ping into one unified counter**
+- 🎨 Smart color-coding based on both metrics
+- ⚡ Reduced overhead with single RAF loop
+- 📊 Cleaner UI with less visual clutter
+- 🔧 Optimized state management
+- 💾 Same data, better organized
+
+### [5.15]
+- Code optimization and dead code removal
+- Reduced to ~1023 lines of pure functionality
+- ~27% code reduction with zero performance impact
+- Cleaned up state object and TIMING constants
+- Optimized function signatures
+- CSS simplification
 
 ### [5.14]
 - ✨ NovaCore-style cyan crosshair with 3 visibility states
