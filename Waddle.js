@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Waddle
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
-// @version      5.15
+// @version      5.16
 // @description  The ultimate Miniblox enhancement suite with advanced API features!
 // @author       The Dream Team! (Scripter & TheM1ddleM1n)
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/Waddle/refs/heads/main/Penguin.png
@@ -9,7 +9,7 @@
 // @run-at       document-start
 // ==/UserScript==
 
-const SCRIPT_VERSION = '5.15';
+const SCRIPT_VERSION = '5.16';
 
 (function () {
     'use strict';
@@ -17,8 +17,7 @@ const SCRIPT_VERSION = '5.15';
     document.title = `🐧 Waddle v${SCRIPT_VERSION} • Miniblox`;
 
     const TIMING = {
-        FPS_UPDATE_INTERVAL: 500,
-        PING_UPDATE_INTERVAL: 2000,
+        PERFORMANCE_UPDATE_INTERVAL: 500,
         COORDS_UPDATE_INTERVAL: 100,
         TOAST_DURATION: 3000,
         SESSION_UPDATE: 1000,
@@ -30,16 +29,14 @@ const SCRIPT_VERSION = '5.15';
     const THEME_COLOR = "#00FFFF";
 
     const DEFAULT_POSITIONS = {
-        fps: { left: '50px', top: '80px' },
+        performance: { left: '50px', top: '80px' },
         keyDisplay: { left: '50px', top: '150px' },
-        ping: { left: '50px', top: '220px' },
-        coords: { left: '50px', top: '360px' },
+        coords: { left: '50px', top: '220px' },
         antiAfk: { left: '50px', top: '290px' }
     };
 
     const COUNTER_CONFIGS = {
-        fps: { id: 'fps-counter', text: 'FPS: 0', pos: DEFAULT_POSITIONS.fps, draggable: true },
-        ping: { id: 'ping-counter', text: 'PING: 0ms', pos: DEFAULT_POSITIONS.ping, draggable: true },
+        performance: { id: 'performance-counter', text: 'FPS: -- | PING: 0ms', pos: DEFAULT_POSITIONS.performance, draggable: true },
         coords: { id: 'coords-counter', text: '📍 X: 0 Y: 0 Z: 0', pos: DEFAULT_POSITIONS.coords, draggable: true },
         realTime: { id: 'real-time-counter', text: '00:00:00 AM', pos: null, draggable: false },
         antiAfk: { id: 'anti-afk-counter', text: '🐧 Jumping in 5s', pos: DEFAULT_POSITIONS.antiAfk, draggable: true }
@@ -117,20 +114,20 @@ const SCRIPT_VERSION = '5.15';
     })();
 
     let state = {
-        features: { fps: false, ping: false, coords: false, realTime: false, antiAfk: false, keyDisplay: false, disablePartyRequests: false },
+        features: { performance: false, coords: false, realTime: false, antiAfk: false, keyDisplay: false, disablePartyRequests: false },
         menuKey: DEFAULT_MENU_KEY,
-        counters: { fps: null, realTime: null, ping: null, coords: null, antiAfk: null, keyDisplay: null },
+        counters: { performance: null, realTime: null, coords: null, antiAfk: null, keyDisplay: null },
         menuOverlay: null,
         tabButtons: {},
         tabContent: {},
         rafId: null,
-        lastFpsUpdate: 0,
+        lastPerformanceUpdate: 0,
         lastCoordsUpdate: 0,
         intervals: {},
         keyboardHandler: null,
         startTime: Date.now(),
         antiAfkCountdown: 5,
-        lastPingColor: '#00FF00',
+        lastPerformanceColor: '#00FF00',
         keys: { w: false, a: false, s: false, d: false, space: false, lmb: false, rmb: false },
         crosshairContainer: null,
         f5PressCount: 0,
@@ -393,19 +390,13 @@ const SCRIPT_VERSION = '5.15';
     function startPerformanceLoop() {
         if (state.rafId) return;
         const loop = (currentTime) => {
-            if (!state.features.fps && !state.features.coords) {
+            if (!state.features.performance && !state.features.coords) {
                 state.rafId = null;
                 return;
             }
-            if (currentTime - state.lastFpsUpdate >= TIMING.FPS_UPDATE_INTERVAL && state.counters.fps) {
-                const game = gameRef.game;
-                if (game) {
-                    const fps = game.resourceMonitor?.filteredFPS;
-                    const inGame = game.inGame;
-                    const fpsText = inGame ? Math.round(fps).toString() : "Only works in-game";
-                    updateCounterText('fps', `FPS: ${fpsText}`);
-                }
-                state.lastFpsUpdate = currentTime;
+            if (currentTime - state.lastPerformanceUpdate >= TIMING.PERFORMANCE_UPDATE_INTERVAL && state.counters.performance) {
+                updatePerformanceCounter();
+                state.lastPerformanceUpdate = currentTime;
             }
             if (currentTime - state.lastCoordsUpdate >= TIMING.COORDS_UPDATE_INTERVAL && state.counters.coords) {
                 const game = gameRef.game;
@@ -430,6 +421,31 @@ const SCRIPT_VERSION = '5.15';
         }
     }
 
+    function updatePerformanceCounter() {
+        const game = gameRef.game;
+        if (!game || !state.counters.performance) return;
+
+        const fps = Math.round(game.resourceMonitor?.filteredFPS || 0);
+        const ping = Math.round(game.resourceMonitor?.filteredPing || 0);
+        const inGame = game.inGame;
+
+        // Determine color based on FPS OR Ping
+        let color = '#00FF00'; // Green - good
+        if (fps < 30 || ping > 200) color = '#FF0000'; // Red - bad
+        else if (fps < 60 || ping > 100) color = '#FFFF00'; // Yellow - okay
+
+        // Update display
+        const fpsText = inGame ? fps.toString() : '--';
+        updateCounterText('performance', `FPS: ${fpsText} | PING: ${ping}ms`);
+
+        // Update styling only if color changed
+        if (state.lastPerformanceColor !== color) {
+            state.counters.performance.style.borderColor = color;
+            state.counters.performance.style.boxShadow = `0 0 15px ${color}, inset 0 0 10px ${color}`;
+            state.lastPerformanceColor = color;
+        }
+    }
+
     function updateRealTime() {
         if (!state.counters.realTime) return;
         const now = new Date();
@@ -439,24 +455,6 @@ const SCRIPT_VERSION = '5.15';
         const ampm = hours >= 12 ? 'PM' : 'AM';
         hours = hours % 12 || 12;
         updateCounterText('realTime', `${hours}:${minutes}:${seconds} ${ampm}`);
-    }
-
-    function updatePingCounter() {
-        const game = gameRef.game;
-        if (!game) return;
-        const ping = Math.round(game.resourceMonitor?.filteredPing || 0);
-
-        let pingColor = '#00FF00';
-        if (ping > 100) pingColor = '#FFFF00';
-        if (ping > 200) pingColor = '#FF0000';
-
-        if (state.counters.ping && state.lastPingColor !== pingColor) {
-            state.counters.ping.style.borderColor = pingColor;
-            state.counters.ping.style.boxShadow = `0 0 15px ${pingColor}, inset 0 0 10px ${pingColor}`;
-            state.lastPingColor = pingColor;
-        }
-
-        updateCounterText('ping', `PING: ${ping}ms`);
     }
 
     function pressSpace() {
@@ -603,28 +601,17 @@ const SCRIPT_VERSION = '5.15';
     }
 
     const featureManager = {
-        fps: {
+        performance: {
             start: () => {
-                if (!state.counters.fps) createCounter('fps');
+                if (!state.counters.performance) createCounter('performance');
                 startPerformanceLoop();
-            },
-            stop: () => stopPerformanceLoop(),
-            cleanup: () => {
-                if (state.counters.fps) { state.counters.fps.remove(); state.counters.fps = null; }
-            }
-        },
-        ping: {
-            start: () => {
-                if (!state.counters.ping) createCounter('ping');
-                updatePingCounter();
-                state.intervals.ping = setInterval(updatePingCounter, TIMING.PING_UPDATE_INTERVAL);
+                updatePerformanceCounter();
             },
             stop: () => {
-                clearInterval(state.intervals.ping);
-                state.intervals.ping = null;
+                stopPerformanceLoop();
             },
             cleanup: () => {
-                if (state.counters.ping) { state.counters.ping.remove(); state.counters.ping = null; }
+                if (state.counters.performance) { state.counters.performance.remove(); state.counters.performance = null; }
             }
         },
         coords: {
@@ -779,8 +766,7 @@ const SCRIPT_VERSION = '5.15';
         featuresContent.className = 'waddle-tab-content active';
         featuresContent.setAttribute('data-content', 'features');
         featuresContent.appendChild(createFeatureCard('📊 Display', [
-            { label: 'FPS', feature: 'fps', icon: '🐧' },
-            { label: 'Ping', feature: 'ping', icon: '🐧' },
+            { label: 'FPS & Ping', feature: 'performance', icon: '🐧' },
             { label: 'Coords', feature: 'coords', icon: '🐧' },
             { label: 'Clock', feature: 'realTime', icon: '🐧' },
             { label: 'Key Display', feature: 'keyDisplay', icon: '🐧' }
