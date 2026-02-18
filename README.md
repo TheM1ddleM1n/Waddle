@@ -32,7 +32,7 @@ Transform your Miniblox experience with professional monitoring and utility feat
 
 ## 🚀 Quick Start
 
-### 1️⃣ Install Userscript Manager
+### 1️⃣ Install using your Userscript Manager
 Choose your browser:
 - **Chrome/Edge/Opera**: [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
 - **Firefox**: [Tampermonkey](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/) or [Violentmonkey](https://addons.mozilla.org/en-US/firefox/addon/violentmonkey/)
@@ -56,7 +56,7 @@ Choose your browser:
 <tr>
 <td width="50%">
 
-#### 📈 Performance Monitor (NEW!)
+#### 📈 Performance Monitor
 - **Unified FPS & Ping display** in one counter
 - **Smart color-coding**:
   - 🟢 Green: FPS 60+ & Ping <100ms
@@ -136,6 +136,7 @@ Never get kicked for inactivity:
 | `F1` | **Toggle Crosshair** | — |
 | `F5` | **Cycle Crosshair States** | — |
 | `ESC` | **Close Menu** | — |
+I will remove the F1/F5 and Esc Keys as they are not even used (for changing crosshair as there is only one)
 
 ### Customizing Your Setup
 
