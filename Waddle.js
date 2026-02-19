@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Waddle
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
-// @version      5.17
+// @version      5.22
 // @description  The ultimate Miniblox enhancement suite with advanced API features!
 // @author       The Dream Team! (Scripter & TheM1ddleM1n)
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/Waddle/refs/heads/main/Penguin.png
@@ -9,23 +9,16 @@
 // @run-at       document-start
 // ==/UserScript==
 
-const SCRIPT_VERSION = '5.17';
+const SCRIPT_VERSION = '5.22';
 
 (function () {
     'use strict';
 
     document.title = `🐧 Waddle v${SCRIPT_VERSION} • Miniblox`;
 
-    const TIMING = {
-        PERFORMANCE_UPDATE_INTERVAL: 500,
-        COORDS_UPDATE_INTERVAL: 100,
-        TOAST_DURATION: 3000,
-        SESSION_UPDATE: 1000,
-        GAME_API_RETRY_INTERVAL: 500
-    };
-
     const SETTINGS_KEY = 'waddle_settings';
     const THEME_COLOR = "#00FFFF";
+    const MAX_GAME_ATTEMPTS = 10; // 5.20: promoted to top-level const
 
     const DEFAULT_POSITIONS = {
         performance: { left: '50px', top: '80px' },
@@ -37,22 +30,21 @@ const SCRIPT_VERSION = '5.17';
     const COUNTER_CONFIGS = {
         performance: { id: 'performance-counter', text: 'FPS: -- | PING: 0ms', pos: DEFAULT_POSITIONS.performance, draggable: true },
         coords: { id: 'coords-counter', text: '📍 X: 0 Y: 0 Z: 0', pos: DEFAULT_POSITIONS.coords, draggable: true },
-        realTime: { id: 'real-time-counter', text: '00:00:00 AM', pos: null, draggable: false },
+        realTime: { id: 'real-time-counter', text: '00:00:00 AM' }, // 5.20: removed dead pos/draggable fields
         antiAfk: { id: 'anti-afk-counter', text: '🐧 Jumping in 5s', pos: DEFAULT_POSITIONS.antiAfk, draggable: true }
     };
 
     const gameRef = {
         _game: null,
         _attempts: 0,
-        MAX_ATTEMPTS: 10,
         _lastTryTime: 0,
 
         get game() {
             if (this._game) return this._game;
-            if (this._attempts >= this.MAX_ATTEMPTS) return null;
+            if (this._attempts >= MAX_GAME_ATTEMPTS) return null;
 
             const now = Date.now();
-            if (now - this._lastTryTime < TIMING.GAME_API_RETRY_INTERVAL) return null;
+            if (now - this._lastTryTime < 500) return null; // 5.20: inlined TIMING value
             this._lastTryTime = now;
 
             const reactRoot = document.querySelector("#react");
@@ -71,7 +63,7 @@ const SCRIPT_VERSION = '5.17';
         }
     };
 
-    (function() {
+    (function () {
         const waitForGame = setInterval(() => {
             const game = gameRef.game;
             if (game && game.chat && typeof game.chat.addChat === "function") {
@@ -84,7 +76,7 @@ const SCRIPT_VERSION = '5.17';
     })();
 
     (function () {
-        'use strict';
+        // 5.22: removed redundant inner 'use strict'
         let clicks = 0;
         const CPS_MIN = 11;
         const CPS_MAX = 15;
@@ -92,9 +84,7 @@ const SCRIPT_VERSION = '5.17';
         const COOLDOWN = 2000;
         let lastWarningTime = 0;
 
-        document.addEventListener("mousedown", () => {
-            clicks++;
-        });
+        document.addEventListener("mousedown", () => { clicks++; });
 
         setInterval(() => {
             const cps = clicks;
@@ -107,7 +97,6 @@ const SCRIPT_VERSION = '5.17';
                 game.chat.addChat({
                     text: "\\#FF0000\\[Waddle Detector]\\reset\\ Fast clicks were detected."
                 });
-                console.log(`%c[Waddle Detector]%c Fast Clicks Detected (CPS: ${cps})`, "color:#FF0000;font-weight:bold;", "color:white;");
             }
         }, CHECK_INTERVAL);
     })();
@@ -116,13 +105,13 @@ const SCRIPT_VERSION = '5.17';
         features: { performance: false, coords: false, realTime: false, antiAfk: false, keyDisplay: false, disablePartyRequests: false },
         counters: { performance: null, realTime: null, coords: null, antiAfk: null, keyDisplay: null },
         menuOverlay: null,
-        tabButtons: {},
-        tabContent: {},
+        // 5.21: removed state.activeTab — never read
+        // 5.22: removed state.keyboardHandler — fire-and-forget
+        // 5.20: removed state.tabButtons/tabContent — now via querySelectorAll
         rafId: null,
         lastPerformanceUpdate: 0,
         lastCoordsUpdate: 0,
         intervals: {},
-        keyboardHandler: null,
         startTime: Date.now(),
         antiAfkCountdown: 5,
         lastPerformanceColor: '#00FF00',
@@ -130,7 +119,7 @@ const SCRIPT_VERSION = '5.17';
         crosshairContainer: null
     };
 
-    function showToast(message, type = 'info', duration = TIMING.TOAST_DURATION) {
+    function showToast(message, type = 'info', duration = 3000) { // 5.20: inlined TIMING.TOAST_DURATION
         if (!document.body) return;
         document.getElementById('waddle-toast')?.remove();
         const toast = document.createElement('div');
@@ -146,7 +135,7 @@ const SCRIPT_VERSION = '5.17';
 
         const colorSet = colors[type] || colors.info;
         toast.style.borderColor = colorSet.border;
-        toast.style.background = `${colorSet.bg}`;
+        toast.style.background = colorSet.bg;
         toast.style.color = colorSet.border;
 
         document.body.appendChild(toast);
@@ -170,19 +159,11 @@ const SCRIPT_VERSION = '5.17';
     }
 
     function saveSettings() {
-        const settings = {
+        // 5.20: removed positions — never restored
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify({
             version: SCRIPT_VERSION,
-            features: state.features,
-            positions: Object.fromEntries(
-                Object.entries(state.counters)
-                    .filter(([_, counter]) => counter)
-                    .map(([type, counter]) => [
-                        type,
-                        { left: counter.style.left, top: counter.style.top }
-                    ])
-            )
-        };
-        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+            features: state.features
+        }));
     }
 
     function injectStyles() {
@@ -198,7 +179,6 @@ const SCRIPT_VERSION = '5.17';
   --fw: 700;
 }
 .css-xhoozx, [class*="crosshair"], img[src*="crosshair"] { display: none !important; }
-.fixed-base { position: fixed; user-select: none; }
 #waddle-menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.9); backdrop-filter: blur(15px); z-index: 9999; display: flex; flex-direction: column; align-items: center; padding-top: 40px; opacity: 0; pointer-events: none; }
 #waddle-menu-overlay.show { opacity: 1; pointer-events: auto; }
 #waddle-menu-header { font-size: 3rem; font-weight: var(--fw); color: var(--p); text-shadow: 0 0 8px var(--p), var(--shadow); margin-bottom: 30px; }
@@ -244,13 +224,6 @@ const SCRIPT_VERSION = '5.17';
         return c;
     }
 
-    function updateCrosshair() {
-        if (state.crosshairContainer) {
-            state.crosshairContainer.innerHTML = '';
-            state.crosshairContainer.appendChild(createCrosshair());
-        }
-    }
-
     function checkCrosshair() {
         if (!state.crosshairContainer) return;
         const defaultCrosshair = document.querySelector('.css-xhoozx');
@@ -265,54 +238,32 @@ const SCRIPT_VERSION = '5.17';
     }
 
     function initializeCrosshairModule() {
-        if (!document.body) {
-            console.error('[Waddle] Cannot initialize crosshair - document.body not ready');
-            return false;
-        }
+        if (!document.body) return false;
         state.crosshairContainer = document.createElement('div');
         state.crosshairContainer.id = 'waddle-crosshair-container';
+        state.crosshairContainer.appendChild(createCrosshair()); // 5.18: inlined updateCrosshair()
         document.body.appendChild(state.crosshairContainer);
-        updateCrosshair();
         new MutationObserver(() => { requestAnimationFrame(checkCrosshair); }).observe(document.body, { childList: true, subtree: true });
         return true;
     }
 
-    function createCounterElement(config) {
-        if (!document.body) {
-            console.error('[Waddle] Cannot create counter - document.body not ready');
-            return null;
-        }
-        const { id, initialText, position = { left: '50px', top: '50px' }, isDraggable = true } = config;
-        const counter = document.createElement('div');
-        counter.id = id;
-        counter.className = 'counter';
-        counter.style.left = position.left;
-        counter.style.top = position.top;
-        const textSpan = document.createElement('span');
-        textSpan.className = 'counter-time-text';
-        textSpan.textContent = initialText;
-        counter.appendChild(textSpan);
-        counter._textSpan = textSpan;
-        document.body.appendChild(counter);
-        if (isDraggable) setupDragging(counter);
-        return counter;
-    }
-
+    // 5.21: merged createCounterElement + createCounter into one function
     function createCounter(type) {
+        if (!document.body) return null;
         const config = COUNTER_CONFIGS[type];
         if (!config) return null;
 
-        let counter;
+        const counter = document.createElement('div');
+        counter.id = config.id;
+        counter.className = 'counter';
+
+        const textSpan = document.createElement('span');
+        textSpan.className = 'counter-time-text';
+        textSpan.textContent = config.text;
+        counter.appendChild(textSpan);
+        counter._textSpan = textSpan;
+
         if (type === 'realTime') {
-            counter = createCounterElement({
-                id: config.id,
-                initialText: config.text,
-                position: { left: '0px', top: '0px' },
-                isDraggable: false
-            });
-            if (!counter) return null;
-            counter.style.left = 'auto';
-            counter.style.top = 'auto';
             counter.style.right = '30px';
             counter.style.bottom = '30px';
             counter.style.background = 'transparent';
@@ -321,14 +272,12 @@ const SCRIPT_VERSION = '5.17';
             counter.style.fontSize = '1.5rem';
             counter.style.padding = '0';
         } else {
-            counter = createCounterElement({
-                id: config.id,
-                initialText: config.text,
-                position: config.pos,
-                isDraggable: config.draggable
-            });
-            if (!counter) return null;
+            counter.style.left = config.pos.left;
+            counter.style.top = config.pos.top;
+            if (config.draggable) setupDragging(counter);
         }
+
+        document.body.appendChild(counter);
         state.counters[type] = counter;
         return counter;
     }
@@ -350,7 +299,7 @@ const SCRIPT_VERSION = '5.17';
                 element._dragging = false;
                 element.classList.remove('dragging');
                 if (rafId) cancelAnimationFrame(rafId);
-                saveSettings();
+                // 5.21: removed saveSettings() — positions no longer persisted
             }
         };
         const onMouseMove = (e) => {
@@ -381,18 +330,15 @@ const SCRIPT_VERSION = '5.17';
                 state.rafId = null;
                 return;
             }
-            if (currentTime - state.lastPerformanceUpdate >= TIMING.PERFORMANCE_UPDATE_INTERVAL && state.counters.performance) {
+            if (currentTime - state.lastPerformanceUpdate >= 500 && state.counters.performance) { // 5.20: inlined
                 updatePerformanceCounter();
                 state.lastPerformanceUpdate = currentTime;
             }
-            if (currentTime - state.lastCoordsUpdate >= TIMING.COORDS_UPDATE_INTERVAL && state.counters.coords) {
+            if (currentTime - state.lastCoordsUpdate >= 100 && state.counters.coords) { // 5.20: inlined
                 const game = gameRef.game;
                 if (game && game.player) {
                     const pos = game.player.pos;
-                    if (pos) {
-                        const coordText = `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`;
-                        updateCounterText('coords', coordText);
-                    }
+                    if (pos) updateCounterText('coords', `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`);
                 }
                 state.lastCoordsUpdate = currentTime;
             }
@@ -420,8 +366,7 @@ const SCRIPT_VERSION = '5.17';
         if (fps < 30 || ping > 200) color = '#FF0000';
         else if (fps < 60 || ping > 100) color = '#FFFF00';
 
-        const fpsText = inGame ? fps.toString() : '--';
-        updateCounterText('performance', `FPS: ${fpsText} | PING: ${ping}ms`);
+        updateCounterText('performance', `FPS: ${inGame ? fps : '--'} | PING: ${ping}ms`);
 
         if (state.lastPerformanceColor !== color) {
             state.counters.performance.style.borderColor = color;
@@ -453,10 +398,7 @@ const SCRIPT_VERSION = '5.17';
     }
 
     function createKeyDisplay() {
-        if (!document.body) {
-            console.error('[Waddle] Cannot create key display - document.body not ready');
-            return null;
-        }
+        if (!document.body) return null;
         const container = document.createElement('div');
         container.id = 'key-display-container';
         container.className = 'key-display-container';
@@ -478,7 +420,6 @@ const SCRIPT_VERSION = '5.17';
             box.textContent = text;
             box.style.gridColumn = col;
             box.style.gridRow = row;
-            box._key = key;
             grid.appendChild(box);
             keyBoxes[key] = box;
         });
@@ -490,20 +431,17 @@ const SCRIPT_VERSION = '5.17';
         const lmbBox = document.createElement('div');
         lmbBox.className = 'key-box mouse-box';
         lmbBox.textContent = 'LMB';
-        lmbBox._key = 'lmb';
         mouseRow.appendChild(lmbBox);
         keyBoxes.lmb = lmbBox;
         const rmbBox = document.createElement('div');
         rmbBox.className = 'key-box mouse-box';
         rmbBox.textContent = 'RMB';
-        rmbBox._key = 'rmb';
         mouseRow.appendChild(rmbBox);
         keyBoxes.rmb = rmbBox;
         const spaceBox = document.createElement('div');
         spaceBox.className = 'key-box space-box';
         spaceBox.textContent = 'SPACE';
         spaceBox.style.marginTop = '6px';
-        spaceBox._key = 'space';
         keyBoxes.space = spaceBox;
         container.appendChild(grid);
         container.appendChild(mouseRow);
@@ -524,18 +462,12 @@ const SCRIPT_VERSION = '5.17';
     function setupKeyDisplayListeners() {
         const keyDownListener = (e) => {
             if (state.menuOverlay?.classList.contains('show')) return;
-            const key = e.key.toLowerCase();
-            if (key in state.keys) {
-                state.keys[key] = true;
-                updateKeyDisplay(key, true);
-            }
+            const key = e.key === ' ' ? 'space' : e.key.toLowerCase(); // 5.18: fixed space bar
+            if (key in state.keys) { state.keys[key] = true; updateKeyDisplay(key, true); }
         };
         const keyUpListener = (e) => {
-            const key = e.key.toLowerCase();
-            if (key in state.keys) {
-                state.keys[key] = false;
-                updateKeyDisplay(key, false);
-            }
+            const key = e.key === ' ' ? 'space' : e.key.toLowerCase(); // 5.18: fixed space bar
+            if (key in state.keys) { state.keys[key] = false; updateKeyDisplay(key, false); }
         };
         const mouseDownListener = (e) => {
             if (e.button === 0) { state.keys.lmb = true; updateKeyDisplay('lmb', true); }
@@ -556,12 +488,9 @@ const SCRIPT_VERSION = '5.17';
         if (!game) return;
         if (game.party && !game.party._waddleOriginalInvoke) {
             game.party._waddleOriginalInvoke = game.party.invoke;
-            game.party.invoke = function(method, ...args) {
+            game.party.invoke = function (method, ...args) {
                 const blockedMethods = ['acceptPartyInvite', 'rejectPartyInvite', 'requestToJoinParty', 'respondToPartyRequest', 'inviteToParty'];
-                if (blockedMethods.includes(method)) {
-                    console.log(`[Waddle] Blocked party request: ${method}`);
-                    return;
-                }
+                if (blockedMethods.includes(method)) return;
                 return this._waddleOriginalInvoke?.(method, ...args);
             };
         }
@@ -581,20 +510,16 @@ const SCRIPT_VERSION = '5.17';
                 startPerformanceLoop();
                 updatePerformanceCounter();
             },
-            stop: () => stopPerformanceLoop(),
-            cleanup: () => {
-                if (state.counters.performance) { state.counters.performance.remove(); state.counters.performance = null; }
-            }
+            stop: () => { if (!state.features.coords) stopPerformanceLoop(); }, // 5.18: fixed RAF loop bug
+            cleanup: () => { if (state.counters.performance) { state.counters.performance.remove(); state.counters.performance = null; } }
         },
         coords: {
             start: () => {
                 if (!state.counters.coords) createCounter('coords');
                 startPerformanceLoop();
             },
-            stop: () => stopPerformanceLoop(),
-            cleanup: () => {
-                if (state.counters.coords) { state.counters.coords.remove(); state.counters.coords = null; }
-            }
+            stop: () => { if (!state.features.performance) stopPerformanceLoop(); }, // 5.18: fixed RAF loop bug
+            cleanup: () => { if (state.counters.coords) { state.counters.coords.remove(); state.counters.coords = null; } }
         },
         realTime: {
             start: () => {
@@ -603,9 +528,7 @@ const SCRIPT_VERSION = '5.17';
                 state.intervals.realTime = setInterval(updateRealTime, 1000);
             },
             stop: () => { clearInterval(state.intervals.realTime); state.intervals.realTime = null; },
-            cleanup: () => {
-                if (state.counters.realTime) { state.counters.realTime.remove(); state.counters.realTime = null; }
-            }
+            cleanup: () => { if (state.counters.realTime) { state.counters.realTime.remove(); state.counters.realTime = null; } }
         },
         antiAfk: {
             start: () => {
@@ -615,23 +538,18 @@ const SCRIPT_VERSION = '5.17';
                 state.intervals.antiAfk = setInterval(() => {
                     state.antiAfkCountdown--;
                     updateAntiAfkCounter();
-                    if (state.antiAfkCountdown <= 0) {
-                        pressSpace();
-                        state.antiAfkCountdown = 5;
-                    }
+                    if (state.antiAfkCountdown <= 0) { pressSpace(); state.antiAfkCountdown = 5; }
                 }, 1000);
             },
             stop: () => { clearInterval(state.intervals.antiAfk); state.intervals.antiAfk = null; },
-            cleanup: () => {
-                if (state.counters.antiAfk) { state.counters.antiAfk.remove(); state.counters.antiAfk = null; }
-            }
+            cleanup: () => { if (state.counters.antiAfk) { state.counters.antiAfk.remove(); state.counters.antiAfk = null; } }
         },
         keyDisplay: {
             start: () => {
                 if (!state.counters.keyDisplay) createKeyDisplay();
                 setupKeyDisplayListeners();
             },
-            stop: () => {},
+            // 5.21: removed empty stop: () => {}
             cleanup: () => {
                 if (state.counters.keyDisplay) { state.counters.keyDisplay.remove(); state.counters.keyDisplay = null; }
                 Object.keys(state.keys).forEach(key => { state.keys[key] = false; });
@@ -655,15 +573,6 @@ const SCRIPT_VERSION = '5.17';
         }
         saveSettings();
         return newState;
-    }
-
-    function resetCounterPositions() {
-        Object.entries(DEFAULT_POSITIONS).forEach(([type, pos]) => {
-            const counter = state.counters[type];
-            if (counter) Object.assign(counter.style, pos);
-        });
-        saveSettings();
-        showToast('Positions Reset! 🐧', 'success');
     }
 
     function createFeatureCard(title, features) {
@@ -690,18 +599,18 @@ const SCRIPT_VERSION = '5.17';
         return card;
     }
 
+    // 5.20: simplified tab system using querySelectorAll + dataset
     function switchTab(tabName) {
-        Object.values(state.tabButtons).forEach(btn => btn.classList.remove('active'));
-        Object.values(state.tabContent).forEach(content => content.classList.remove('active'));
-        state.tabButtons[tabName].classList.add('active');
-        state.tabContent[tabName].classList.add('active');
+        document.querySelectorAll('.waddle-tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tabName);
+        });
+        document.querySelectorAll('.waddle-tab-content').forEach(content => {
+            content.classList.toggle('active', content.dataset.content === tabName);
+        });
     }
 
     function createMenu() {
-        if (!document.body) {
-            console.error('[Waddle] Cannot create menu - document.body not ready');
-            return null;
-        }
+        if (!document.body) return null;
         const menuOverlay = document.createElement('div');
         menuOverlay.id = 'waddle-menu-overlay';
         const menuHeader = document.createElement('div');
@@ -710,20 +619,20 @@ const SCRIPT_VERSION = '5.17';
         menuOverlay.appendChild(menuHeader);
         const tabsContainer = document.createElement('div');
         tabsContainer.id = 'waddle-tabs';
+
+        // 5.19: Settings tab removed — Features and About only
         const tabConfigs = [
             { name: 'features', label: '⚙️ Features' },
-            { name: 'settings', label: '🎨 Settings' },
             { name: 'about', label: 'ℹ️ About' }
         ];
-        tabConfigs.forEach(({ name, label }) => {
+        tabConfigs.forEach(({ name, label }, i) => {
             const btn = document.createElement('button');
             btn.className = 'waddle-tab-btn';
-            if (name === 'features') btn.classList.add('active');
+            if (i === 0) btn.classList.add('active');
             btn.setAttribute('data-tab', name);
             btn.textContent = label;
             btn.onclick = () => switchTab(name);
             tabsContainer.appendChild(btn);
-            state.tabButtons[name] = btn;
         });
         menuOverlay.appendChild(tabsContainer);
         const menuContent = document.createElement('div');
@@ -744,24 +653,6 @@ const SCRIPT_VERSION = '5.17';
             { label: 'Block Party RQ', feature: 'disablePartyRequests', icon: '🐧' }
         ]));
         menuContent.appendChild(featuresContent);
-        state.tabContent.features = featuresContent;
-
-        // Settings tab
-        const settingsContent = document.createElement('div');
-        settingsContent.className = 'waddle-tab-content';
-        settingsContent.setAttribute('data-content', 'settings');
-        const layoutCard = document.createElement('div');
-        layoutCard.className = 'waddle-card';
-        layoutCard.innerHTML = '<div class="waddle-card-header">📐 Layout</div>';
-        const resetBtn = document.createElement('button');
-        resetBtn.className = 'waddle-menu-btn';
-        resetBtn.style.width = '100%';
-        resetBtn.textContent = '🔄 Reset Counter Positions';
-        resetBtn.addEventListener('click', resetCounterPositions);
-        layoutCard.appendChild(resetBtn);
-        settingsContent.appendChild(layoutCard);
-        menuContent.appendChild(settingsContent);
-        state.tabContent.settings = settingsContent;
 
         // About tab
         const aboutContent = document.createElement('div');
@@ -772,39 +663,30 @@ const SCRIPT_VERSION = '5.17';
         timerCard.style.textAlign = 'center';
         timerCard.innerHTML = `
             <div class="waddle-card-header" style="justify-content: center;">⏱️ Session Timer</div>
-            <div id="waddle-session-timer" style="
-                font-size: 2.5rem;
-                font-weight: 900;
-                color: var(--waddle-primary);
-                font-family: 'Courier New', monospace;
-                text-shadow: 0 0 10px rgba(0,255,255,0.5);
-                margin-top: 8px;
-            ">00:00:00</div>
+            <div id="waddle-session-timer" style="font-size:2.5rem;font-weight:900;color:var(--waddle-primary);font-family:'Courier New',monospace;text-shadow:0 0 10px rgba(0,255,255,0.5);margin-top:8px;">00:00:00</div>
         `;
         aboutContent.appendChild(timerCard);
         const creditsCard = document.createElement('div');
         creditsCard.className = 'waddle-card';
         creditsCard.innerHTML = `
             <div class="waddle-card-header">Credits</div>
-            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <img src="https://avatars.githubusercontent.com/Scripter132132" width="32" height="32" style="border-radius: 50%; box-shadow: 0 0 8px rgba(0,255,255,0.35);">
-                    <div style="flex: 1;">
-                        <div style="color: #00ffff; font-size: 0.75rem; font-weight: 600;">Original Creator</div>
-                        <a href="https://github.com/Scripter132132" target="_blank" style="color: #aaa; font-size: 0.85rem; text-decoration: none;">@Scripter132132</a>
+            <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <img src="https://avatars.githubusercontent.com/Scripter132132" width="32" height="32" style="border-radius:50%;box-shadow:0 0 8px rgba(0,255,255,0.35);">
+                    <div style="flex:1;">
+                        <div style="color:#00ffff;font-size:0.75rem;font-weight:600;">Original Creator</div>
+                        <a href="https://github.com/Scripter132132" target="_blank" style="color:#aaa;font-size:0.85rem;text-decoration:none;">@Scripter132132</a>
                     </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <img src="https://avatars.githubusercontent.com/TheM1ddleM1n" width="32" height="32" style="border-radius: 50%; box-shadow: 0 0 8px rgba(243,156,18,0.35);">
-                    <div style="flex: 1;">
-                        <div style="color: #f39c12; font-size: 0.75rem; font-weight: 600;">Enhanced By</div>
-                        <a href="https://github.com/TheM1ddleM1n" target="_blank" style="color: #aaa; font-size: 0.85rem; text-decoration: none;">@TheM1ddleM1n</a>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <img src="https://avatars.githubusercontent.com/TheM1ddleM1n" width="32" height="32" style="border-radius:50%;box-shadow:0 0 8px rgba(243,156,18,0.35);">
+                    <div style="flex:1;">
+                        <div style="color:#f39c12;font-size:0.75rem;font-weight:600;">Enhanced By</div>
+                        <a href="https://github.com/TheM1ddleM1n" target="_blank" style="color:#aaa;font-size:0.85rem;text-decoration:none;">@TheM1ddleM1n</a>
                     </div>
                 </div>
             </div>
-            <div style="font-size: 0.7rem; color: #555; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(0, 255, 255, 0.15); text-align: center;">
-                v${SCRIPT_VERSION} • MIT License • Built with ❤️
-            </div>
+            <div style="font-size:0.7rem;color:#555;margin-top:12px;padding-top:12px;border-top:1px solid rgba(0,255,255,0.15);text-align:center;">v${SCRIPT_VERSION} • MIT License • Built with ❤️</div>
         `;
         aboutContent.appendChild(creditsCard);
         const linksCard = document.createElement('div');
@@ -825,7 +707,6 @@ const SCRIPT_VERSION = '5.17';
         linksCard.appendChild(linksGrid);
         aboutContent.appendChild(linksCard);
         menuContent.appendChild(aboutContent);
-        state.tabContent.about = aboutContent;
 
         menuOverlay.appendChild(menuContent);
         document.body.appendChild(menuOverlay);
@@ -838,8 +719,9 @@ const SCRIPT_VERSION = '5.17';
         state.menuOverlay?.classList.toggle('show');
     }
 
+    // 5.22: fire-and-forget — removed state.keyboardHandler storage
     function setupKeyboardHandler() {
-        state.keyboardHandler = (e) => {
+        window.addEventListener('keydown', (e) => {
             if (e.key === '\\') {
                 e.preventDefault();
                 toggleMenu();
@@ -847,8 +729,7 @@ const SCRIPT_VERSION = '5.17';
                 e.preventDefault();
                 state.menuOverlay.classList.remove('show');
             }
-        };
-        window.addEventListener('keydown', state.keyboardHandler);
+        });
     }
 
     function restoreSavedState() {
@@ -857,25 +738,18 @@ const SCRIPT_VERSION = '5.17';
         const settings = JSON.parse(saved);
         if (typeof settings.features === 'object' && settings.features !== null) {
             Object.keys(state.features).forEach(key => {
-                if (typeof settings.features[key] === 'boolean') {
-                    state.features[key] = settings.features[key];
-                }
+                if (typeof settings.features[key] === 'boolean') state.features[key] = settings.features[key];
             });
         }
     }
 
     function globalCleanup() {
-        console.log('[Waddle] Cleaning up resources..');
         Object.entries(state.features).forEach(([feature, enabled]) => {
-            if (enabled) {
-                featureManager[feature]?.cleanup?.();
-                featureManager[feature]?.stop?.();
-            }
+            if (enabled) { featureManager[feature]?.cleanup?.(); featureManager[feature]?.stop?.(); }
         });
-        if (state.keyboardHandler) window.removeEventListener('keydown', state.keyboardHandler);
+        // 5.22: removed keyboardHandler removeEventListener — fire-and-forget
         Object.entries(state.intervals).forEach(([_, id]) => { if (id) clearInterval(id); });
         if (state.rafId) cancelAnimationFrame(state.rafId);
-        console.log('[Waddle] Cleanup complete!');
     }
 
     window.addEventListener('beforeunload', globalCleanup);
@@ -888,10 +762,7 @@ const SCRIPT_VERSION = '5.17';
                 document.addEventListener('DOMContentLoaded', resolve, { once: true });
             } else {
                 const checkBody = setInterval(() => {
-                    if (document.body && document.head) {
-                        clearInterval(checkBody);
-                        resolve();
-                    }
+                    if (document.body && document.head) { clearInterval(checkBody); resolve(); }
                 }, 50);
             }
         });
@@ -899,10 +770,7 @@ const SCRIPT_VERSION = '5.17';
 
     async function safeInit() {
         try {
-            console.log(`[Waddle] Waiting for DOM...`);
             await ensureDOMReady();
-            console.log(`[Waddle] Initializing v${SCRIPT_VERSION}...`);
-
             injectStyles();
             restoreSavedState();
 
@@ -910,28 +778,19 @@ const SCRIPT_VERSION = '5.17';
             if (!menuCreated) throw new Error('Failed to create menu');
 
             setupKeyboardHandler();
-            const crosshairOk = initializeCrosshairModule();
-            if (!crosshairOk) console.warn('[Waddle] Crosshair module failed to initialize');
-
+            initializeCrosshairModule();
             showToast(`Press \\ to open menu!`, 'info');
 
             setTimeout(() => {
+                // 5.22: removed per-feature try/catch — single outer handler sufficient
                 Object.entries(state.features).forEach(([feature, enabled]) => {
-                    if (enabled && featureManager[feature]?.start) {
-                        try {
-                            featureManager[feature].start();
-                        } catch (error) {
-                            console.error(`[Waddle] Failed to start feature '${feature}':`, error);
-                        }
-                    }
+                    if (enabled && featureManager[feature]?.start) featureManager[feature].start();
                 });
             }, 100);
 
             updateSessionTimer();
-            state.intervals.sessionTimer = setInterval(updateSessionTimer, TIMING.SESSION_UPDATE);
-            console.log('[Waddle] Initialization completed!');
+            setInterval(updateSessionTimer, 1000); // 5.22: fire-and-forget, removed state.intervals.sessionTimer
         } catch (error) {
-            console.error('[Waddle] Initialization failed:', error);
             showToast('Waddle failed to initialize! Check console.', 'error');
         }
     }
