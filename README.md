@@ -4,7 +4,7 @@
 
 ### The Ultimate Miniblox Enhancement Suite
 
-![Version](https://img.shields.io/badge/version-5.16-39ff14?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-5.17-39ff14?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-39ff14?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-39ff14?style=for-the-badge)
 
@@ -18,7 +18,7 @@
 
 ## ✨ Why Waddle?
 
-Transform your Miniblox experience with professional monitoring and utility features. Built by the Dream Team, optimized for performance, and professionally designed
+Transform your Miniblox experience with professional monitoring and utility features. Built by the Dream Team, optimized for performance, and professionally designed.
 
 | Feature | Benefit |
 |---------|----------|
@@ -26,7 +26,7 @@ Transform your Miniblox experience with professional monitoring and utility feat
 | 📊 **Live Performance Metrics** | Monitor FPS & Ping together in real-time |
 | ⚡ **Minimal Overhead** | ~0.4% CPU usage — play without limits! |
 | 💾 **Auto-Saving Settings** | Your preferences are always remembered |
-| 🔧 **Zero Dependencies** | Lightweight script (~1009 lines, zero bloat) |
+| 🔧 **Zero Dependencies** | Lightweight script, zero bloat |
 
 ---
 
@@ -105,14 +105,12 @@ Never get kicked for inactivity:
 - Simulates spacebar presses every 5 seconds
 - Live countdown timer display
 - Stay in lobbies without manual input
-- Completely automated and silent (no kick for suspicious movements!)
+- Completely automated and silent
 
 ### 🎯 Crosshair System
 
-**NovaCore-inspired cyan crosshair** with full control:
+**NovaCore-inspired cyan crosshair** — always on, no configuration needed:
 - ✅ **Always-on by default** — never miss a shot
-- **F1**: Toggle on/off manually
-- **F5**: Cycle through 3 visibility states (always on / always off / menu-only)
 - Auto-hides in pause screens and menus
 - Bright cyan (#00FFFF) for maximum visibility
 
@@ -130,27 +128,15 @@ Never get kicked for inactivity:
 
 ### Keyboard Shortcuts
 
-| Key | Action | Customizable |
-|-----|--------|:---:|
-| `\` (backslash) | **Open/Close Menu** | ✅ Yes |
-| `F1` | **Toggle Crosshair** | — |
-| `F5` | **Cycle Crosshair States** | — |
-| `ESC` | **Close Menu** | — |
-I will remove the F1/F5 and Esc Keys as they are not even used (for changing crosshair as there is only one)
+| Key | Action |
+|-----|--------|
+| `\` (backslash) | **Open/Close Menu** |
+| `ESC` | **Close Menu** |
 
-### Customizing Your Setup
-
-#### Change Menu Key
-1. Open Waddle menu (`\`)
-2. Go to 🎨 **Settings** tab
-3. Click the keybind input
-4. Press your preferred key
-5. ✅ Saved automatically!
-
-#### Reposition Counters
+### Reposition Counters
 Simply **click and drag** any counter to move it. Positions auto-save when you release!
 
-#### Reset Everything
+### Reset Everything
 1. Go to 🎨 **Settings → Layout**
 2. Click "🔄 Reset Counter Positions"
 3. All counters return to default positions
@@ -191,7 +177,6 @@ Total Impact:         ~0.4% CPU ⚡
 - ✅ Direct DOM updates (only when values change)
 - ✅ Zero external dependencies
 - ✅ Aggressive memory cleanup
-- ✅ **~1009 lines of lean, optimized code** (zero dead code!)
 
 ### Browser Compatibility
 
@@ -218,7 +203,6 @@ Total Impact:         ~0.4% CPU ⚡
 ```json
 {
   "enabled_features": "Your feature preferences",
-  "menu_keybind": "Your chosen menu key",
   "counter_positions": "Where you placed each counter"
 }
 ```
@@ -273,12 +257,9 @@ If still stuck: Refresh page → Try again
 <details>
 <summary><b>💡 Solution</b></summary>
 
-Try these in order:
-1. Press **F1** to toggle manually
-2. Press **F5** to cycle visibility states (3 options)
-3. Verify you're not in a pause menu
-4. **Refresh** the page
-5. Check if hidden behind game UI
+1. Verify you're not in a pause menu
+2. **Refresh** the page
+3. Check if hidden behind game UI
 
 </details>
 
@@ -306,7 +287,7 @@ Try these in order:
 <details>
 <summary><b>💡 Solution</b></summary>
 
-1. **Close the menu** (press ESC) — keys are ignored when menu open
+1. **Close the menu** (press ESC) — keys are ignored when menu is open
 2. **Click the game canvas** to ensure focus
 3. **Refresh** the page
 4. Check for conflicting userscripts
@@ -361,21 +342,14 @@ Cyan (#00FFFF) is chosen because:
 <details>
 <summary><b>Q: How often do coordinates update?</b></summary>
 
-**Every 100ms** (10 times per second) for smooth, real-time position tracking. No lag, no compromise!
-
-</details>
-
-<details>
-<summary><b>Q: Can I change the menu key?</b></summary>
-
-✅ **Yes!** Go to 🎨 **Settings → Controls** and click the keybind input. Press any key you want. Saved instantly!
+**Every 100ms** (10 times per second) for smooth, real-time position tracking.
 
 </details>
 
 <details>
 <summary><b>Q: Which features work in menus?</b></summary>
 
-**All counters** (Performance, Coords, Clock, Key Display) work everywhere. The crosshair auto-hides in menus unless you press F1 to force show it.
+**All counters** (Performance, Coords, Clock, Key Display) work everywhere. The crosshair auto-hides in menus.
 
 </details>
 
@@ -389,7 +363,7 @@ Cyan (#00FFFF) is chosen because:
 <details>
 <summary><b>Q: Does this affect Miniblox performance?</b></summary>
 
-❌ **No impact!** Waddle runs in the browser layer and doesn't touch the game engine. You get full FPS with or without it.
+❌ **No impact!** Waddle runs in the browser layer and doesn't touch the game engine.
 
 </details>
 
@@ -414,7 +388,6 @@ Cyan (#00FFFF) is chosen because:
 - Single color indicator shows overall performance health
 - Less screen clutter — one draggable counter instead of two
 - Smart logic: Red if EITHER FPS is bad OR Ping is bad
-- Faster updates with single RAF loop
 - Still shows both metrics clearly: "FPS: 60 | PING: 45ms"
 
 </details>
@@ -426,7 +399,7 @@ Cyan (#00FFFF) is chosen because:
 ### Found an Issue? 🐛
 [→ Report Bug](https://github.com/TheM1ddleM1n/Waddle/issues/new?labels=bug)
 
-### Do you have ideas of what should be added? 💡
+### Have ideas? 💡
 [→ Suggest Feature](https://github.com/TheM1ddleM1n/Waddle/issues/new?labels=enhancement)
 
 ### Want to Contribute? 🚀
@@ -439,29 +412,32 @@ Cyan (#00FFFF) is chosen because:
 
 ## 📝 Current Version
 
+### [5.17] - Simplified Controls
+- 🔒 Menu key permanently set to `\` (backslash)
+- 🧹 Removed F1/F5 crosshair toggle keybinds
+- 🧹 Removed customizable keybind system
+- ⚡ Simplified crosshair logic — always on in-game, always hides in menus
+- 🎨 Cleaner Settings tab with Controls card removed
+
 ### [5.16] - Unified Performance Counter
-- ✨ **Combined FPS & Ping into one unified counter**
+- ✨ Combined FPS & Ping into one unified counter
 - 🎨 Smart color-coding based on both metrics
 - ⚡ Reduced overhead with single RAF loop
 - 📊 Cleaner UI with less visual clutter
 - 🔧 Optimized state management
-- 💾 Same data, better organized
 
 ### [5.15]
 - Code optimization and dead code removal
-- Reduced to ~1023 lines of pure functionality
 - ~27% code reduction with zero performance impact
 - Cleaned up state object and TIMING constants
 - Optimized function signatures
 - CSS simplification
 
 ### [5.14]
-- ✨ NovaCore-style cyan crosshair with 3 visibility states
-- 🎯 F1/F5 crosshair controls (toggle + cycling)
+- ✨ NovaCore-style cyan crosshair
 - 🔧 Consolidated RAF loop for peak performance
 - 🛡️ Enhanced game API retry logic
 - 💾 Improved settings validation
-- 🎨 Cleaner UI with simplified controls
 - 📡 Color-coded ping status (Green/Yellow/Red)
 - 🧹 Better memory management
 
