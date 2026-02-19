@@ -4,7 +4,7 @@
 
 ### The Ultimate Miniblox Enhancement Suite
 
-![Version](https://img.shields.io/badge/version-5.17-39ff14?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-5.22-39ff14?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-39ff14?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-39ff14?style=for-the-badge)
 
@@ -22,10 +22,10 @@ Transform your Miniblox experience with professional monitoring and utility feat
 
 | Feature | Benefit |
 |---------|----------|
-| 🎯 **Crosshair** | Lag-free aiming with full visibility control |
+| 🎯 **Crosshair** | Lag-free aiming, always on in-game |
 | 📊 **Live Performance Metrics** | Monitor FPS & Ping together in real-time |
 | ⚡ **Minimal Overhead** | ~0.4% CPU usage — play without limits! |
-| 💾 **Auto-Saving Settings** | Your preferences are always remembered |
+| 💾 **Auto-Saving Settings** | Your feature toggles are always remembered |
 | 🔧 **Zero Dependencies** | Lightweight script, zero bloat |
 
 ---
@@ -124,9 +124,7 @@ Never get kicked for inactivity:
 
 ---
 
-## ⌨️ Control Center
-
-### Keyboard Shortcuts
+## ⌨️ Controls
 
 | Key | Action |
 |-----|--------|
@@ -134,21 +132,15 @@ Never get kicked for inactivity:
 | `ESC` | **Close Menu** |
 
 ### Reposition Counters
-Simply **click and drag** any counter to move it. Positions auto-save when you release!
-
-### Reset Everything
-1. Go to 🎨 **Settings → Layout**
-2. Click "🔄 Reset Counter Positions"
-3. All counters return to default positions
+Simply **click and drag** any counter to move it.
 
 ---
 
-## 🎨 Customization & Preferences
+## 🎨 Feature Toggles
 
-### Feature Toggles
-Enable exactly what you need:
+Enable exactly what you need via the **⚙️ Features** tab:
 
-**Display Counters**
+**Display**
 - [ ] FPS & Ping (Unified)
 - [ ] Coordinates
 - [ ] Clock
@@ -160,7 +152,7 @@ Enable exactly what you need:
 
 ---
 
-## 📈 Performance & Optimization
+## 📈 Performance
 
 ### Incredibly Lightweight
 ```
@@ -176,34 +168,31 @@ Total Impact:         ~0.4% CPU ⚡
 - ✅ Single consolidated RAF loop
 - ✅ Direct DOM updates (only when values change)
 - ✅ Zero external dependencies
-- ✅ Aggressive memory cleanup
+- ✅ Zero dead code
 
 ### Browser Compatibility
 
-| Browser | Support | Notes |
-|---------|:-------:|-------|
-| **Chrome 90+** | ✅ | Recommended |
-| **Firefox 88+** | ✅ | Perfect compatibility |
-| **Edge 90+** | ✅ | Chromium-based |
-| **Safari 14+** | ✅ | May need permissions |
-| **Opera 76+** | ✅ | Chromium-based |
-| **Brave** | ✅ | Privacy-focused |
+| Browser | Support |
+|---------|:-------:|
+| **Chrome 90+** | ✅ |
+| **Firefox 88+** | ✅ |
+| **Edge 90+** | ✅ |
+| **Safari 14+** | ✅ |
+| **Opera 76+** | ✅ |
+| **Brave** | ✅ |
 
 ---
 
 ## 💾 Data & Privacy
 
-### Local Storage Only
-- ✅ All settings saved **in your browser**
-- ✅ **Zero cloud sync** — completely offline
+- ✅ All settings saved **in your browser only**
 - ✅ **No external connections** to any servers
 - ✅ **100% private** — only you can see your data
 
-**What We Store:**
+**What's stored:**
 ```json
 {
-  "enabled_features": "Your feature preferences",
-  "counter_positions": "Where you placed each counter"
+  "features": "Your enabled/disabled feature preferences"
 }
 ```
 
@@ -212,40 +201,33 @@ Total Impact:         ~0.4% CPU ⚡
 ## 🐛 Troubleshooting
 
 ### Problem: Menu Won't Open
-
 <details>
 <summary><b>💡 Solution</b></summary>
 
-1. Press **F12** to open Developer Tools
-2. Check the **Console** tab for errors
-3. Ensure Tampermonkey is **enabled** for miniblox.io
+1. Press **F12** → **Console** tab and check for errors
+2. Ensure Tampermonkey is **enabled** for miniblox.io
+3. Verify the script shows as "Active" in your userscript manager
 4. **Refresh** the page and try again
-5. Verify the script shows as "Active" in your userscript manager
 
 </details>
 
 ### Problem: Counters Not Showing
-
 <details>
 <summary><b>💡 Solution</b></summary>
 
-1. Open Waddle menu and go to **⚙️ Features**
+1. Open Waddle menu → **⚙️ Features**
 2. Verify the feature has a **✓ checkmark**
-3. If missing, click to enable it
-4. Drag the counter back into view if it's off-screen
-5. Clear browser cache and refresh if still stuck
+3. If off-screen, refresh the page to reset positions to default
+4. Clear browser cache and refresh if still stuck
 
 </details>
 
 ### Problem: Performance Counter Not Updating
-
 <details>
 <summary><b>💡 Solution</b></summary>
 
-✅ **Requirements:**
 - You must be in an **active game** (not menu/lobby)
-- Performance feature must be **enabled** with a ✓ checkmark
-- Game API must be accessible
+- Feature must be **enabled** with a ✓ checkmark
 - Updates occur every 500ms when in-game
 
 If still stuck: Refresh page → Try again
@@ -253,7 +235,6 @@ If still stuck: Refresh page → Try again
 </details>
 
 ### Problem: Crosshair Not Showing
-
 <details>
 <summary><b>💡 Solution</b></summary>
 
@@ -264,51 +245,29 @@ If still stuck: Refresh page → Try again
 </details>
 
 ### Problem: Settings Not Saving
-
 <details>
 <summary><b>💡 Solution</b></summary>
 
-**Possible causes:**
-- 🔴 localStorage disabled in browser → Enable it
+- 🔴 localStorage disabled → Enable it in browser settings
 - 🔴 Private/Incognito mode → Disable and retry
 - 🔴 Storage quota exceeded → Clear browser data
-- 🔴 Browser blocking storage → Check permissions
 
-**How to clear storage:**
-1. Press **F12** → **Application** tab
-2. Find **localStorage**
-3. Delete `waddle_settings` entry
-4. Refresh and reconfigure
+**To reset storage:**
+1. Press **F12** → **Application** → **localStorage**
+2. Delete the `waddle_settings` entry
+3. Refresh and reconfigure
 
 </details>
 
 ### Problem: Key Display Not Working
-
 <details>
 <summary><b>💡 Solution</b></summary>
 
-1. **Close the menu** (press ESC) — keys are ignored when menu is open
+1. **Close the menu** (ESC) — keys are ignored while menu is open
 2. **Click the game canvas** to ensure focus
 3. **Refresh** the page
-4. Check for conflicting userscripts
 
 **Test:** Enable Key Display → Press WASD → Keys should highlight cyan
-
-</details>
-
-### Problem: Performance Issues
-
-<details>
-<summary><b>💡 Solution</b></summary>
-
-**Optimization tips:**
-- ✅ Only enable features you actively use
-- ✅ Disable unused counters
-- ✅ Close other browser tabs
-- ✅ Clear browser cache
-- ✅ Check for conflicting scripts
-
-Waddle uses only ~0.4% CPU — if lagging, it's likely something else!
 
 </details>
 
@@ -319,137 +278,96 @@ Waddle uses only ~0.4% CPU — if lagging, it's likely something else!
 <details>
 <summary><b>Q: Is Waddle safe to use?</b></summary>
 
-✅ **Absolutely!** The script is:
-- Open-source
-- Read-only access to game state
-- Runs only in your browser
-- No data sent anywhere
-- MIT licensed
+✅ Open-source, read-only game state access, runs only in your browser, no data sent anywhere, MIT licensed.
 
 </details>
 
 <details>
 <summary><b>Q: Why cyan for everything?</b></summary>
 
-Cyan (#00FFFF) is chosen because:
-- 🎯 **Highly visible** on light and dark backgrounds
-- 🎨 **Professional gaming aesthetic**
-- 💎 **Consistent visual identity** throughout the app
-- ⚡ **Reduces eye strain** compared to pure white
+Cyan (#00FFFF) is highly visible on light and dark backgrounds, gives a consistent professional gaming aesthetic, and reduces eye strain compared to pure white.
 
 </details>
 
 <details>
 <summary><b>Q: How often do coordinates update?</b></summary>
 
-**Every 100ms** (10 times per second) for smooth, real-time position tracking.
-
-</details>
-
-<details>
-<summary><b>Q: Which features work in menus?</b></summary>
-
-**All counters** (Performance, Coords, Clock, Key Display) work everywhere. The crosshair auto-hides in menus.
-
-</details>
-
-<details>
-<summary><b>Q: Can I use multiple features together?</b></summary>
-
-✅ **Yes!** Enable as many features as you want. The consolidated RAF loop keeps performance optimized even with everything on.
-
-</details>
-
-<details>
-<summary><b>Q: Does this affect Miniblox performance?</b></summary>
-
-❌ **No impact!** Waddle runs in the browser layer and doesn't touch the game engine.
+Every 100ms — 10 times per second.
 
 </details>
 
 <details>
 <summary><b>Q: Can I move the real-time clock?</b></summary>
 
-❌ **No** — it's fixed to bottom-right for consistency. But all other counters are fully draggable!
+No — it's fixed to bottom-right. All other counters are fully draggable.
 
 </details>
 
 <details>
-<summary><b>Q: Do I need a Miniblox account?</b></summary>
+<summary><b>Q: Does this affect Miniblox performance?</b></summary>
 
-❌ **No!** Waddle works 100% client-side. No account, login, or tracking needed.
-
-</details>
-
-<details>
-<summary><b>Q: What's different about the unified FPS & Ping counter?</b></summary>
-
-✅ **Better than separate counters:**
-- Single color indicator shows overall performance health
-- Less screen clutter — one draggable counter instead of two
-- Smart logic: Red if EITHER FPS is bad OR Ping is bad
-- Still shows both metrics clearly: "FPS: 60 | PING: 45ms"
+No. Waddle runs in the browser layer and doesn't touch the game engine.
 
 </details>
+
+---
+
+## 📝 Changelog
+
+### [5.22] - Code Cleanup
+- 🧹 Removed `state.keyboardHandler` — handler is now fire-and-forget
+- 🧹 Removed redundant inner `'use strict'` from CPS IIFE
+- 🧹 Removed `state.intervals.sessionTimer` — session timer is fire-and-forget
+- 🧹 Removed per-feature `try/catch` in `safeInit` — single outer handler is sufficient
+- 🧹 Stripped all `console.log/warn/error` calls from shipped code
+
+### [5.21] - Dead Code Pass
+- 🧹 Removed `state.activeTab` — never read after being set
+- 🧹 Removed `saveSettings()` from drag `onMouseUp` — positions no longer persisted
+- 🧹 Removed empty `featureManager.keyDisplay.stop`
+- 🔀 Merged `createCounterElement` + `createCounter` into one function
+
+### [5.20] - Consolidation
+- 🧹 Removed `positions` from `saveSettings` — never restored
+- 🧹 Removed dead fields from `COUNTER_CONFIGS.realTime`
+- 🧹 Removed `TIMING` object — all values inlined or promoted to top-level consts
+- 🔀 Simplified tab system using `querySelectorAll` + `dataset`
+- 🔀 Promoted `MAX_GAME_ATTEMPTS` to top-level const
+
+### [5.19] - Settings Tab Removed
+- 🧹 Removed Settings tab, layout card, and `resetCounterPositions()`
+- Menu now has Features and About only
+
+### [5.18] - Bug Fixes & Dead Code
+- 🐛 Fixed space bar never lighting up in Key Display
+- 🧹 Removed `.fixed-base` and `.keybind-input` CSS
+- 🧹 Inlined `updateCrosshair()` into init
+- 🧹 Removed `TIMING.SESSION_UPDATE`
+- 🐛 Fixed RAF loop bug — disabling one of Performance/Coords no longer kills both
+
+### [5.17] - Simplified Controls
+- 🔒 Menu key permanently set to `\`
+- 🧹 Removed F1/F5 crosshair keybinds and customizable keybind system
+
+### [5.16] - Unified Performance Counter
+- ✨ Combined FPS & Ping into one unified counter
+- 🎨 Smart color-coding based on both metrics
 
 ---
 
 ## 🤝 Contributing & Support
 
-### Found an Issue? 🐛
-[→ Report Bug](https://github.com/TheM1ddleM1n/Waddle/issues/new?labels=bug)
-
-### Have ideas? 💡
-[→ Suggest Feature](https://github.com/TheM1ddleM1n/Waddle/issues/new?labels=enhancement)
-
-### Want to Contribute? 🚀
-1. Fork the repository
-2. Make your improvements
-3. Submit a pull request
-4. And join the team!
-
----
-
-## 📝 Current Version
-
-### [5.17] - Simplified Controls
-- 🔒 Menu key permanently set to `\` (backslash)
-- 🧹 Removed F1/F5 crosshair toggle keybinds
-- 🧹 Removed customizable keybind system
-- ⚡ Simplified crosshair logic — always on in-game, always hides in menus
-- 🎨 Cleaner Settings tab with Controls card removed
-
-### [5.16] - Unified Performance Counter
-- ✨ Combined FPS & Ping into one unified counter
-- 🎨 Smart color-coding based on both metrics
-- ⚡ Reduced overhead with single RAF loop
-- 📊 Cleaner UI with less visual clutter
-- 🔧 Optimized state management
-
-### [5.15]
-- Code optimization and dead code removal
-- ~27% code reduction with zero performance impact
-- Cleaned up state object and TIMING constants
-- Optimized function signatures
-- CSS simplification
-
-### [5.14]
-- ✨ NovaCore-style cyan crosshair
-- 🔧 Consolidated RAF loop for peak performance
-- 🛡️ Enhanced game API retry logic
-- 💾 Improved settings validation
-- 📡 Color-coded ping status (Green/Yellow/Red)
-- 🧹 Better memory management
+[→ Report Bug](https://github.com/TheM1ddleM1n/Waddle/issues/new?labels=bug) • [→ Suggest Feature](https://github.com/TheM1ddleM1n/Waddle/issues/new?labels=enhancement)
 
 ---
 
 ## 👥 Credits
 
-| Role | Contributor | Links |
-|------|-------------|-------|
-| **Original Creator** | [@Scripter132132](https://github.com/Scripter132132) | [GitHub](https://github.com/Scripter132132) |
-| **Enhancement & Maintenance** | [@TheM1ddleM1n](https://github.com/TheM1ddleM1n) | [GitHub](https://github.com/TheM1ddleM1n) |
-| **Inspired By** | NovaCore Team | Crosshair System |
+| Role | Contributor |
+|------|-------------|
+| **Original Creator** | [@Scripter132132](https://github.com/Scripter132132) |
+| **Enhancement & Maintenance** | [@TheM1ddleM1n](https://github.com/TheM1ddleM1n) |
+| **Inspired By** | NovaCore Team |
 
 **Special Thanks:** Miniblox community for feedback, testing, and bug reports! 🙏
 
@@ -457,17 +375,17 @@ Cyan (#00FFFF) is chosen because:
 
 ## 📄 License
 
-WaddleClient is licensed under the **MIT License** — fully open-source and free to use, modify, and distribute.
+Licensed under the **MIT License** — free to use, modify, and distribute.
 
 [📖 View License](https://github.com/TheM1ddleM1n/WaddleClient/blob/main/LICENSE)
 
-## 🔗 Useful Links
+## 🔗 Links
 
 <div align="center">
 
-[📦 GitHub Repo](https://github.com/TheM1ddleM1n/WaddleClient) • 
-[🐛 Issue Tracker](https://github.com/TheM1ddleM1n/WaddleClient/issues) • 
-[🎮 Play Miniblox](https://miniblox.io/) • 
+[📦 GitHub Repo](https://github.com/TheM1ddleM1n/WaddleClient) •
+[🐛 Issue Tracker](https://github.com/TheM1ddleM1n/WaddleClient/issues) •
+[🎮 Play Miniblox](https://miniblox.io/) •
 [📖 Userscript Help](https://www.tampermonkey.net/faq.php)
 
 </div>
