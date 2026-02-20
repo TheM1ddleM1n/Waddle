@@ -4,7 +4,7 @@
 
 ### The Ultimate Miniblox Enhancement Suite
 
-![Version](https://img.shields.io/badge/version-6.1-39ff14?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-6.2-39ff14?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-39ff14?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-39ff14?style=for-the-badge)
 
@@ -104,6 +104,7 @@ Choose your browser:
 Never get kicked for inactivity:
 - Simulates spacebar presses every 5 seconds
 - Live countdown timer display
+- **Pulse animation** on the counter confirms each jump fired
 - Stay in lobbies without manual input
 - Completely automated and silent
 
@@ -132,7 +133,7 @@ Never get kicked for inactivity:
 | `ESC` | **Close Menu** |
 
 ### Reposition Counters
-Simply **click and drag** any counter to move it.
+Simply **click and drag** any counter to move it. The clock is fixed to the bottom-right and is not draggable.
 
 ---
 
@@ -167,6 +168,8 @@ Total Impact:         ~0.4% CPU ⚡
 ### Why So Fast?
 - ✅ Single consolidated RAF loop
 - ✅ Direct DOM updates (only when values change)
+- ✅ Cached module panels — no rebuilds on tab switch
+- ✅ Scoped MutationObserver — watches `#react` only, not the whole page
 - ✅ Zero external dependencies
 - ✅ Zero dead code
 
@@ -271,6 +274,14 @@ If still stuck: Refresh page → Try again
 
 </details>
 
+### Problem: Anti-AFK Doesn't Seem to Be Firing
+<details>
+<summary><b>💡 Solution</b></summary>
+
+Watch the Anti-AFK counter — it pulses cyan each time a jump is dispatched. If you see the pulse but still get kicked, the game may require mouse movement rather than just a keypress.
+
+</details>
+
 ---
 
 ## ❓ FAQ
@@ -313,6 +324,19 @@ No. Waddle runs in the browser layer and doesn't touch the game engine.
 ---
 
 ## 📝 Changelog
+
+### [6.2] - Architecture & Correctness Pass
+- 🐛 Fixed `toggleFeature` calling both `cleanup()` and `stop()` on disable — each feature's `cleanup()` is now the single authoritative teardown path, eliminating double-cleanup
+- 🐛 Fixed session timer interval leaking on unload — now stored in `state.intervals.sessionTimer` and cleared by `globalCleanup`
+- 🐛 Fixed `safeInit` aborting all feature restores if one throws — each feature start is now individually wrapped in `try/catch`
+- 🐛 Fixed `showToast` reusing a stale detached container — now guards with `document.contains()` before reuse
+- ⚡ `MutationObserver` for crosshair now scoped to `#react` instead of `document.body` — eliminates observer firing on every Waddle DOM change (toasts, HUD items, etc.)
+- ⚡ Module panels are now cached per category (`_panelCache`) — buttons are built once and re-appended on tab switch with active state synced, no `innerHTML` rebuilds and no duplicate listeners
+- 🔧 `gameRef` getter-with-side-effects replaced with explicit `gameRef.resolve()` method — side-effecting property access was surprising and made retry logic hard to reason about
+- 🔧 Removed `MAX_GAME_ATTEMPTS` hard cap — the 500ms throttle alone prevents hammering; the cap caused `gameRef` to give up permanently if the game loaded after ~5 seconds
+- 🎨 Anti-AFK counter now pulses cyan on each jump dispatch — confirms the spacebar fired without needing to watch the countdown reset
+- 🎨 Clock counter now shows `cursor: default` — previously showed a grab cursor despite not being draggable
+- 🎨 CPS detector threshold raised to `>= 15 CPS` (removed the narrow `11–15` band that false-positived on fast legitimate players)
 
 ### [6.1] - Reliability & Correctness Pass
 - 🐛 Fixed `gameRef` stale reference — cached game object is now re-validated on every access and evicted after a game session ends
