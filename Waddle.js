@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Waddle
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
-// @version      6.0
+// @version      6.1
 // @description  The ultimate Miniblox enhancement suite with advanced API features!
 // @author       The Dream Team! (Scripter & TheM1ddleM1n)
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/Waddle/refs/heads/main/Penguin.png
@@ -9,7 +9,7 @@
 // @run-at       document-start
 // ==/UserScript==
 
-const SCRIPT_VERSION = '6.0';
+const SCRIPT_VERSION = '6.1';
 
 (function () {
     'use strict';
@@ -17,109 +17,144 @@ const SCRIPT_VERSION = '6.0';
     document.title = `🐧 Waddle v${SCRIPT_VERSION} • Miniblox`;
 
     const SETTINGS_KEY = 'waddle_settings';
-    const THEME_COLOR = "#00FFFF";
+    const THEME_COLOR  = '#00FFFF';
     const MAX_GAME_ATTEMPTS = 10;
 
     const DEFAULT_POSITIONS = {
-        performance: { left: '50px', top: '80px' },
-        keyDisplay: { left: '50px', top: '150px' },
-        coords: { left: '50px', top: '220px' },
-        antiAfk: { left: '50px', top: '290px' }
+        performance: { left: '50px', top: '80px'  },
+        keyDisplay:  { left: '50px', top: '150px' },
+        coords:      { left: '50px', top: '220px' },
+        antiAfk:     { left: '50px', top: '290px' }
     };
 
     const COUNTER_CONFIGS = {
         performance: { id: 'performance-counter', text: 'FPS: -- | PING: 0ms', pos: DEFAULT_POSITIONS.performance, draggable: true },
-        coords: { id: 'coords-counter', text: '📍 X: 0 Y: 0 Z: 0', pos: DEFAULT_POSITIONS.coords, draggable: true },
-        realTime: { id: 'real-time-counter', text: '00:00:00 AM' },
-        antiAfk: { id: 'anti-afk-counter', text: '🐧 Jumping in 5s', pos: DEFAULT_POSITIONS.antiAfk, draggable: true }
+        coords:      { id: 'coords-counter',      text: '📍 X: 0 Y: 0 Z: 0',  pos: DEFAULT_POSITIONS.coords,      draggable: true },
+        realTime:    { id: 'real-time-counter',    text: '00:00:00 AM'                                                              },
+        antiAfk:     { id: 'anti-afk-counter',     text: '🐧 Jumping in 5s',   pos: DEFAULT_POSITIONS.antiAfk,     draggable: true }
     };
 
     const CATEGORIES = [
-        { id: 'display',    label: 'Display',   icon: '📊' },
-        { id: 'utilities',  label: 'Utilities',  icon: '🛠️' },
-        { id: 'about',      label: 'About',      icon: 'ℹ️'  }
+        { id: 'display',   label: 'Display',   icon: '📊' },
+        { id: 'utilities', label: 'Utilities', icon: '🛠️' },
+        { id: 'about',     label: 'About',     icon: 'ℹ️'  }
     ];
 
     const FEATURE_MAP = {
         display: [
-            { label: 'FPS & Ping',  feature: 'performance'          },
-            { label: 'Coords',      feature: 'coords'               },
-            { label: 'Clock',       feature: 'realTime'             },
-            { label: 'Key Display', feature: 'keyDisplay'           }
+            { label: 'FPS & Ping',  feature: 'performance'        },
+            { label: 'Coords',      feature: 'coords'             },
+            { label: 'Clock',       feature: 'realTime'           },
+            { label: 'Key Display', feature: 'keyDisplay'         }
         ],
         utilities: [
-            { label: 'Anti-AFK',       feature: 'antiAfk'               },
-            { label: 'Block Party RQ', feature: 'disablePartyRequests'   }
+            { label: 'Anti-AFK',       feature: 'antiAfk'             },
+            { label: 'Block Party RQ', feature: 'disablePartyRequests' }
         ]
     };
 
+    // ─── Game reference ────────────────────────────────────────────────────────
+    // Fix 4: validate cached reference on every access so stale post-game refs are
+    //         automatically evicted.
+    // Fix 7: fiber traversal wrapped in try/catch so React-internal changes don't
+    //         silently burn through all MAX_GAME_ATTEMPTS.
     const gameRef = {
         _game: null,
         _attempts: 0,
         _lastTryTime: 0,
         get game() {
-            if (this._game) return this._game;
+            if (this._game) {
+                if (this._game.player && this._game.resourceMonitor) return this._game;
+                // Stale reference — evict and re-probe.
+                this._game    = null;
+                this._attempts = 0;
+            }
             if (this._attempts >= MAX_GAME_ATTEMPTS) return null;
             const now = Date.now();
             if (now - this._lastTryTime < 500) return null;
             this._lastTryTime = now;
-            const reactRoot = document.querySelector("#react");
-            if (!reactRoot) return null;
-            const fiber = Object.values(reactRoot)?.[0];
-            const game = fiber?.updateQueue?.baseState?.element?.props?.game;
-            if (game && game.resourceMonitor && game.player) {
-                this._game = game;
-                this._attempts = 0;
-                return game;
-            }
+            try {
+                const reactRoot = document.querySelector('#react');
+                if (!reactRoot) return null;
+                const fiber = Object.values(reactRoot)?.[0];
+                const game  = fiber?.updateQueue?.baseState?.element?.props?.game;
+                if (game && game.resourceMonitor && game.player) {
+                    this._game    = game;
+                    this._attempts = 0;
+                    return game;
+                }
+            } catch (_) {}
             this._attempts++;
             return null;
         }
     };
 
+    // ─── State ────────────────────────────────────────────────────────────────
+    let state = {
+        features: {
+            performance: false, coords: false, realTime: false,
+            antiAfk: false, keyDisplay: false, disablePartyRequests: false
+        },
+        counters: { performance: null, realTime: null, coords: null, antiAfk: null, keyDisplay: null },
+        menuOverlay:          null,
+        activeCategory:       'display',
+        rafId:                null,
+        lastPerformanceUpdate: 0,
+        lastCoordsUpdate:      0,
+        intervals:            {},   // Fix 12: all intervals live here so globalCleanup catches them
+        startTime:            Date.now(),
+        antiAfkCountdown:     5,
+        lastPerformanceColor: '#00FF00',
+        keys: { w: false, a: false, s: false, d: false, space: false, lmb: false, rmb: false },
+        crosshairContainer:   null,
+        hudArray:             null,
+        toastContainer:       null  // Fix 11: module-level ref prevents duplicate containers
+    };
+
+    // ─── Chat greeting ────────────────────────────────────────────────────────
+    // Fix 12: stored in state.intervals so globalCleanup clears it on unload.
     (function () {
-        const waitForGame = setInterval(() => {
+        state.intervals.waitForGame = setInterval(() => {
             const game = gameRef.game;
-            if (game && game.chat && typeof game.chat.addChat === "function") {
-                clearInterval(waitForGame);
-                game.chat.addChat({ text: `\\${THEME_COLOR}\\[Server]\\reset\\ Hello and Thank you for using Waddle v${SCRIPT_VERSION}! Have Fun!` });
+            if (game && game.chat && typeof game.chat.addChat === 'function') {
+                clearInterval(state.intervals.waitForGame);
+                state.intervals.waitForGame = null;
+                game.chat.addChat({
+                    text: `\\${THEME_COLOR}\\[Server]\\reset\\ Hello and Thank you for using Waddle v${SCRIPT_VERSION}! Have Fun!`
+                });
             }
         }, 500);
     })();
 
+    // ─── CPS detector (unchanged per request) ─────────────────────────────────
     (function () {
         let clicks = 0;
         const CPS_MIN = 11, CPS_MAX = 15, CHECK_INTERVAL = 1000, COOLDOWN = 2000;
         let lastWarningTime = 0;
-        document.addEventListener("mousedown", () => { clicks++; });
+        document.addEventListener('mousedown', () => { clicks++; });
         setInterval(() => {
             const cps = clicks; clicks = 0;
             const game = gameRef.game;
-            const now = Date.now();
-            if (cps >= CPS_MIN && cps <= CPS_MAX && game?.chat && typeof game.chat.addChat === "function" && now - lastWarningTime > COOLDOWN) {
+            const now  = Date.now();
+            if (
+                cps >= CPS_MIN && cps <= CPS_MAX &&
+                game?.chat && typeof game.chat.addChat === 'function' &&
+                now - lastWarningTime > COOLDOWN
+            ) {
                 lastWarningTime = now;
-                game.chat.addChat({ text: "\\#FF0000\\[Waddle Detector]\\reset\\ Fast clicks were detected." });
+                game.chat.addChat({ text: '\\#FF0000\\[Waddle Detector]\\reset\\ Fast clicks were detected.' });
             }
         }, CHECK_INTERVAL);
     })();
 
-    let state = {
-        features: { performance: false, coords: false, realTime: false, antiAfk: false, keyDisplay: false, disablePartyRequests: false },
-        counters: { performance: null, realTime: null, coords: null, antiAfk: null, keyDisplay: null },
-        menuOverlay: null,
-        activeCategory: 'display',
-        rafId: null,
-        lastPerformanceUpdate: 0,
-        lastCoordsUpdate: 0,
-        intervals: {},
-        startTime: Date.now(),
-        antiAfkCountdown: 5,
-        lastPerformanceColor: '#00FF00',
-        keys: { w: false, a: false, s: false, d: false, space: false, lmb: false, rmb: false },
-        crosshairContainer: null,
-        hudArray: null,
-        toastQueue: []
-    };
+    // ─── Settings (Fix 8: debounced write) ────────────────────────────────────
+    let _saveTimer = null;
+    function saveSettings() {
+        clearTimeout(_saveTimer);
+        _saveTimer = setTimeout(() => {
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify({ version: SCRIPT_VERSION, features: state.features }));
+        }, 100);
+    }
 
     // ─── Styles ────────────────────────────────────────────────────────────────
     function injectStyles() {
@@ -141,11 +176,7 @@ const SCRIPT_VERSION = '6.0';
   --glow: 0 0 12px rgba(0,255,255,.5);
   --shadow: 0 8px 32px rgba(0,0,0,.8);
 }
-
-/* ── Hide default crosshair ── */
 .css-xhoozx, [class*="crosshair"], img[src*="crosshair"] { display:none !important; }
-
-/* ── Menu overlay ── */
 #waddle-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,.65);
@@ -156,8 +187,6 @@ const SCRIPT_VERSION = '6.0';
   transition: opacity .15s ease;
 }
 #waddle-overlay.show { opacity: 1; pointer-events: auto; }
-
-/* ── Menu window ── */
 #waddle-window {
   display: flex;
   width: 680px; height: 420px;
@@ -168,8 +197,6 @@ const SCRIPT_VERSION = '6.0';
   overflow: hidden;
   user-select: none;
 }
-
-/* ── Category sidebar ── */
 #waddle-sidebar {
   width: 140px; min-width: 140px;
   background: var(--bg2);
@@ -204,13 +231,7 @@ const SCRIPT_VERSION = '6.0';
   font-size: .65rem; color: var(--text-dim);
   border-top: 1px solid var(--c-border);
 }
-
-/* ── Module panel ── */
-#waddle-panel {
-  flex: 1;
-  display: flex; flex-direction: column;
-  overflow: hidden;
-}
+#waddle-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 #waddle-panel-title {
   padding: 14px 18px 10px;
   font-size: .7rem; font-weight: var(--fw);
@@ -227,8 +248,6 @@ const SCRIPT_VERSION = '6.0';
 }
 #waddle-module-grid::-webkit-scrollbar { width: 4px; }
 #waddle-module-grid::-webkit-scrollbar-thumb { background: var(--c-border); border-radius: 2px; }
-
-/* ── Module button ── */
 .waddle-module {
   background: var(--bg3);
   border: 1px solid rgba(255,255,255,.07);
@@ -242,21 +261,15 @@ const SCRIPT_VERSION = '6.0';
 }
 .waddle-module:hover { border-color: var(--c-border); color: var(--text); }
 .waddle-module.active {
-  border-color: var(--c);
-  background: var(--c-dim);
-  color: var(--c);
+  border-color: var(--c); background: var(--c-dim); color: var(--c);
   box-shadow: inset 0 0 8px rgba(0,255,255,.08);
 }
 .waddle-module-dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: var(--text-dim);
-  flex-shrink: 0;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--text-dim); flex-shrink: 0;
   transition: background .12s ease;
 }
 .waddle-module.active .waddle-module-dot { background: var(--c); box-shadow: 0 0 6px var(--c); }
-
-/* ── About panel ── */
 #waddle-about {
   flex: 1; padding: 18px;
   display: flex; flex-direction: column; gap: 14px;
@@ -277,8 +290,6 @@ const SCRIPT_VERSION = '6.0';
   cursor: pointer; transition: all .1s ease;
 }
 .about-link-btn:hover { background: var(--c-dim); }
-
-/* ── HUD Array ── */
 #waddle-hud {
   position: fixed; top: 60px; right: 16px;
   z-index: 9998;
@@ -290,13 +301,10 @@ const SCRIPT_VERSION = '6.0';
   border-left: 2px solid var(--c);
   padding: 3px 10px;
   font-size: .72rem; font-weight: var(--fw);
-  color: var(--c);
-  letter-spacing: .5px;
+  color: var(--c); letter-spacing: .5px;
   animation: hud-in .15s ease;
 }
 @keyframes hud-in { from { opacity:0; transform:translateX(8px); } to { opacity:1; transform:none; } }
-
-/* ── Toast notifications ── */
 #waddle-toasts {
   position: fixed; bottom: 70px; right: 18px;
   z-index: 10000;
@@ -305,11 +313,8 @@ const SCRIPT_VERSION = '6.0';
 }
 .waddle-toast {
   display: flex; align-items: center; gap: 10px;
-  background: var(--bg2);
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: var(--radius);
-  padding: 9px 14px;
-  min-width: 200px;
+  background: var(--bg2); border: 1px solid rgba(255,255,255,.1);
+  border-radius: var(--radius); padding: 9px 14px; min-width: 200px;
   box-shadow: var(--shadow);
   animation: toast-in .2s ease;
   transition: opacity .25s ease, transform .25s ease;
@@ -327,19 +332,11 @@ const SCRIPT_VERSION = '6.0';
 .toast-body { flex: 1; }
 .toast-title { font-size: .78rem; font-weight: 700; color: var(--text); }
 .toast-msg   { font-size: .68rem; color: var(--text-dim); margin-top: 1px; }
-
-/* ── Counters ── */
-.counter, .key-display-container {
-  position: fixed; z-index: 9998; user-select: none;
-}
+.counter, .key-display-container { position: fixed; z-index: 9998; user-select: none; }
 .counter {
-  background: var(--bg);
-  border: 1px solid var(--c-border);
-  color: var(--c);
-  font-weight: var(--fw); font-size: .78rem;
-  padding: 5px 11px;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  background: var(--bg); border: 1px solid var(--c-border); color: var(--c);
+  font-weight: var(--fw); font-size: .78rem; padding: 5px 11px;
+  border-radius: var(--radius); box-shadow: var(--shadow);
   cursor: grab; width: max-content;
 }
 .counter.dragging { cursor: grabbing; transform: scale(1.05); }
@@ -355,8 +352,6 @@ const SCRIPT_VERSION = '6.0';
 .key-box.active { background: var(--c-dim); border-color: var(--c); color: var(--c); box-shadow: var(--glow); }
 .key-box.mouse-box { width: 62px; }
 .key-box.space-box { grid-column: 1 / -1; width: 100%; height: 36px; }
-
-/* ── Crosshair ── */
 #waddle-crosshair-container {
   position: fixed; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
@@ -367,39 +362,34 @@ const SCRIPT_VERSION = '6.0';
         return true;
     }
 
-    // ─── Toast system ──────────────────────────────────────────────────────────
+    // ─── Toast system (Fix 11: module-level container ref) ────────────────────
     function showToast(title, type = 'info', message = '') {
         if (!document.body) return;
-        let container = document.getElementById('waddle-toasts');
-        if (!container) {
-            container = document.createElement('div');
+        if (!state.toastContainer) {
+            const container = document.createElement('div');
             container.id = 'waddle-toasts';
             document.body.appendChild(container);
+            state.toastContainer = container;
         }
-
         const toast = document.createElement('div');
         toast.className = 'waddle-toast';
-
         const iconMap = { enabled: '✓', disabled: '✗', info: '!' };
         const icon = document.createElement('div');
         icon.className = `toast-icon ${type}`;
         icon.textContent = iconMap[type] || '!';
-
         const body = document.createElement('div');
         body.className = 'toast-body';
         body.innerHTML = `<div class="toast-title">${title}</div>${message ? `<div class="toast-msg">${message}</div>` : ''}`;
-
         toast.appendChild(icon);
         toast.appendChild(body);
-        container.appendChild(toast);
-
+        state.toastContainer.appendChild(toast);
         setTimeout(() => {
             toast.classList.add('hide');
             setTimeout(() => toast.remove(), 280);
         }, 2800);
     }
 
-    // ─── HUD Array ─────────────────────────────────────────────────────────────
+    // ─── HUD Array (Fix 6: targeted add/remove instead of full innerHTML wipe) ─
     function initHud() {
         if (document.getElementById('waddle-hud')) return;
         const hud = document.createElement('div');
@@ -410,19 +400,25 @@ const SCRIPT_VERSION = '6.0';
 
     function refreshHud() {
         if (!state.hudArray) return;
-        state.hudArray.innerHTML = '';
         const allFeatures = [...(FEATURE_MAP.display || []), ...(FEATURE_MAP.utilities || [])];
         allFeatures.forEach(({ label, feature }) => {
+            const itemId   = `hud-item-${feature}`;
+            const existing = document.getElementById(itemId);
             if (state.features[feature]) {
-                const item = document.createElement('div');
-                item.className = 'hud-item';
-                item.textContent = label;
-                state.hudArray.appendChild(item);
+                if (!existing) {
+                    const item = document.createElement('div');
+                    item.className = 'hud-item';
+                    item.id        = itemId;
+                    item.textContent = label;
+                    state.hudArray.appendChild(item);
+                }
+            } else {
+                existing?.remove();
             }
         });
     }
 
-    // ─── Session timer ─────────────────────────────────────────────────────────
+    // ─── Session timer ────────────────────────────────────────────────────────
     function formatSessionTime() {
         const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
         const h = Math.floor(elapsed / 3600);
@@ -436,12 +432,9 @@ const SCRIPT_VERSION = '6.0';
         if (el) el.textContent = formatSessionTime();
     }
 
-    // ─── Settings ──────────────────────────────────────────────────────────────
-    function saveSettings() {
-        localStorage.setItem(SETTINGS_KEY, JSON.stringify({ version: SCRIPT_VERSION, features: state.features }));
-    }
+    // ─── Crosshair (Fix 5: RAF guard on MutationObserver callback) ────────────
+    let _crosshairRafPending = false;
 
-    // ─── Crosshair ─────────────────────────────────────────────────────────────
     function makeLine(styles) {
         const div = document.createElement('div');
         Object.assign(div.style, { position: 'absolute', backgroundColor: THEME_COLOR, pointerEvents: 'none' }, styles);
@@ -475,34 +468,41 @@ const SCRIPT_VERSION = '6.0';
         state.crosshairContainer.id = 'waddle-crosshair-container';
         state.crosshairContainer.appendChild(createCrosshair());
         document.body.appendChild(state.crosshairContainer);
-        new MutationObserver(() => { requestAnimationFrame(checkCrosshair); }).observe(document.body, { childList: true, subtree: true });
+        new MutationObserver(() => {
+            // Fix 5: single pending RAF flag prevents the observer from scheduling
+            //         hundreds of frames during heavy DOM activity.
+            if (!_crosshairRafPending) {
+                _crosshairRafPending = true;
+                requestAnimationFrame(() => { _crosshairRafPending = false; checkCrosshair(); });
+            }
+        }).observe(document.body, { childList: true, subtree: true });
         return true;
     }
 
-    // ─── Counters ──────────────────────────────────────────────────────────────
+    // ─── Counters ─────────────────────────────────────────────────────────────
     function createCounter(type) {
         if (!document.body) return null;
         const config = COUNTER_CONFIGS[type];
         if (!config) return null;
-        const counter = document.createElement('div');
-        counter.id = config.id;
+        const counter   = document.createElement('div');
+        counter.id      = config.id;
         counter.className = 'counter';
-        const textSpan = document.createElement('span');
+        const textSpan  = document.createElement('span');
         textSpan.className = 'counter-time-text';
         textSpan.textContent = config.text;
         counter.appendChild(textSpan);
         counter._textSpan = textSpan;
         if (type === 'realTime') {
-            counter.style.right = '30px';
-            counter.style.bottom = '30px';
+            counter.style.right      = '30px';
+            counter.style.bottom     = '30px';
             counter.style.background = 'transparent';
-            counter.style.boxShadow = 'none';
-            counter.style.border = 'none';
-            counter.style.fontSize = '1.1rem';
-            counter.style.padding = '0';
+            counter.style.boxShadow  = 'none';
+            counter.style.border     = 'none';
+            counter.style.fontSize   = '1.1rem';
+            counter.style.padding    = '0';
         } else {
             counter.style.left = config.pos.left;
-            counter.style.top = config.pos.top;
+            counter.style.top  = config.pos.top;
             if (config.draggable) setupDragging(counter);
         }
         document.body.appendChild(counter);
@@ -511,29 +511,36 @@ const SCRIPT_VERSION = '6.0';
     }
 
     function updateCounterText(counterType, text) {
-        state.counters[counterType]?._textSpan && (state.counters[counterType]._textSpan.textContent = text);
+        state.counters[counterType]?._textSpan &&
+            (state.counters[counterType]._textSpan.textContent = text);
     }
 
     function setupDragging(element) {
         let rafId = null;
         element.addEventListener('mousedown', (e) => {
             element._dragging = true;
-            element._offsetX = e.clientX - element.getBoundingClientRect().left;
-            element._offsetY = e.clientY - element.getBoundingClientRect().top;
+            element._offsetX  = e.clientX - element.getBoundingClientRect().left;
+            element._offsetY  = e.clientY - element.getBoundingClientRect().top;
             element.classList.add('dragging');
         }, { passive: true });
         window.addEventListener('mouseup', () => {
-            if (element._dragging) { element._dragging = false; element.classList.remove('dragging'); if (rafId) cancelAnimationFrame(rafId); }
+            if (element._dragging) {
+                element._dragging = false;
+                element.classList.remove('dragging');
+                if (rafId) cancelAnimationFrame(rafId);
+            }
         }, { passive: true });
         window.addEventListener('mousemove', (e) => {
             if (element._dragging && element.parentElement) {
-                element._pendingX = e.clientX; element._pendingY = e.clientY;
+                element._pendingX = e.clientX;
+                element._pendingY = e.clientY;
                 if (!rafId) {
                     rafId = requestAnimationFrame(() => {
                         const rect = element.getBoundingClientRect();
                         const newX = Math.max(10, Math.min(window.innerWidth  - rect.width  - 10, element._pendingX - element._offsetX));
                         const newY = Math.max(10, Math.min(window.innerHeight - rect.height - 10, element._pendingY - element._offsetY));
-                        element.style.left = `${newX}px`; element.style.top = `${newY}px`;
+                        element.style.left = `${newX}px`;
+                        element.style.top  = `${newY}px`;
                         rafId = null;
                     });
                 }
@@ -541,7 +548,7 @@ const SCRIPT_VERSION = '6.0';
         }, { passive: true });
     }
 
-    // ─── RAF loop ──────────────────────────────────────────────────────────────
+    // ─── RAF loop ─────────────────────────────────────────────────────────────
     function startPerformanceLoop() {
         if (state.rafId) return;
         const loop = (t) => {
@@ -570,44 +577,49 @@ const SCRIPT_VERSION = '6.0';
     function updatePerformanceCounter() {
         const game = gameRef.game;
         if (!game || !state.counters.performance) return;
-        const fps = Math.round(game.resourceMonitor?.filteredFPS || 0);
+        const fps  = Math.round(game.resourceMonitor?.filteredFPS  || 0);
         const ping = Math.round(game.resourceMonitor?.filteredPing || 0);
         let color = '#00FF00';
-        if (fps < 30 || ping > 200) color = '#FF0000';
-        else if (fps < 60 || ping > 100) color = '#FFFF00';
+        if (fps < 30 || ping > 200)       color = '#FF0000';
+        else if (fps < 60 || ping > 100)  color = '#FFFF00';
         updateCounterText('performance', `FPS: ${game.inGame ? fps : '--'} | PING: ${ping}ms`);
         if (state.lastPerformanceColor !== color) {
             state.counters.performance.style.borderColor = color;
-            state.counters.performance.style.color = color;
+            state.counters.performance.style.color       = color;
             state.lastPerformanceColor = color;
         }
     }
 
     function updateRealTime() {
         if (!state.counters.realTime) return;
-        const now = new Date();
-        let hours = now.getHours();
+        const now     = new Date();
+        let hours     = now.getHours();
         const minutes = String(now.getMinutes()).padStart(2, '0');
         const seconds = String(now.getSeconds()).padStart(2, '0');
-        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const ampm    = hours >= 12 ? 'PM' : 'AM';
         hours = hours % 12 || 12;
         updateCounterText('realTime', `${hours}:${minutes}:${seconds} ${ampm}`);
     }
 
+    // Minor fix: dispatch to document — Miniblox listens there, not window.
     function pressSpace() {
-        const down = new KeyboardEvent("keydown", { key: " ", code: "Space", keyCode: 32, which: 32, bubbles: true });
-        const up   = new KeyboardEvent("keyup",   { key: " ", code: "Space", keyCode: 32, which: 32, bubbles: true });
-        window.dispatchEvent(down);
-        setTimeout(() => window.dispatchEvent(up), 50);
+        const down = new KeyboardEvent('keydown', { key: ' ', code: 'Space', keyCode: 32, which: 32, bubbles: true });
+        const up   = new KeyboardEvent('keyup',   { key: ' ', code: 'Space', keyCode: 32, which: 32, bubbles: true });
+        document.dispatchEvent(down);
+        setTimeout(() => document.dispatchEvent(up), 50);
     }
 
-    function updateAntiAfkCounter() { updateCounterText('antiAfk', `🐧 Jumping in ${state.antiAfkCountdown}s`); }
+    function updateAntiAfkCounter() {
+        updateCounterText('antiAfk', `🐧 Jumping in ${state.antiAfkCountdown}s`);
+    }
 
-    // ─── Key display ───────────────────────────────────────────────────────────
+    // ─── Key display (Fix 3: tracked listeners + teardown) ────────────────────
+    let _keyListeners = null;
+
     function createKeyDisplay() {
         if (!document.body) return null;
         const container = document.createElement('div');
-        container.id = 'key-display-container';
+        container.id        = 'key-display-container';
         container.className = 'key-display-container';
         container.style.left = DEFAULT_POSITIONS.keyDisplay.left;
         container.style.top  = DEFAULT_POSITIONS.keyDisplay.top;
@@ -615,24 +627,32 @@ const SCRIPT_VERSION = '6.0';
         grid.className = 'key-display-grid';
         grid.style.gridTemplateColumns = '44px 44px 44px';
         const keyBoxes = {};
-        [{ text: 'W', col: '2', row: '1', key: 'w' },
-         { text: 'A', col: '1', row: '2', key: 'a' },
-         { text: 'S', col: '2', row: '2', key: 's' },
-         { text: 'D', col: '3', row: '2', key: 'd' }].forEach(({ text, col, row, key }) => {
+        [
+            { text: 'W', col: '2', row: '1', key: 'w' },
+            { text: 'A', col: '1', row: '2', key: 'a' },
+            { text: 'S', col: '2', row: '2', key: 's' },
+            { text: 'D', col: '3', row: '2', key: 'd' }
+        ].forEach(({ text, col, row, key }) => {
             const box = document.createElement('div');
-            box.className = 'key-box'; box.textContent = text;
-            box.style.gridColumn = col; box.style.gridRow = row;
-            grid.appendChild(box); keyBoxes[key] = box;
+            box.className = 'key-box';
+            box.textContent = text;
+            box.style.gridColumn = col;
+            box.style.gridRow    = row;
+            grid.appendChild(box);
+            keyBoxes[key] = box;
         });
         const mouseRow = document.createElement('div');
         mouseRow.style.cssText = 'display:grid;grid-template-columns:62px 62px;gap:5px;margin-top:5px;';
-        ['LMB','RMB'].forEach((label, i) => {
+        ['LMB', 'RMB'].forEach((label, i) => {
             const box = document.createElement('div');
-            box.className = 'key-box mouse-box'; box.textContent = label;
-            mouseRow.appendChild(box); keyBoxes[i === 0 ? 'lmb' : 'rmb'] = box;
+            box.className = 'key-box mouse-box';
+            box.textContent = label;
+            mouseRow.appendChild(box);
+            keyBoxes[i === 0 ? 'lmb' : 'rmb'] = box;
         });
         const spaceBox = document.createElement('div');
-        spaceBox.className = 'key-box space-box'; spaceBox.textContent = 'SPACE';
+        spaceBox.className   = 'key-box space-box';
+        spaceBox.textContent = 'SPACE';
         spaceBox.style.marginTop = '5px';
         keyBoxes.space = spaceBox;
         container.appendChild(grid);
@@ -650,6 +670,7 @@ const SCRIPT_VERSION = '6.0';
     }
 
     function setupKeyDisplayListeners() {
+        if (_keyListeners) return;  // Fix 3: guard against duplicate registration
         const kd = (e) => {
             if (state.menuOverlay?.classList.contains('show')) return;
             const k = e.key === ' ' ? 'space' : e.key.toLowerCase();
@@ -660,39 +681,56 @@ const SCRIPT_VERSION = '6.0';
             if (k in state.keys) { state.keys[k] = false; updateKeyDisplay(k, false); }
         };
         const md = (e) => {
-            if (e.button === 0) { state.keys.lmb = true; updateKeyDisplay('lmb', true); }
-            else if (e.button === 2) { state.keys.rmb = true; updateKeyDisplay('rmb', true); }
+            if (e.button === 0) { state.keys.lmb = true;  updateKeyDisplay('lmb', true);  }
+            else if (e.button === 2) { state.keys.rmb = true;  updateKeyDisplay('rmb', true);  }
         };
         const mu = (e) => {
             if (e.button === 0) { state.keys.lmb = false; updateKeyDisplay('lmb', false); }
             else if (e.button === 2) { state.keys.rmb = false; updateKeyDisplay('rmb', false); }
         };
-        window.addEventListener('keydown', kd, { passive: true });
-        window.addEventListener('keyup',   ku, { passive: true });
+        window.addEventListener('keydown',   kd, { passive: true });
+        window.addEventListener('keyup',     ku, { passive: true });
         window.addEventListener('mousedown', md, { passive: true });
         window.addEventListener('mouseup',   mu, { passive: true });
+        _keyListeners = { kd, ku, md, mu };
     }
 
-    // ─── Party requests ────────────────────────────────────────────────────────
+    function teardownKeyDisplayListeners() {
+        if (!_keyListeners) return;
+        window.removeEventListener('keydown',   _keyListeners.kd);
+        window.removeEventListener('keyup',     _keyListeners.ku);
+        window.removeEventListener('mousedown', _keyListeners.md);
+        window.removeEventListener('mouseup',   _keyListeners.mu);
+        _keyListeners = null;
+    }
+
+    // ─── Party requests (Fix 2: retry until game ready; Fix 10: tightened block list) ──
     function disablePartyRequestsSystem() {
         const game = gameRef.game;
-        if (!game) return;
-        if (game.party && !game.party._waddleOriginalInvoke) {
+        if (!game?.party) return false;
+        if (!game.party._waddleOriginalInvoke) {
             game.party._waddleOriginalInvoke = game.party.invoke;
             game.party.invoke = function (method, ...args) {
-                const blocked = ['acceptPartyInvite','rejectPartyInvite','requestToJoinParty','respondToPartyRequest','inviteToParty'];
+                // Fix 10: only suppress incoming invite/join triggers.
+                //          acceptPartyInvite / rejectPartyInvite are player responses
+                //          and must remain reachable so the game UI still works.
+                const blocked = ['inviteToParty', 'requestToJoinParty'];
                 if (blocked.includes(method)) return;
                 return this._waddleOriginalInvoke?.(method, ...args);
             };
         }
+        return true;
     }
 
     function restorePartyRequests() {
         const game = gameRef.game;
-        if (game?.party?._waddleOriginalInvoke) game.party.invoke = game.party._waddleOriginalInvoke;
+        if (game?.party?._waddleOriginalInvoke) {
+            game.party.invoke = game.party._waddleOriginalInvoke;
+            delete game.party._waddleOriginalInvoke;
+        }
     }
 
-    // ─── Feature manager ───────────────────────────────────────────────────────
+    // ─── Feature manager ──────────────────────────────────────────────────────
     const featureManager = {
         performance: {
             start:   () => { if (!state.counters.performance) createCounter('performance'); startPerformanceLoop(); updatePerformanceCounter(); },
@@ -710,9 +748,10 @@ const SCRIPT_VERSION = '6.0';
             cleanup: () => { if (state.counters.realTime) { state.counters.realTime.remove(); state.counters.realTime = null; } }
         },
         antiAfk: {
-            start:   () => {
+            start: () => {
                 if (!state.counters.antiAfk) createCounter('antiAfk');
-                state.antiAfkCountdown = 5; updateAntiAfkCounter();
+                state.antiAfkCountdown = 5;
+                updateAntiAfkCounter();
                 state.intervals.antiAfk = setInterval(() => {
                     state.antiAfkCountdown--;
                     updateAntiAfkCounter();
@@ -724,12 +763,35 @@ const SCRIPT_VERSION = '6.0';
         },
         keyDisplay: {
             start:   () => { if (!state.counters.keyDisplay) createKeyDisplay(); setupKeyDisplayListeners(); },
-            cleanup: () => { if (state.counters.keyDisplay) { state.counters.keyDisplay.remove(); state.counters.keyDisplay = null; } Object.keys(state.keys).forEach(k => { state.keys[k] = false; }); }
+            stop:    () => { teardownKeyDisplayListeners(); },   // Fix 3: real stop
+            cleanup: () => {
+                teardownKeyDisplayListeners();
+                if (state.counters.keyDisplay) { state.counters.keyDisplay.remove(); state.counters.keyDisplay = null; }
+                Object.keys(state.keys).forEach(k => { state.keys[k] = false; });
+            }
         },
         disablePartyRequests: {
-            start:   () => disablePartyRequestsSystem(),
-            stop:    () => restorePartyRequests(),
-            cleanup: () => restorePartyRequests()
+            start: () => {
+                // Fix 2: retry every 500 ms until the game object is available.
+                if (!disablePartyRequestsSystem()) {
+                    state.intervals.partyRetry = setInterval(() => {
+                        if (disablePartyRequestsSystem()) {
+                            clearInterval(state.intervals.partyRetry);
+                            state.intervals.partyRetry = null;
+                        }
+                    }, 500);
+                }
+            },
+            stop: () => {
+                clearInterval(state.intervals.partyRetry);
+                state.intervals.partyRetry = null;
+                restorePartyRequests();
+            },
+            cleanup: () => {
+                clearInterval(state.intervals.partyRetry);
+                state.intervals.partyRetry = null;
+                restorePartyRequests();
+            }
         }
     };
 
@@ -743,45 +805,40 @@ const SCRIPT_VERSION = '6.0';
         return enabled;
     }
 
-    // ─── Menu ──────────────────────────────────────────────────────────────────
+    // ─── Menu ─────────────────────────────────────────────────────────────────
     function buildModulePanel(categoryId) {
-        const panel = document.getElementById('waddle-module-grid');
-        const title = document.getElementById('waddle-panel-title');
+        const panel      = document.getElementById('waddle-module-grid');
+        const title      = document.getElementById('waddle-panel-title');
         const aboutPanel = document.getElementById('waddle-about');
         if (!panel) return;
 
         if (categoryId === 'about') {
-            panel.style.display = 'none';
+            panel.style.display      = 'none';
             if (title) title.style.display = 'none';
             if (aboutPanel) aboutPanel.style.display = 'flex';
             return;
         }
 
         panel.style.display = 'grid';
-        if (title) { title.style.display = 'block'; title.textContent = categoryId; }
-        if (aboutPanel) aboutPanel.style.display = 'none';
+        if (title)      { title.style.display = 'block'; title.textContent = categoryId; }
+        if (aboutPanel)   aboutPanel.style.display = 'none';
 
         panel.innerHTML = '';
         const features = FEATURE_MAP[categoryId] || [];
         features.forEach(({ label, feature }) => {
             const btn = document.createElement('div');
             btn.className = `waddle-module${state.features[feature] ? ' active' : ''}`;
-
             const labelEl = document.createElement('span');
             labelEl.textContent = label;
-
             const dot = document.createElement('div');
             dot.className = 'waddle-module-dot';
-
             btn.appendChild(labelEl);
             btn.appendChild(dot);
-
             btn.onclick = () => {
                 const enabled = toggleFeature(feature);
                 btn.classList.toggle('active', enabled);
                 showToast(label, enabled ? 'enabled' : 'disabled', enabled ? 'Module enabled' : 'Module disabled');
             };
-
             panel.appendChild(btn);
         });
     }
@@ -799,11 +856,12 @@ const SCRIPT_VERSION = '6.0';
 
         const overlay = document.createElement('div');
         overlay.id = 'waddle-overlay';
+        overlay.dataset.version = SCRIPT_VERSION; // Minor fix: version stamped for stale-instance detection
 
         const win = document.createElement('div');
         win.id = 'waddle-window';
 
-        // ── Sidebar
+        // Sidebar
         const sidebar = document.createElement('div');
         sidebar.id = 'waddle-sidebar';
 
@@ -814,32 +872,32 @@ const SCRIPT_VERSION = '6.0';
 
         CATEGORIES.forEach(({ id, label, icon }) => {
             const cat = document.createElement('div');
-            cat.className = `waddle-cat${id === state.activeCategory ? ' active' : ''}`;
+            cat.className   = `waddle-cat${id === state.activeCategory ? ' active' : ''}`;
             cat.dataset.cat = id;
-            cat.innerHTML = `<span class="waddle-cat-icon">${icon}</span>${label}`;
-            cat.onclick = () => switchCategory(id);
+            cat.innerHTML   = `<span class="waddle-cat-icon">${icon}</span>${label}`;
+            cat.onclick     = () => switchCategory(id);
             sidebar.appendChild(cat);
         });
 
         const footer = document.createElement('div');
-        footer.id = 'waddle-sidebar-footer';
+        footer.id          = 'waddle-sidebar-footer';
         footer.textContent = 'Press \\ to toggle';
         sidebar.appendChild(footer);
 
-        // ── Right panel
+        // Right panel
         const panel = document.createElement('div');
         panel.id = 'waddle-panel';
 
         const panelTitle = document.createElement('div');
-        panelTitle.id = 'waddle-panel-title';
+        panelTitle.id          = 'waddle-panel-title';
         panelTitle.textContent = state.activeCategory;
 
         const moduleGrid = document.createElement('div');
         moduleGrid.id = 'waddle-module-grid';
 
-        // ── About panel (hidden by default)
+        // About panel
         const aboutPanel = document.createElement('div');
-        aboutPanel.id = 'waddle-about';
+        aboutPanel.id           = 'waddle-about';
         aboutPanel.style.display = 'none';
 
         const timerBlock = document.createElement('div');
@@ -848,28 +906,32 @@ const SCRIPT_VERSION = '6.0';
 
         const creditsBlock = document.createElement('div');
         creditsBlock.className = 'about-block';
+        // Minor fix: ?s=56 for crisp 2x rendering on HiDPI displays
         creditsBlock.innerHTML = `
           <h3>Credits</h3>
           <div class="about-credit">
-            <img src="https://avatars.githubusercontent.com/Scripter132132">
+            <img src="https://avatars.githubusercontent.com/Scripter132132?s=56">
             <div><div class="role">Original Creator</div><a href="https://github.com/Scripter132132" target="_blank">@Scripter132132</a></div>
           </div>
           <div class="about-credit">
-            <img src="https://avatars.githubusercontent.com/TheM1ddleM1n">
+            <img src="https://avatars.githubusercontent.com/TheM1ddleM1n?s=56">
             <div><div class="role" style="color:#f39c12">Enhanced By</div><a href="https://github.com/TheM1ddleM1n" target="_blank">@TheM1ddleM1n</a></div>
           </div>
         `;
 
         const linksBlock = document.createElement('div');
         linksBlock.className = 'about-block';
-        linksBlock.innerHTML = '<h3>🔗 GitHub</h3>';
+        linksBlock.innerHTML  = '<h3>🔗 GitHub</h3>';
         const linksRow = document.createElement('div');
         linksRow.className = 'about-links';
-        [['Suggest Feature','https://github.com/TheM1ddleM1n/Waddle/issues/new?labels=enhancement'],
-         ['Report Bug',     'https://github.com/TheM1ddleM1n/Waddle/issues/new?labels=bug']].forEach(([text, url]) => {
+        [
+            ['Suggest Feature', 'https://github.com/TheM1ddleM1n/Waddle/issues/new?labels=enhancement'],
+            ['Report Bug',      'https://github.com/TheM1ddleM1n/Waddle/issues/new?labels=bug'        ]
+        ].forEach(([text, url]) => {
             const btn = document.createElement('button');
-            btn.className = 'about-link-btn'; btn.textContent = text;
-            btn.onclick = () => window.open(url, '_blank');
+            btn.className   = 'about-link-btn';
+            btn.textContent = text;
+            btn.onclick     = () => window.open(url, '_blank');
             linksRow.appendChild(btn);
         });
         linksBlock.appendChild(linksRow);
@@ -910,7 +972,7 @@ const SCRIPT_VERSION = '6.0';
         });
     }
 
-    // ─── Init ──────────────────────────────────────────────────────────────────
+    // ─── Init ─────────────────────────────────────────────────────────────────
     function restoreSavedState() {
         const saved = localStorage.getItem(SETTINGS_KEY);
         if (!saved) return;
@@ -928,6 +990,7 @@ const SCRIPT_VERSION = '6.0';
         Object.entries(state.features).forEach(([feature, enabled]) => {
             if (enabled) { featureManager[feature]?.cleanup?.(); featureManager[feature]?.stop?.(); }
         });
+        // Fix 12: all intervals including waitForGame are stored here
         Object.values(state.intervals).forEach(id => { if (id) clearInterval(id); });
         if (state.rafId) cancelAnimationFrame(state.rafId);
     }
