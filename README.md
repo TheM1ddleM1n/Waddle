@@ -4,7 +4,7 @@
 
 ### The Ultimate Miniblox Enhancement Suite!
 
-![Version](https://img.shields.io/badge/version-6.5-39ff14?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-6.8-39ff14?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-39ff14?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-39ff14?style=for-the-badge)
 
@@ -47,6 +47,7 @@
 | 🕐 Clock | 12-hour clock, fixed bottom-right |
 | ⌨️ Key Display | WASD + LMB/RMB/Space, cyan on press |
 | 🐧 Anti-AFK | Auto spacebar every 5s with countdown |
+| 🐧 Fun Facts | Penguin fun fact toast on game join |
 | 🚫 Block Party RQ | Silently blocks party invites |
 
 ---
@@ -73,12 +74,13 @@
 
 ## 📝 Changelog
 
-### [6.5 v2] - Reliability Pass
-- ⚡ `getGameCached()` — game reference now revalidated every 2s instead of every RAF frame; `updatePerformanceCounter` accepts pre-resolved game to avoid double-resolve
+### [6.8] - Stability & Polish
+- ⚡ `getGameCached()` — game reference revalidated every 2s instead of every RAF frame
 - 🐛 `_panelCache` busted on `restoreSavedState` so module buttons correctly reflect loaded settings
 - 🛡️ Three.js version guard in `initSpaceSky` — uses bundled copy only if `REVISION >= 128`, otherwise loads pinned CDN build with `onerror` toast fallback
-- 🛡️ Error boundary in `startTargetHUDLoop` — `tick()` wrapped in try/catch; on error, resets draw state and restarts via `setTimeout` + early `return` to prevent duplicate RAF chains
-- 🗂️ Settings versioning — `migrateSettings()` silently drops keys not present in the current feature set; `KNOWN_FEATURES` derived automatically from initial state so no manual list to maintain
+- 🛡️ Error boundary in `startTargetHUDLoop` — `tick()` wrapped in try/catch; resets draw state and restarts via `setTimeout` to prevent duplicate RAF chains
+- 🗂️ Settings versioning — `migrateSettings()` silently drops keys not in the current feature set; `KNOWN_FEATURES` derived automatically from initial state
+- ✨ Fun Facts module — penguin fact toast fires once on first game join per session
 
 ### [6.5] - Space Sky
 - 🗑️ Removed custom health/food/XP overlay — native bars restored
@@ -111,7 +113,6 @@
 | Original Creator          | [@Scripter132132](https://github.com/Scripter132132) |
 | Enhancement & Maintenance | [@TheM1ddleM1n](https://github.com/TheM1ddleM1n)     |
 | Inspired By               | Scripter's NovaCore Client                           |
-
 
 ---
 
