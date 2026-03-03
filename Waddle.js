@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Waddle
+// @name         Waddle (With Fun Facts!)
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
 // @version      6.8
 // @description  The ultimate Miniblox enhancement suite with advanced API features!
@@ -388,323 +388,328 @@ const SCRIPT_VERSION = '6.8';
   }
 
   // ─── HUD Canvas ──────────────────────────────────────────────────────────────
-  function initHudCanvas() {
-    if (document.getElementById('wb-hud-canvas')) return;
-    const canvas = document.createElement('canvas');
-    canvas.id = 'wb-hud-canvas';
+function initHudCanvas() {
+  if (document.getElementById('wb-hud-canvas')) return;
+  const canvas = document.createElement('canvas');
+  canvas.id = 'wb-hud-canvas';
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  document.body.appendChild(canvas);
+  window.addEventListener('resize', () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    document.body.appendChild(canvas);
-    window.addEventListener('resize', () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }, { passive: true });
+  }, { passive: true });
+}
+
+// ─── Target HUD ──────────────────────────────────────────────────────────────
+const _faceImgCache = {};
+const _playerFaceCache = {};
+let _entityMapKey = null;
+
+let _cachedNearest = null;
+let _cachedMinDist = Infinity;
+let _lastEntityScan = 0;
+const ENTITY_SCAN_INTERVAL = 50;
+
+let _cachedPauseMenu = false;
+let _lastPauseCheck = 0;
+const PAUSE_CHECK_INTERVAL = 200;
+
+let _cachedBorderGradient = null;
+let _cachedBorderGradientKey = '';
+
+let _lastDrawnHp = -1;
+let _lastDrawnName = '';
+let _lastDrawnFaceSrc = '';
+let _lastDrawnType = '';
+let _needsRedraw = true;
+
+// ─── Smooth HP
+let _displayedHp = 0;
+
+function findEntityMapKey(world) {
+  if (_entityMapKey && world[_entityMapKey] instanceof Map) return _entityMapKey;
+  for (const [k, v] of Object.entries(world)) {
+    if (v instanceof Map && v.size > 0) {
+      const first = v.values().next().value;
+      if (first && typeof first.getHealth === 'function' && first.pos) {
+        _entityMapKey = k;
+        return k;
+      }
+    }
+  }
+  return null;
+}
+
+// ─── Target HUD Loop
+function startTargetHUDLoop() {
+  const canvas = document.getElementById('wb-hud-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    showToast('Target HUD', 'info', 'Canvas 2D context unavailable');
+    return;
   }
 
-  // ─── Target HUD ──────────────────────────────────────────────────────────────
-  const _faceImgCache = {};
-  const _playerFaceCache = {};
-  let _entityMapKey = null;
+  const MAX_RANGE = 5;
+  const W = 220, R = 10;
+  const H_ENTITY = 86;
+  const H_BLOCK = 52;
 
-  let _cachedNearest = null;
-  let _cachedMinDist = Infinity;
-  let _lastEntityScan = 0;
-  const ENTITY_SCAN_INTERVAL = 50;
-
-  let _cachedPauseMenu = false;
-  let _lastPauseCheck = 0;
-  const PAUSE_CHECK_INTERVAL = 200;
-
-  let _cachedBorderGradient = null;
-  let _cachedBorderGradientKey = '';
-
-  let _lastDrawnHp = -1;
-  let _lastDrawnName = '';
-  let _lastDrawnFaceSrc = '';
-  let _lastDrawnType = '';
-  let _needsRedraw = true;
-
-  function findEntityMapKey(world) {
-    if (_entityMapKey && world[_entityMapKey] instanceof Map) return _entityMapKey;
-    for (const [k, v] of Object.entries(world)) {
-      if (v instanceof Map && v.size > 0) {
-        const first = v.values().next().value;
-        if (first && typeof first.getHealth === 'function' && first.pos) {
-          _entityMapKey = k;
-          return k;
-        }
-      }
-    }
-    return null;
+  function getBorderGradient(x, y, h) {
+    const key = `${x},${y},${h}`;
+    if (_cachedBorderGradient && _cachedBorderGradientKey === key) return _cachedBorderGradient;
+    const g = ctx.createLinearGradient(x, y, x + W, y + h);
+    g.addColorStop(0, '#7c3aed');
+    g.addColorStop(1, '#2563eb');
+    _cachedBorderGradient = g;
+    _cachedBorderGradientKey = key;
+    return g;
   }
 
-  // ─── Fix 4: Error boundary + self-restarting RAF in startTargetHUDLoop ───────
-  function startTargetHUDLoop() {
-    const canvas = document.getElementById('wb-hud-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      showToast('Target HUD', 'info', 'Canvas 2D context unavailable');
-      return;
+  let _domFaceEl = null;
+  let _domNameEl = null;
+  let _domQueryAge = 0;
+  const DOM_QUERY_INTERVAL = 500;
+
+  function getDOM(now) {
+    if (now - _domQueryAge > DOM_QUERY_INTERVAL) {
+      _domFaceEl = document.querySelector('.css-1pj0jj0 img');
+      _domNameEl = document.querySelector('.css-1pj0jj0 p');
+      _domQueryAge = now;
     }
+  }
 
-    const MAX_RANGE = 5;
-    const W = 220, R = 10;
-    const H_ENTITY = 86;
-    const H_BLOCK = 52;
+  function drawRoundedBox(x, y, w, h) {
+    ctx.beginPath();
+    ctx.moveTo(x + R, y);
+    ctx.lineTo(x + w - R, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + R);
+    ctx.lineTo(x + w, y + h - R);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - R, y + h);
+    ctx.lineTo(x + R, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - R);
+    ctx.lineTo(x, y + R);
+    ctx.quadraticCurveTo(x, y, x + R, y);
+    ctx.closePath();
+  }
 
-    function getBorderGradient(x, y, h) {
-      const key = `${x},${y},${h}`;
-      if (_cachedBorderGradient && _cachedBorderGradientKey === key) return _cachedBorderGradient;
-      const g = ctx.createLinearGradient(x, y, x + W, y + h);
-      g.addColorStop(0, '#7c3aed');
-      g.addColorStop(1, '#2563eb');
-      _cachedBorderGradient = g;
-      _cachedBorderGradientKey = key;
-      return g;
-    }
+  // ─── Draw Entity HUD with Smooth HP + Full Opacity
+  function drawEntityHUD(nearest, faceSrc, faceName) {
+    const x = (canvas.width - W) / 2;
+    const y = 16;
+    const maxHp = nearest.getMaxHealth?.() ?? 20;
 
-    let _domFaceEl = null;
-    let _domNameEl = null;
-    let _domQueryAge = 0;
-    const DOM_QUERY_INTERVAL = 500;
+    const realHp = Math.max(0, nearest.getHealth());
+    if (_displayedHp === 0) _displayedHp = realHp;
+    _displayedHp += (realHp - _displayedHp) * 0.15;
+    const hp = _displayedHp;
+    const hpPct = hp / maxHp;
 
-    function getDOM(now) {
-      if (now - _domQueryAge > DOM_QUERY_INTERVAL) {
-        _domFaceEl = document.querySelector('.css-1pj0jj0 img');
-        _domNameEl = document.querySelector('.css-1pj0jj0 p');
-        _domQueryAge = now;
+    const barColor = hpPct > 0.5 ? '#22c55e' : hpPct > 0.25 ? '#eab308' : '#ef4444';
+
+    if (
+      Math.round(hp) === Math.round(_lastDrawnHp) &&
+      faceName === _lastDrawnName &&
+      faceSrc === _lastDrawnFaceSrc &&
+      _lastDrawnType === 'entity' &&
+      !_needsRedraw
+    ) return;
+
+    _lastDrawnHp = Math.round(hp);
+    _lastDrawnName = faceName;
+    _lastDrawnFaceSrc = faceSrc;
+    _lastDrawnType = 'entity';
+    _needsRedraw = false;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+
+    ctx.globalAlpha = 1; // fully opaque
+    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+    ctx.shadowBlur = 18;
+    drawRoundedBox(x, y, W, H_ENTITY);
+    ctx.fillStyle = '#0b0b14';
+    ctx.fill();
+
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = getBorderGradient(x, y, H_ENTITY);
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    if (faceSrc) {
+      if (!_faceImgCache[faceSrc]) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = faceSrc;
+        _faceImgCache[faceSrc] = img;
       }
+      const img = _faceImgCache[faceSrc];
+      if (img.complete && img.naturalWidth > 0) ctx.drawImage(img, x + 10, y + 10, 34, 34);
     }
 
-    function drawRoundedBox(x, y, w, h) {
-      ctx.beginPath();
-      ctx.moveTo(x + R, y);
-      ctx.lineTo(x + w - R, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + R);
-      ctx.lineTo(x + w, y + h - R);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - R, y + h);
-      ctx.lineTo(x + R, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - R);
-      ctx.lineTo(x, y + R);
-      ctx.quadraticCurveTo(x, y, x + R, y);
-      ctx.closePath();
-    }
+    const nameX = faceSrc ? x + 52 : x + 10;
+    ctx.font = 'bold 13px Poppins,sans-serif';
+    ctx.fillStyle = '#e2e8f0';
+    ctx.textAlign = 'left';
+    ctx.fillText(faceName, nameX, y + 26);
 
-    function drawEntityHUD(nearest, faceSrc, faceName) {
-      const x = (canvas.width - W) / 2;
-      const y = 16;
-      const maxHp = nearest.getMaxHealth?.() ?? 20;
-      const hp = Math.max(0, nearest.getHealth());
-      const hpPct = hp / maxHp;
-      const barColor = hpPct > 0.5 ? '#22c55e' : hpPct > 0.25 ? '#eab308' : '#ef4444';
+    const barW = W - 20, barH = 8;
+    const barX = x + 10, barY = y + 40;
 
-      if (
-        hp === _lastDrawnHp &&
-        faceName === _lastDrawnName &&
-        faceSrc === _lastDrawnFaceSrc &&
-        _lastDrawnType === 'entity' &&
-        !_needsRedraw
-      ) return;
+    ctx.fillStyle = 'rgba(255,255,255,0.07)';
+    ctx.beginPath();
+    ctx.roundRect(barX, barY, barW, barH, 4);
+    ctx.fill();
 
-      _lastDrawnHp = hp;
-      _lastDrawnName = faceName;
-      _lastDrawnFaceSrc = faceSrc;
-      _lastDrawnType = 'entity';
-      _needsRedraw = false;
+    ctx.fillStyle = barColor;
+    ctx.beginPath();
+    ctx.roundRect(barX, barY, Math.max(hpPct * barW, 0), barH, 4);
+    ctx.fill();
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.save();
+    ctx.font = '10px Poppins,sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,1)';
+    ctx.fillText(`${Math.round(hp)} / ${maxHp}`, barX, barY + barH + 14);
 
-      ctx.shadowColor = 'rgba(0,0,0,0.9)';
-      ctx.shadowBlur = 18;
-      drawRoundedBox(x, y, W, H_ENTITY);
-      ctx.globalAlpha = 0.9;
-      ctx.fillStyle = '#0b0b14';
-      ctx.fill();
-      ctx.globalAlpha = 1;
-      ctx.strokeStyle = getBorderGradient(x, y, H_ENTITY);
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
+    ctx.restore();
+  }
 
-      if (faceSrc) {
-        if (!_faceImgCache[faceSrc]) {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.src = faceSrc;
-          _faceImgCache[faceSrc] = img;
-        }
-        const img = _faceImgCache[faceSrc];
-        if (img.complete && img.naturalWidth > 0) ctx.drawImage(img, x + 10, y + 10, 34, 34);
-      }
+  function drawBlockHUD(blockName) {
+    const x = (canvas.width - W) / 2;
+    const y = 16;
 
-      const nameX = faceSrc ? x + 52 : x + 10;
-      ctx.textAlign = 'left';
-      ctx.font = 'bold 13px Poppins,sans-serif';
-      ctx.fillStyle = '#e2e8f0';
-      ctx.fillText(faceName, nameX, y + 26);
-
-      const barW = W - 20, barH = 8;
-      const barX = x + 10;
-      const barY = y + 40;
-
-      ctx.fillStyle = 'rgba(255,255,255,0.07)';
-      ctx.beginPath();
-      ctx.roundRect(barX, barY, barW, barH, 4);
-      ctx.fill();
-
-      ctx.fillStyle = barColor;
-      ctx.beginPath();
-      ctx.roundRect(barX, barY, Math.max(hpPct * barW, 0), barH, 4);
-      ctx.fill();
-
-      ctx.font = '10px Poppins,sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.6)';
-      ctx.textAlign = 'left';
-      ctx.fillText(`${Math.round(hp)} / ${maxHp}`, barX, barY + barH + 14);
-
-      ctx.restore();
-    }
-
-    function drawBlockHUD(blockName) {
-      const x = (canvas.width - W) / 2;
-      const y = 16;
-
-      if (
-        blockName === _lastDrawnName &&
+    if (blockName === _lastDrawnName &&
         _lastDrawnType === 'block' &&
-        !_needsRedraw
-      ) return;
+        !_needsRedraw) return;
 
-      _lastDrawnName = blockName;
-      _lastDrawnType = 'block';
-      _lastDrawnHp = -1;
-      _lastDrawnFaceSrc = '';
-      _needsRedraw = false;
+    _lastDrawnName = blockName;
+    _lastDrawnType = 'block';
+    _lastDrawnHp = -1;
+    _lastDrawnFaceSrc = '';
+    _needsRedraw = false;
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.save();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
 
-      ctx.shadowColor = 'rgba(0,0,0,0.9)';
-      ctx.shadowBlur = 18;
-      drawRoundedBox(x, y, W, H_BLOCK);
-      ctx.globalAlpha = 0.9;
-      ctx.fillStyle = '#0b0b14';
-      ctx.fill();
-      ctx.globalAlpha = 1;
-      ctx.strokeStyle = getBorderGradient(x, y, H_BLOCK);
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1; // full opacity
+    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+    ctx.shadowBlur = 18;
+    drawRoundedBox(x, y, W, H_BLOCK);
+    ctx.fillStyle = '#0b0b14';
+    ctx.fill();
 
-      ctx.font = '22px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText('🧱', x + 10, y + 32);
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = getBorderGradient(x, y, H_BLOCK);
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
 
-      ctx.font = 'bold 13px Poppins,sans-serif';
-      ctx.fillStyle = '#e2e8f0';
-      ctx.textAlign = 'left';
-      ctx.fillText(blockName, x + 44, y + 21);
+    ctx.font = '22px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('🧱', x + 10, y + 32);
 
-      ctx.font = '10px Poppins,sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.35)';
-      ctx.fillText('Block', x + 44, y + 36);
+    ctx.font = 'bold 13px Poppins,sans-serif';
+    ctx.fillStyle = '#e2e8f0';
+    ctx.textAlign = 'left';
+    ctx.fillText(blockName, x + 44, y + 21);
 
-      ctx.restore();
-    }
+    ctx.font = '10px Poppins,sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,1)';
+    ctx.fillText('Block', x + 44, y + 36);
 
-    function tick() {
-      try {
-        const now = performance.now();
+    ctx.restore();
+  }
 
-        if (now - _lastPauseCheck > PAUSE_CHECK_INTERVAL) {
-          _cachedPauseMenu = !!document.querySelector('.chakra-modal__content-container,[role="dialog"]');
-          _lastPauseCheck = now;
+  function tick() {
+    try {
+      const now = performance.now();
+
+      if (now - _lastPauseCheck > PAUSE_CHECK_INTERVAL) {
+        _cachedPauseMenu = !!document.querySelector('.chakra-modal__content-container,[role="dialog"]');
+        _lastPauseCheck = now;
+      }
+
+      const inGame = !!(document.pointerLockElement && !_cachedPauseMenu);
+      if (!inGame) {
+        if (_lastDrawnType !== '') {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          _lastDrawnType = '';
+          _needsRedraw = true;
+        }
+        requestAnimationFrame(tick);
+        return;
+      }
+
+      const game = getGameCached(now);
+      const player = game?.player;
+
+      if (game?.world && player?.pos) {
+        if (now - _lastEntityScan > ENTITY_SCAN_INTERVAL) {
+          _lastEntityScan = now;
+          const mapKey = findEntityMapKey(game.world);
+          const dump = mapKey ? game.world[mapKey] : null;
+          if (dump) {
+            let nearest = null, minDist = Infinity;
+            dump.forEach((entity) => {
+              if (!entity || entity.id === player.id) return;
+              if (typeof entity.getHealth !== 'function') return;
+              if (!entity.pos) return;
+              const dist = player.pos.distanceTo(entity.pos);
+              if (dist < minDist) { minDist = dist; nearest = entity; }
+            });
+            if (nearest !== _cachedNearest) _needsRedraw = true;
+            _cachedNearest = nearest;
+            _cachedMinDist = minDist;
+          }
         }
 
-        const inGame = !!(document.pointerLockElement && !_cachedPauseMenu);
-        if (!inGame) {
-          if (_lastDrawnType !== '') {
+        if (_cachedNearest && _cachedMinDist <= MAX_RANGE) {
+          const isPlayer = _cachedNearest.constructor?.name === 'ClientEntityPlayerOther';
+          getDOM(now);
+
+          const domSrc = _domFaceEl?.src ?? null;
+          const domName = _domNameEl?.textContent ?? null;
+
+          let faceSrc = null;
+          let faceName;
+
+          if (isPlayer) {
+            const lookingAtPlayer = !!(domSrc);
+            const nameKey = (lookingAtPlayer ? domName : null) || _cachedNearest.name || '';
+            if (domSrc && nameKey) _playerFaceCache[nameKey] = domSrc;
+            faceSrc = _playerFaceCache[nameKey] ?? null;
+            faceName = (lookingAtPlayer ? domName : null) || _cachedNearest.name || '???';
+          } else {
+            faceName = _cachedNearest.name || _cachedNearest.constructor?.name?.replace('Entity', '') || '???';
+          }
+
+          drawEntityHUD(_cachedNearest, faceSrc, faceName);
+        } else {
+          getDOM(now);
+          const blockName = _domNameEl?.textContent?.trim() ?? null;
+          if (blockName) {
+            drawBlockHUD(blockName);
+          } else if (_lastDrawnType !== '') {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             _lastDrawnType = '';
             _needsRedraw = true;
           }
-          requestAnimationFrame(tick);
-          return;
         }
-
-        const game = getGameCached(now);
-        const player = game?.player;
-
-        if (game?.world && player?.pos) {
-          if (now - _lastEntityScan > ENTITY_SCAN_INTERVAL) {
-            _lastEntityScan = now;
-            const mapKey = findEntityMapKey(game.world);
-            const dump = mapKey ? game.world[mapKey] : null;
-            if (dump) {
-              let nearest = null, minDist = Infinity;
-              dump.forEach((entity) => {
-                if (!entity || entity.id === player.id) return;
-                if (typeof entity.getHealth !== 'function') return;
-                if (!entity.pos) return;
-                const dist = player.pos.distanceTo(entity.pos);
-                if (dist < minDist) { minDist = dist; nearest = entity; }
-              });
-              if (nearest !== _cachedNearest) _needsRedraw = true;
-              _cachedNearest = nearest;
-              _cachedMinDist = minDist;
-            }
-          }
-
-          if (_cachedNearest && _cachedMinDist <= MAX_RANGE) {
-            const isPlayer = _cachedNearest.constructor?.name === 'ClientEntityPlayerOther';
-            getDOM(now);
-
-            const domSrc = _domFaceEl?.src ?? null;
-            const domName = _domNameEl?.textContent ?? null;
-
-            let faceSrc = null;
-            let faceName;
-
-            if (isPlayer) {
-              const lookingAtPlayer = !!(domSrc);
-              const nameKey = (lookingAtPlayer ? domName : null) || _cachedNearest.name || '';
-              if (domSrc && nameKey) _playerFaceCache[nameKey] = domSrc;
-              faceSrc = _playerFaceCache[nameKey] ?? null;
-              faceName = (lookingAtPlayer ? domName : null) || _cachedNearest.name || '???';
-            } else {
-              faceName = _cachedNearest.name || _cachedNearest.constructor?.name?.replace('Entity', '') || '???';
-            }
-
-            drawEntityHUD(_cachedNearest, faceSrc, faceName);
-          } else {
-            getDOM(now);
-            const blockName = _domNameEl?.textContent?.trim() ?? null;
-            if (blockName) {
-              drawBlockHUD(blockName);
-            } else if (_lastDrawnType !== '') {
-              ctx.clearRect(0, 0, canvas.width, canvas.height);
-              _lastDrawnType = '';
-              _needsRedraw = true;
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('[Waddle] Target HUD tick error:', err);
-        _lastDrawnType = '';
-        _needsRedraw = true;
-        try { ctx.clearRect(0, 0, canvas.width, canvas.height); } catch (_) {}
-        setTimeout(() => requestAnimationFrame(tick), 2000);
-        return;
       }
-      requestAnimationFrame(tick);
+    } catch (err) {
+      console.warn('[Waddle] Target HUD tick error:', err);
+      _lastDrawnType = '';
+      _needsRedraw = true;
+      try { ctx.clearRect(0, 0, canvas.width, canvas.height); } catch (_) {}
+      setTimeout(() => requestAnimationFrame(tick), 2000);
+      return;
     }
-
     requestAnimationFrame(tick);
   }
+
+  requestAnimationFrame(tick);
+}
 
   // ─── Counters ────────────────────────────────────────────────────────────────
   function createCounter(type) {
