@@ -4,7 +4,7 @@
 
 ### The Ultimate Miniblox Enhancement Suite!
 
-![Version](https://img.shields.io/badge/version-6.8-39ff14?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-6.9-39ff14?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-39ff14?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-39ff14?style=for-the-badge)
 
@@ -33,6 +33,7 @@
 - **Mobs** — clean name (`Zombie`, `Creeper` etc.) + health bar + distance
 - **Blocks** — block name + 🧱 icon when no entity is nearby. Entity always takes priority over block
 - Health bar color reacts to HP: 🟢 → 🟡 → 🔴
+- Smooth HP interpolation resets correctly on target switch
 
 **🌌 Space Sky** — MilkyWay cubemap skybox, replaces the default day/night sky entirely
 
@@ -44,10 +45,10 @@
 |---------|-------------|
 | 📊 FPS & Ping | Unified counter, color-coded by performance |
 | 📍 Coordinates | Live X Y Z, 10 updates/sec |
-| 🕐 Clock | 12-hour clock, fixed bottom-right |
+| 🕐 Clock | 24-hour clock with AM/PM (e.g. `20:00:00 PM`), fixed bottom-right |
 | ⌨️ Key Display | WASD + LMB/RMB/Space, cyan on press |
 | 🐧 Anti-AFK | Auto spacebar every 5s with countdown |
-| 🐧 Fun Facts | Penguin fun fact toast on game join |
+| 🐧 Fun Facts | Penguin fun fact toast on game join, resets on toggle |
 | 🚫 Block Party RQ | Silently blocks party invites |
 
 ---
@@ -60,19 +61,35 @@
 - Single RAF loop, direct DOM updates, debounced settings saves
 - MutationObserver scoped to `#react` only, module panels cached
 - Space sky patches `sky.update` directly — zero RAF overhead
+- Face and player image caches pruned to 64 entries to prevent unbounded growth
 
 ---
 
 ## 🛡️ Stability
 
 - Target HUD RAF loop is error-bounded — any mid-frame throw resets state and restarts after 2s backoff instead of silently dying
-- Space Sky detects whether Miniblox's bundled Three.js is new enough (r128+) before using it; falls back to a pinned CDN build if not, with a toast on failure
+- Smooth HP bar resets to zero on target switch so interpolation always starts from the correct entity
+- Space Sky detects whether Miniblox's bundled Three.js is new enough (r128+) before using it; falls back to a pinned CDN build if not, with a toast on failure. Gives up after 20 attempts with a toast instead of retrying forever
 - Settings migration strips unrecognised keys from older versions so stale config never breaks new feature state
 - Panel cache is invalidated on settings restore so module buttons always reflect the correct saved state
+- MutationObserver and resize listener are properly disconnected and removed on page unload
+- CPS detector interval stored in state so it is cleaned up on unload
 
 ---
 
 ## 📝 Changelog
+
+### [6.9] - Bug Fixes & Polish
+- 🐛 `_displayedHp` resets to `0` on target switch — smooth HP bar no longer interpolates from a previous entity's health
+- 🐛 CPS detector interval now stored in `state.intervals` so it is properly cleaned up on unload
+- 🐛 `funFacts` cleanup now clears `hasShownFunFactOnJoin` so the module works correctly when toggled off and on again
+- 🛡️ `MutationObserver` from crosshair module disconnected on page unload
+- 🛡️ Canvas resize listener stored on state and removed on page unload
+- 🛡️ `tryPatch` in `initSpaceSky` now gives up after 20 attempts with a toast instead of retrying forever
+- ⚡ One-off `getGameCached` calls pass `0` to force revalidation without an unnecessary `performance.now()` call
+- ⚡ `pressSpace` now dispatches on both `document` and `window` for better compatibility
+- ⚡ Face and player image caches pruned to a max of 64 entries to prevent memory growth
+- 🕐 Clock now shows 24-hour time with AM/PM suffix (e.g. `20:00:00 PM`)
 
 ### [6.8] - Stability & Polish
 - ⚡ `getGameCached()` — game reference revalidated every 2s instead of every RAF frame
