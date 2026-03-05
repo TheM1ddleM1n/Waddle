@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Waddle (With Fun Facts!)
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
-// @version      6.8
+// @version      6.9
 // @description  The ultimate Miniblox enhancement suite with advanced API features!
 // @author       The Dream Team! (Scripter & TheM1ddleM1n)
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/Waddle/refs/heads/main/Penguin.png
@@ -9,7 +9,7 @@
 // @run-at       document-start
 // ==/UserScript==
 
-const SCRIPT_VERSION = '6.8';
+const SCRIPT_VERSION = '6.9';
 
 (function () {
   'use strict';
@@ -75,7 +75,7 @@ const SCRIPT_VERSION = '6.8';
     'Not all penguins live in icy climates; several species live in temperate regions.',
     'Penguins are birds, but their bodies are specialized for swimming instead of flying.'
   ];
-  // ─── gameRef ─────────────────────────────────────────────────────────────────
+
   const gameRef = {
     _game: null,
     _attempts: 0,
@@ -106,7 +106,6 @@ const SCRIPT_VERSION = '6.8';
     reset() { this._attempts = 0; this._lastTryTime = 0; }
   };
 
-  // ─── Fix 1: Cached game accessor (revalidates every 2s, not every frame) ────
   let _lastGameValidation = 0;
   function getGameCached(now = performance.now()) {
     if (!gameRef._game || now - _lastGameValidation > 2000) {
@@ -116,7 +115,6 @@ const SCRIPT_VERSION = '6.8';
     return gameRef._game;
   }
 
-  // ─── State ───────────────────────────────────────────────────────────────────
   let state = {
     features: {
       performance: false, coords: false, realTime: false,
@@ -137,10 +135,11 @@ const SCRIPT_VERSION = '6.8';
     crosshairContainer: null,
     hudArray: null,
     toastContainer: null,
-    hasShownFunFactOnJoin: false
+    hasShownFunFactOnJoin: false,
+    _resizeHandler: null,
+    _crosshairObserver: null
   };
 
-  // ─── Fix 5: Settings versioning — derive known keys from initial state ────────
   const KNOWN_FEATURES = new Set(Object.keys(state.features));
 
   function migrateSettings(raw) {
@@ -152,7 +151,6 @@ const SCRIPT_VERSION = '6.8';
     return features;
   }
 
-  // ─── Greeting ────────────────────────────────────────────────────────────────
   (function () {
     state.intervals.waitForGame = setInterval(() => {
       const game = gameRef.resolve();
@@ -166,13 +164,12 @@ const SCRIPT_VERSION = '6.8';
     }, 500);
   })();
 
-  // ─── CPS Detector ────────────────────────────────────────────────────────────
   (function () {
     let clicks = 0;
     const CPS_THRESHOLD = 15, CHECK_INTERVAL = 1000, COOLDOWN = 2000;
     let lastWarningTime = 0;
     document.addEventListener('mousedown', () => { clicks++; });
-    setInterval(() => {
+    state.intervals.cpsDetector = setInterval(() => {
       const cps = clicks; clicks = 0;
       if (cps < CPS_THRESHOLD) return;
       const game = gameRef.resolve();
@@ -184,7 +181,6 @@ const SCRIPT_VERSION = '6.8';
     }, CHECK_INTERVAL);
   })();
 
-  // ─── Settings ────────────────────────────────────────────────────────────────
   let _saveTimer = null;
   function saveSettings() {
     clearTimeout(_saveTimer);
@@ -193,7 +189,6 @@ const SCRIPT_VERSION = '6.8';
     }, 100);
   }
 
-  // ─── Styles ──────────────────────────────────────────────────────────────────
   function injectStyles() {
     if (!document.head) return false;
     const style = document.createElement('style');
@@ -277,7 +272,6 @@ const SCRIPT_VERSION = '6.8';
     return true;
   }
 
-  // ─── Toast ───────────────────────────────────────────────────────────────────
   function showToast(title, type = 'info', message = '') {
     if (!document.body) return;
     if (!state.toastContainer || !document.contains(state.toastContainer)) {
@@ -302,7 +296,6 @@ const SCRIPT_VERSION = '6.8';
     setTimeout(() => { toast.classList.add('hide'); setTimeout(() => toast.remove(), 280); }, 2800);
   }
 
-  // ─── HUD ─────────────────────────────────────────────────────────────────────
   function initHud() {
     if (document.getElementById('waddle-hud')) return;
     const hud = document.createElement('div');
@@ -330,7 +323,6 @@ const SCRIPT_VERSION = '6.8';
     });
   }
 
-  // ─── Session Timer ───────────────────────────────────────────────────────────
   function formatSessionTime() {
     const s = Math.floor((Date.now() - state.startTime) / 1000);
     return [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60]
@@ -342,7 +334,6 @@ const SCRIPT_VERSION = '6.8';
     if (el) el.textContent = formatSessionTime();
   }
 
-  // ─── Crosshair ───────────────────────────────────────────────────────────────
   let _crosshairRafPending = false;
 
   function makeLine(styles) {
@@ -378,340 +369,352 @@ const SCRIPT_VERSION = '6.8';
     state.crosshairContainer.appendChild(createCrosshair());
     document.body.appendChild(state.crosshairContainer);
     const target = document.getElementById('react') || document.body;
-    new MutationObserver(() => {
+    state._crosshairObserver = new MutationObserver(() => {
       if (!_crosshairRafPending) {
         _crosshairRafPending = true;
         requestAnimationFrame(() => { _crosshairRafPending = false; checkCrosshair(); });
       }
-    }).observe(target, { childList: true, subtree: true });
+    });
+    state._crosshairObserver.observe(target, { childList: true, subtree: true });
     return true;
   }
 
-  // ─── HUD Canvas ──────────────────────────────────────────────────────────────
-function initHudCanvas() {
-  if (document.getElementById('wb-hud-canvas')) return;
-  const canvas = document.createElement('canvas');
-  canvas.id = 'wb-hud-canvas';
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  document.body.appendChild(canvas);
-  window.addEventListener('resize', () => {
+  function initHudCanvas() {
+    if (document.getElementById('wb-hud-canvas')) return;
+    const canvas = document.createElement('canvas');
+    canvas.id = 'wb-hud-canvas';
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-  }, { passive: true });
-}
-
-// ─── Target HUD ──────────────────────────────────────────────────────────────
-const _faceImgCache = {};
-const _playerFaceCache = {};
-let _entityMapKey = null;
-
-let _cachedNearest = null;
-let _cachedMinDist = Infinity;
-let _lastEntityScan = 0;
-const ENTITY_SCAN_INTERVAL = 50;
-
-let _cachedPauseMenu = false;
-let _lastPauseCheck = 0;
-const PAUSE_CHECK_INTERVAL = 200;
-
-let _cachedBorderGradient = null;
-let _cachedBorderGradientKey = '';
-
-let _lastDrawnHp = -1;
-let _lastDrawnName = '';
-let _lastDrawnFaceSrc = '';
-let _lastDrawnType = '';
-let _needsRedraw = true;
-
-// ─── Smooth HP
-let _displayedHp = 0;
-
-function findEntityMapKey(world) {
-  if (_entityMapKey && world[_entityMapKey] instanceof Map) return _entityMapKey;
-  for (const [k, v] of Object.entries(world)) {
-    if (v instanceof Map && v.size > 0) {
-      const first = v.values().next().value;
-      if (first && typeof first.getHealth === 'function' && first.pos) {
-        _entityMapKey = k;
-        return k;
-      }
-    }
-  }
-  return null;
-}
-
-// ─── Target HUD Loop
-function startTargetHUDLoop() {
-  const canvas = document.getElementById('wb-hud-canvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) {
-    showToast('Target HUD', 'info', 'Canvas 2D context unavailable');
-    return;
+    document.body.appendChild(canvas);
+    state._resizeHandler = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    window.addEventListener('resize', state._resizeHandler, { passive: true });
   }
 
-  const MAX_RANGE = 5;
-  const W = 220, R = 10;
-  const H_ENTITY = 86;
-  const H_BLOCK = 52;
+  const FACE_CACHE_MAX = 64;
 
-  function getBorderGradient(x, y, h) {
-    const key = `${x},${y},${h}`;
-    if (_cachedBorderGradient && _cachedBorderGradientKey === key) return _cachedBorderGradient;
-    const g = ctx.createLinearGradient(x, y, x + W, y + h);
-    g.addColorStop(0, '#7c3aed');
-    g.addColorStop(1, '#2563eb');
-    _cachedBorderGradient = g;
-    _cachedBorderGradientKey = key;
-    return g;
-  }
-
-  let _domFaceEl = null;
-  let _domNameEl = null;
-  let _domQueryAge = 0;
-  const DOM_QUERY_INTERVAL = 500;
-
-  function getDOM(now) {
-    if (now - _domQueryAge > DOM_QUERY_INTERVAL) {
-      _domFaceEl = document.querySelector('.css-1pj0jj0 img');
-      _domNameEl = document.querySelector('.css-1pj0jj0 p');
-      _domQueryAge = now;
+  function pruneCache(cache) {
+    const keys = Object.keys(cache);
+    if (keys.length > FACE_CACHE_MAX) {
+      keys.slice(0, keys.length - FACE_CACHE_MAX).forEach(k => delete cache[k]);
     }
   }
 
-  function drawRoundedBox(x, y, w, h) {
-    ctx.beginPath();
-    ctx.moveTo(x + R, y);
-    ctx.lineTo(x + w - R, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + R);
-    ctx.lineTo(x + w, y + h - R);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - R, y + h);
-    ctx.lineTo(x + R, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - R);
-    ctx.lineTo(x, y + R);
-    ctx.quadraticCurveTo(x, y, x + R, y);
-    ctx.closePath();
-  }
+  const _faceImgCache = {};
+  const _playerFaceCache = {};
+  let _entityMapKey = null;
 
-  // ─── Draw Entity HUD with Smooth HP + Full Opacity
-  function drawEntityHUD(nearest, faceSrc, faceName) {
-    const x = (canvas.width - W) / 2;
-    const y = 16;
-    const maxHp = nearest.getMaxHealth?.() ?? 20;
+  let _cachedNearest = null;
+  let _cachedMinDist = Infinity;
+  let _lastEntityScan = 0;
+  const ENTITY_SCAN_INTERVAL = 50;
 
-    const realHp = Math.max(0, nearest.getHealth());
-    if (_displayedHp === 0) _displayedHp = realHp;
-    _displayedHp += (realHp - _displayedHp) * 0.15;
-    const hp = _displayedHp;
-    const hpPct = hp / maxHp;
+  let _cachedPauseMenu = false;
+  let _lastPauseCheck = 0;
+  const PAUSE_CHECK_INTERVAL = 200;
 
-    const barColor = hpPct > 0.5 ? '#22c55e' : hpPct > 0.25 ? '#eab308' : '#ef4444';
+  let _cachedBorderGradient = null;
+  let _cachedBorderGradientKey = '';
 
-    if (
-      Math.round(hp) === Math.round(_lastDrawnHp) &&
-      faceName === _lastDrawnName &&
-      faceSrc === _lastDrawnFaceSrc &&
-      _lastDrawnType === 'entity' &&
-      !_needsRedraw
-    ) return;
+  let _lastDrawnHp = -1;
+  let _lastDrawnName = '';
+  let _lastDrawnFaceSrc = '';
+  let _lastDrawnType = '';
+  let _needsRedraw = true;
 
-    _lastDrawnHp = Math.round(hp);
-    _lastDrawnName = faceName;
-    _lastDrawnFaceSrc = faceSrc;
-    _lastDrawnType = 'entity';
-    _needsRedraw = false;
+  let _displayedHp = 0;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.save();
-
-    ctx.globalAlpha = 1; // fully opaque
-    ctx.shadowColor = 'rgba(0,0,0,0.9)';
-    ctx.shadowBlur = 18;
-    drawRoundedBox(x, y, W, H_ENTITY);
-    ctx.fillStyle = '#0b0b14';
-    ctx.fill();
-
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = getBorderGradient(x, y, H_ENTITY);
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    if (faceSrc) {
-      if (!_faceImgCache[faceSrc]) {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.src = faceSrc;
-        _faceImgCache[faceSrc] = img;
-      }
-      const img = _faceImgCache[faceSrc];
-      if (img.complete && img.naturalWidth > 0) ctx.drawImage(img, x + 10, y + 10, 34, 34);
-    }
-
-    const nameX = faceSrc ? x + 52 : x + 10;
-    ctx.font = 'bold 13px Poppins,sans-serif';
-    ctx.fillStyle = '#e2e8f0';
-    ctx.textAlign = 'left';
-    ctx.fillText(faceName, nameX, y + 26);
-
-    const barW = W - 20, barH = 8;
-    const barX = x + 10, barY = y + 40;
-
-    ctx.fillStyle = 'rgba(255,255,255,0.07)';
-    ctx.beginPath();
-    ctx.roundRect(barX, barY, barW, barH, 4);
-    ctx.fill();
-
-    ctx.fillStyle = barColor;
-    ctx.beginPath();
-    ctx.roundRect(barX, barY, Math.max(hpPct * barW, 0), barH, 4);
-    ctx.fill();
-
-    ctx.font = '10px Poppins,sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,1)';
-    ctx.fillText(`${Math.round(hp)} / ${maxHp}`, barX, barY + barH + 14);
-
-    ctx.restore();
-  }
-
-  function drawBlockHUD(blockName) {
-    const x = (canvas.width - W) / 2;
-    const y = 16;
-
-    if (blockName === _lastDrawnName &&
-        _lastDrawnType === 'block' &&
-        !_needsRedraw) return;
-
-    _lastDrawnName = blockName;
-    _lastDrawnType = 'block';
-    _lastDrawnHp = -1;
-    _lastDrawnFaceSrc = '';
-    _needsRedraw = false;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.save();
-
-    ctx.globalAlpha = 1; // full opacity
-    ctx.shadowColor = 'rgba(0,0,0,0.9)';
-    ctx.shadowBlur = 18;
-    drawRoundedBox(x, y, W, H_BLOCK);
-    ctx.fillStyle = '#0b0b14';
-    ctx.fill();
-
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = getBorderGradient(x, y, H_BLOCK);
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    ctx.font = '22px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('🧱', x + 10, y + 32);
-
-    ctx.font = 'bold 13px Poppins,sans-serif';
-    ctx.fillStyle = '#e2e8f0';
-    ctx.textAlign = 'left';
-    ctx.fillText(blockName, x + 44, y + 21);
-
-    ctx.font = '10px Poppins,sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,1)';
-    ctx.fillText('Block', x + 44, y + 36);
-
-    ctx.restore();
-  }
-
-  function tick() {
-    try {
-      const now = performance.now();
-
-      if (now - _lastPauseCheck > PAUSE_CHECK_INTERVAL) {
-        _cachedPauseMenu = !!document.querySelector('.chakra-modal__content-container,[role="dialog"]');
-        _lastPauseCheck = now;
-      }
-
-      const inGame = !!(document.pointerLockElement && !_cachedPauseMenu);
-      if (!inGame) {
-        if (_lastDrawnType !== '') {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          _lastDrawnType = '';
-          _needsRedraw = true;
+  function findEntityMapKey(world) {
+    if (_entityMapKey && world[_entityMapKey] instanceof Map) return _entityMapKey;
+    for (const [k, v] of Object.entries(world)) {
+      if (v instanceof Map && v.size > 0) {
+        const first = v.values().next().value;
+        if (first && typeof first.getHealth === 'function' && first.pos) {
+          _entityMapKey = k;
+          return k;
         }
-        requestAnimationFrame(tick);
-        return;
+      }
+    }
+    return null;
+  }
+
+  function startTargetHUDLoop() {
+    const canvas = document.getElementById('wb-hud-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      showToast('Target HUD', 'info', 'Canvas 2D context unavailable');
+      return;
+    }
+
+    const MAX_RANGE = 5;
+    const W = 220, R = 10;
+    const H_ENTITY = 86;
+    const H_BLOCK = 52;
+
+    function getBorderGradient(x, y, h) {
+      const key = `${x},${y},${h}`;
+      if (_cachedBorderGradient && _cachedBorderGradientKey === key) return _cachedBorderGradient;
+      const g = ctx.createLinearGradient(x, y, x + W, y + h);
+      g.addColorStop(0, '#7c3aed');
+      g.addColorStop(1, '#2563eb');
+      _cachedBorderGradient = g;
+      _cachedBorderGradientKey = key;
+      return g;
+    }
+
+    let _domFaceEl = null;
+    let _domNameEl = null;
+    let _domQueryAge = 0;
+    const DOM_QUERY_INTERVAL = 500;
+
+    function getDOM(now) {
+      if (now - _domQueryAge > DOM_QUERY_INTERVAL) {
+        _domFaceEl = document.querySelector('.css-1pj0jj0 img');
+        _domNameEl = document.querySelector('.css-1pj0jj0 p');
+        _domQueryAge = now;
+      }
+    }
+
+    function drawRoundedBox(x, y, w, h) {
+      ctx.beginPath();
+      ctx.moveTo(x + R, y);
+      ctx.lineTo(x + w - R, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + R);
+      ctx.lineTo(x + w, y + h - R);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - R, y + h);
+      ctx.lineTo(x + R, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - R);
+      ctx.lineTo(x, y + R);
+      ctx.quadraticCurveTo(x, y, x + R, y);
+      ctx.closePath();
+    }
+
+    function drawEntityHUD(nearest, faceSrc, faceName) {
+      const x = (canvas.width - W) / 2;
+      const y = 16;
+      const maxHp = nearest.getMaxHealth?.() ?? 20;
+
+      const realHp = Math.max(0, nearest.getHealth());
+      if (_displayedHp === 0) _displayedHp = realHp;
+      _displayedHp += (realHp - _displayedHp) * 0.15;
+      const hp = _displayedHp;
+      const hpPct = hp / maxHp;
+
+      const barColor = hpPct > 0.5 ? '#22c55e' : hpPct > 0.25 ? '#eab308' : '#ef4444';
+
+      if (
+        Math.round(hp) === Math.round(_lastDrawnHp) &&
+        faceName === _lastDrawnName &&
+        faceSrc === _lastDrawnFaceSrc &&
+        _lastDrawnType === 'entity' &&
+        !_needsRedraw
+      ) return;
+
+      _lastDrawnHp = Math.round(hp);
+      _lastDrawnName = faceName;
+      _lastDrawnFaceSrc = faceSrc;
+      _lastDrawnType = 'entity';
+      _needsRedraw = false;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+
+      ctx.globalAlpha = 1;
+      ctx.shadowColor = 'rgba(0,0,0,0.9)';
+      ctx.shadowBlur = 18;
+      drawRoundedBox(x, y, W, H_ENTITY);
+      ctx.fillStyle = '#0b0b14';
+      ctx.fill();
+
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = getBorderGradient(x, y, H_ENTITY);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      if (faceSrc) {
+        if (!_faceImgCache[faceSrc]) {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.src = faceSrc;
+          _faceImgCache[faceSrc] = img;
+          pruneCache(_faceImgCache);
+        }
+        const img = _faceImgCache[faceSrc];
+        if (img.complete && img.naturalWidth > 0) ctx.drawImage(img, x + 10, y + 10, 34, 34);
       }
 
-      const game = getGameCached(now);
-      const player = game?.player;
+      const nameX = faceSrc ? x + 52 : x + 10;
+      ctx.font = 'bold 13px Poppins,sans-serif';
+      ctx.fillStyle = '#e2e8f0';
+      ctx.textAlign = 'left';
+      ctx.fillText(faceName, nameX, y + 26);
 
-      if (game?.world && player?.pos) {
-        if (now - _lastEntityScan > ENTITY_SCAN_INTERVAL) {
-          _lastEntityScan = now;
-          const mapKey = findEntityMapKey(game.world);
-          const dump = mapKey ? game.world[mapKey] : null;
-          if (dump) {
-            let nearest = null, minDist = Infinity;
-            dump.forEach((entity) => {
-              if (!entity || entity.id === player.id) return;
-              if (typeof entity.getHealth !== 'function') return;
-              if (!entity.pos) return;
-              const dist = player.pos.distanceTo(entity.pos);
-              if (dist < minDist) { minDist = dist; nearest = entity; }
-            });
-            if (nearest !== _cachedNearest) _needsRedraw = true;
-            _cachedNearest = nearest;
-            _cachedMinDist = minDist;
-          }
+      const barW = W - 20, barH = 8;
+      const barX = x + 10, barY = y + 40;
+
+      ctx.fillStyle = 'rgba(255,255,255,0.07)';
+      ctx.beginPath();
+      ctx.roundRect(barX, barY, barW, barH, 4);
+      ctx.fill();
+
+      ctx.fillStyle = barColor;
+      ctx.beginPath();
+      ctx.roundRect(barX, barY, Math.max(hpPct * barW, 0), barH, 4);
+      ctx.fill();
+
+      ctx.font = '10px Poppins,sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,1)';
+      ctx.fillText(`${Math.round(hp)} / ${maxHp}`, barX, barY + barH + 14);
+
+      ctx.restore();
+    }
+
+    function drawBlockHUD(blockName) {
+      const x = (canvas.width - W) / 2;
+      const y = 16;
+
+      if (blockName === _lastDrawnName &&
+          _lastDrawnType === 'block' &&
+          !_needsRedraw) return;
+
+      _lastDrawnName = blockName;
+      _lastDrawnType = 'block';
+      _lastDrawnHp = -1;
+      _lastDrawnFaceSrc = '';
+      _needsRedraw = false;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+
+      ctx.globalAlpha = 1;
+      ctx.shadowColor = 'rgba(0,0,0,0.9)';
+      ctx.shadowBlur = 18;
+      drawRoundedBox(x, y, W, H_BLOCK);
+      ctx.fillStyle = '#0b0b14';
+      ctx.fill();
+
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = getBorderGradient(x, y, H_BLOCK);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.font = '22px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('🧱', x + 10, y + 32);
+
+      ctx.font = 'bold 13px Poppins,sans-serif';
+      ctx.fillStyle = '#e2e8f0';
+      ctx.textAlign = 'left';
+      ctx.fillText(blockName, x + 44, y + 21);
+
+      ctx.font = '10px Poppins,sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,1)';
+      ctx.fillText('Block', x + 44, y + 36);
+
+      ctx.restore();
+    }
+
+    function tick() {
+      try {
+        const now = performance.now();
+
+        if (now - _lastPauseCheck > PAUSE_CHECK_INTERVAL) {
+          _cachedPauseMenu = !!document.querySelector('.chakra-modal__content-container,[role="dialog"]');
+          _lastPauseCheck = now;
         }
 
-        if (_cachedNearest && _cachedMinDist <= MAX_RANGE) {
-          const isPlayer = _cachedNearest.constructor?.name === 'ClientEntityPlayerOther';
-          getDOM(now);
-
-          const domSrc = _domFaceEl?.src ?? null;
-          const domName = _domNameEl?.textContent ?? null;
-
-          let faceSrc = null;
-          let faceName;
-
-          if (isPlayer) {
-            const lookingAtPlayer = !!(domSrc);
-            const nameKey = (lookingAtPlayer ? domName : null) || _cachedNearest.name || '';
-            if (domSrc && nameKey) _playerFaceCache[nameKey] = domSrc;
-            faceSrc = _playerFaceCache[nameKey] ?? null;
-            faceName = (lookingAtPlayer ? domName : null) || _cachedNearest.name || '???';
-          } else {
-            faceName = _cachedNearest.name || _cachedNearest.constructor?.name?.replace('Entity', '') || '???';
-          }
-
-          drawEntityHUD(_cachedNearest, faceSrc, faceName);
-        } else {
-          getDOM(now);
-          const blockName = _domNameEl?.textContent?.trim() ?? null;
-          if (blockName) {
-            drawBlockHUD(blockName);
-          } else if (_lastDrawnType !== '') {
+        const inGame = !!(document.pointerLockElement && !_cachedPauseMenu);
+        if (!inGame) {
+          if (_lastDrawnType !== '') {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             _lastDrawnType = '';
             _needsRedraw = true;
           }
+          requestAnimationFrame(tick);
+          return;
         }
+
+        const game = getGameCached(now);
+        const player = game?.player;
+
+        if (game?.world && player?.pos) {
+          if (now - _lastEntityScan > ENTITY_SCAN_INTERVAL) {
+            _lastEntityScan = now;
+            const mapKey = findEntityMapKey(game.world);
+            const dump = mapKey ? game.world[mapKey] : null;
+            if (dump) {
+              let nearest = null, minDist = Infinity;
+              dump.forEach((entity) => {
+                if (!entity || entity.id === player.id) return;
+                if (typeof entity.getHealth !== 'function') return;
+                if (!entity.pos) return;
+                const dist = player.pos.distanceTo(entity.pos);
+                if (dist < minDist) { minDist = dist; nearest = entity; }
+              });
+              if (nearest !== _cachedNearest) {
+                _needsRedraw = true;
+                _displayedHp = 0;
+              }
+              _cachedNearest = nearest;
+              _cachedMinDist = minDist;
+            }
+          }
+
+          if (_cachedNearest && _cachedMinDist <= MAX_RANGE) {
+            const isPlayer = _cachedNearest.constructor?.name === 'ClientEntityPlayerOther';
+            getDOM(now);
+
+            const domSrc = _domFaceEl?.src ?? null;
+            const domName = _domNameEl?.textContent ?? null;
+
+            let faceSrc = null;
+            let faceName;
+
+            if (isPlayer) {
+              const lookingAtPlayer = !!(domSrc);
+              const nameKey = (lookingAtPlayer ? domName : null) || _cachedNearest.name || '';
+              if (domSrc && nameKey) {
+                _playerFaceCache[nameKey] = domSrc;
+                pruneCache(_playerFaceCache);
+              }
+              faceSrc = _playerFaceCache[nameKey] ?? null;
+              faceName = (lookingAtPlayer ? domName : null) || _cachedNearest.name || '???';
+            } else {
+              faceName = _cachedNearest.name || _cachedNearest.constructor?.name?.replace('Entity', '') || '???';
+            }
+
+            drawEntityHUD(_cachedNearest, faceSrc, faceName);
+          } else {
+            getDOM(now);
+            const blockName = _domNameEl?.textContent?.trim() ?? null;
+            if (blockName) {
+              drawBlockHUD(blockName);
+            } else if (_lastDrawnType !== '') {
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              _lastDrawnType = '';
+              _needsRedraw = true;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[Waddle] Target HUD tick error:', err);
+        _lastDrawnType = '';
+        _needsRedraw = true;
+        try { ctx.clearRect(0, 0, canvas.width, canvas.height); } catch (_) {}
+        setTimeout(() => requestAnimationFrame(tick), 2000);
+        return;
       }
-    } catch (err) {
-      console.warn('[Waddle] Target HUD tick error:', err);
-      _lastDrawnType = '';
-      _needsRedraw = true;
-      try { ctx.clearRect(0, 0, canvas.width, canvas.height); } catch (_) {}
-      setTimeout(() => requestAnimationFrame(tick), 2000);
-      return;
+      requestAnimationFrame(tick);
     }
+
     requestAnimationFrame(tick);
   }
 
-  requestAnimationFrame(tick);
-}
-
-  // ─── Counters ────────────────────────────────────────────────────────────────
   function createCounter(type) {
     if (!document.body) return null;
     const config = COUNTER_CONFIGS[type];
@@ -770,7 +773,6 @@ function startTargetHUDLoop() {
     }, { passive: true });
   }
 
-  // ─── Fix 1: RAF loop uses getGameCached + accepts game param ─────────────────
   function startPerformanceLoop() {
     if (state.rafId) return;
     const loop = (t) => {
@@ -810,27 +812,27 @@ function startTargetHUDLoop() {
   }
 
   function updateRealTime() {
-    if (!state.counters.realTime) return;
-    const now = new Date();
-    let h = now.getHours();
-    const m = String(now.getMinutes()).padStart(2, '0');
-    const s = String(now.getSeconds()).padStart(2, '0');
-    const ampm = h > 12 ? 'PM' : 'AM';
-    h = h % 12 || 12;
-    updateCounterText('realTime', `${h}:${m}:${s} ${ampm}`);
-  }
+  if (!state.counters.realTime) return;
+  const now = new Date();
+  const h = now.getHours();
+  const m = String(now.getMinutes()).padStart(2, '0');
+  const s = String(now.getSeconds()).padStart(2, '0');
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  updateCounterText('realTime', `${String(h).padStart(2, '0')}:${m}:${s} ${ampm}`);
+}
 
   function pressSpace() {
     const opts = { key: ' ', code: 'Space', keyCode: 32, which: 32, bubbles: true };
-    document.dispatchEvent(new KeyboardEvent('keydown', opts));
-    setTimeout(() => document.dispatchEvent(new KeyboardEvent('keyup', opts)), 50);
+    [document, window].forEach(target => {
+      target.dispatchEvent(new KeyboardEvent('keydown', opts));
+      setTimeout(() => target.dispatchEvent(new KeyboardEvent('keyup', opts)), 50);
+    });
   }
 
   function updateAntiAfkCounter() {
     updateCounterText('antiAfk', `🐧 Jumping in ${state.antiAfkCountdown}s`);
   }
 
-  // ─── Key Display ─────────────────────────────────────────────────────────────
   let _keyListeners = null;
 
   function createKeyDisplay() {
@@ -919,7 +921,6 @@ function startTargetHUDLoop() {
     _keyListeners = null;
   }
 
-  // ─── Party Requests ──────────────────────────────────────────────────────────
   function disablePartyRequestsSystem() {
     const game = gameRef.resolve();
     if (!game?.party) return false;
@@ -941,10 +942,9 @@ function startTargetHUDLoop() {
     }
   }
 
-  // ─── Feature Manager ─────────────────────────────────────────────────────────
   const featureManager = {
     performance: {
-      start: () => { if (!state.counters.performance) createCounter('performance'); startPerformanceLoop(); updatePerformanceCounter(getGameCached()); },
+      start: () => { if (!state.counters.performance) createCounter('performance'); startPerformanceLoop(); updatePerformanceCounter(getGameCached(0)); },
       cleanup: () => {
         if (state.counters.performance) { state.counters.performance.remove(); state.counters.performance = null; }
         if (!state.features.coords) stopPerformanceLoop();
@@ -1035,6 +1035,7 @@ function startTargetHUDLoop() {
       cleanup: () => {
         clearInterval(state.intervals.funFacts);
         state.intervals.funFacts = null;
+        state.hasShownFunFactOnJoin = false;
       }
     }
   };
@@ -1049,7 +1050,6 @@ function startTargetHUDLoop() {
     return enabled;
   }
 
-  // ─── Panel Cache ─────────────────────────────────────────────────────────────
   const _panelCache = {};
 
   function buildModulePanel(categoryId) {
@@ -1097,7 +1097,6 @@ function startTargetHUDLoop() {
     buildModulePanel(categoryId);
   }
 
-  // ─── Menu ────────────────────────────────────────────────────────────────────
   function createMenu() {
     if (!document.body) return null;
     const overlay = document.createElement('div');
@@ -1176,7 +1175,6 @@ function startTargetHUDLoop() {
     });
   }
 
-  // ─── Fix 2 + 5: Persistence with migration and panel cache invalidation ───────
   function restoreSavedState() {
     try {
       const raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
@@ -1185,16 +1183,16 @@ function startTargetHUDLoop() {
     Object.keys(_panelCache).forEach(k => delete _panelCache[k]);
   }
 
-  // ─── Cleanup ─────────────────────────────────────────────────────────────────
   function globalCleanup() {
     Object.keys(state.features).forEach(f => { if (state.features[f]) featureManager[f]?.cleanup(); });
     Object.values(state.intervals).forEach(id => { if (id) clearInterval(id); });
     if (state.rafId) cancelAnimationFrame(state.rafId);
+    if (state._resizeHandler) window.removeEventListener('resize', state._resizeHandler);
+    state._crosshairObserver?.disconnect();
   }
 
   window.addEventListener('beforeunload', globalCleanup);
 
-  // ─── Init ────────────────────────────────────────────────────────────────────
   function ensureDOMReady() {
     return new Promise(resolve => {
       if (document.body && document.head) { resolve(); return; }
@@ -1203,7 +1201,6 @@ function startTargetHUDLoop() {
     });
   }
 
-  // ─── Fix 3: Space Sky with Three.js version guard ────────────────────────────
   const MIN_THREE_REVISION = 128;
 
   function isThreeCompatible() {
@@ -1214,7 +1211,13 @@ function startTargetHUDLoop() {
 
   function initSpaceSky() {
     const doApply = () => {
+      let _skyAttempts = 0;
+      const MAX_SKY_ATTEMPTS = 20;
       const tryPatch = () => {
+        if (++_skyAttempts > MAX_SKY_ATTEMPTS) {
+          showToast('Space Sky', 'info', 'Could not find game scene');
+          return;
+        }
         const gs = gameRef.resolve()?.gameScene;
         if (!gs?.sky) { setTimeout(tryPatch, 500); return; }
         const loader = new THREE.CubeTextureLoader();
