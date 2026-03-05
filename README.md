@@ -4,7 +4,7 @@
 
 ### The Ultimate Miniblox Enhancement Suite!
 
-![Version](https://img.shields.io/badge/version-6.9-39ff14?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-6.10-39ff14?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-39ff14?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-39ff14?style=for-the-badge)
 
@@ -79,7 +79,7 @@
 
 ## 📝 Changelog
 
-### [6.9] - Bug Fixes & Polish
+### [6.9/6.10] - Bug Fixes & Polish
 - 🐛 `_displayedHp` resets to `0` on target switch — smooth HP bar no longer interpolates from a previous entity's health
 - 🐛 CPS detector interval now stored in `state.intervals` so it is properly cleaned up on unload
 - 🐛 `funFacts` cleanup now clears `hasShownFunFactOnJoin` so the module works correctly when toggled off and on again
