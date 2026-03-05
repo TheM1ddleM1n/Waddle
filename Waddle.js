@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Waddle (With Fun Facts!)
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
-// @version      6.9
+// @version      6.10
 // @description  The ultimate Miniblox enhancement suite with advanced API features!
 // @author       The Dream Team! (Scripter & TheM1ddleM1n)
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/Waddle/refs/heads/main/Penguin.png
@@ -9,7 +9,7 @@
 // @run-at       document-start
 // ==/UserScript==
 
-const SCRIPT_VERSION = '6.9';
+const SCRIPT_VERSION = '6.10';
 
 (function () {
   'use strict';
@@ -71,7 +71,7 @@ const SCRIPT_VERSION = '6.9';
     'The yellow-eyed penguin is one of the rarest penguin species.',
     'Penguins can spend around half their lives in the ocean.',
     'Penguins have excellent underwater vision compared to their land vision.',
-    'Molting season replaces penguins\' feathers all at once, so they stay ashore.',
+    'Molting season replaces penguins\'s feathers all at once, so they stay ashore.',
     'Not all penguins live in icy climates; several species live in temperate regions.',
     'Penguins are birds, but their bodies are specialized for swimming instead of flying.'
   ];
@@ -152,7 +152,14 @@ const SCRIPT_VERSION = '6.9';
   }
 
   (function () {
+    let _greetAttempts = 0;
+    const MAX_GREET_ATTEMPTS = 40;
     state.intervals.waitForGame = setInterval(() => {
+      if (++_greetAttempts > MAX_GREET_ATTEMPTS) {
+        clearInterval(state.intervals.waitForGame);
+        state.intervals.waitForGame = null;
+        return;
+      }
       const game = gameRef.resolve();
       if (game?.chat && typeof game.chat.addChat === 'function') {
         clearInterval(state.intervals.waitForGame);
@@ -746,19 +753,15 @@ const SCRIPT_VERSION = '6.9';
 
   function setupDragging(el) {
     let rafId = null;
-    el.addEventListener('mousedown', (e) => {
-      el._dragging = true;
-      el._offsetX = e.clientX - el.getBoundingClientRect().left;
-      el._offsetY = e.clientY - el.getBoundingClientRect().top;
-      el.classList.add('dragging');
-    }, { passive: true });
-    window.addEventListener('mouseup', () => {
+
+    const onMouseUp = () => {
       if (!el._dragging) return;
       el._dragging = false;
       el.classList.remove('dragging');
       if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-    }, { passive: true });
-    window.addEventListener('mousemove', (e) => {
+    };
+
+    const onMouseMove = (e) => {
       if (!el._dragging || !el.parentElement) return;
       el._pendingX = e.clientX;
       el._pendingY = e.clientY;
@@ -770,7 +773,22 @@ const SCRIPT_VERSION = '6.9';
           rafId = null;
         });
       }
+    };
+
+    el.addEventListener('mousedown', (e) => {
+      el._dragging = true;
+      el._offsetX = e.clientX - el.getBoundingClientRect().left;
+      el._offsetY = e.clientY - el.getBoundingClientRect().top;
+      el.classList.add('dragging');
     }, { passive: true });
+
+    window.addEventListener('mouseup', onMouseUp, { passive: true });
+    window.addEventListener('mousemove', onMouseMove, { passive: true });
+
+    el._dragCleanup = () => {
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('mousemove', onMouseMove);
+    };
   }
 
   function startPerformanceLoop() {
@@ -812,21 +830,21 @@ const SCRIPT_VERSION = '6.9';
   }
 
   function updateRealTime() {
-  if (!state.counters.realTime) return;
-  const now = new Date();
-  const h = now.getHours();
-  const m = String(now.getMinutes()).padStart(2, '0');
-  const s = String(now.getSeconds()).padStart(2, '0');
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  updateCounterText('realTime', `${String(h).padStart(2, '0')}:${m}:${s} ${ampm}`);
-}
+    if (!state.counters.realTime) return;
+    const now = new Date();
+    const h = now.getHours();
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const s = String(now.getSeconds()).padStart(2, '0');
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    updateCounterText('realTime', `${String(h).padStart(2, '0')}:${m}:${s} ${ampm}`);
+  }
 
   function pressSpace() {
     const opts = { key: ' ', code: 'Space', keyCode: 32, which: 32, bubbles: true };
-    [document, window].forEach(target => {
-      target.dispatchEvent(new KeyboardEvent('keydown', opts));
-      setTimeout(() => target.dispatchEvent(new KeyboardEvent('keyup', opts)), 50);
-    });
+    [document, window].forEach(t => t.dispatchEvent(new KeyboardEvent('keydown', opts)));
+    setTimeout(() => {
+      [document, window].forEach(t => t.dispatchEvent(new KeyboardEvent('keyup', opts)));
+    }, 50);
   }
 
   function updateAntiAfkCounter() {
@@ -946,14 +964,14 @@ const SCRIPT_VERSION = '6.9';
     performance: {
       start: () => { if (!state.counters.performance) createCounter('performance'); startPerformanceLoop(); updatePerformanceCounter(getGameCached(0)); },
       cleanup: () => {
-        if (state.counters.performance) { state.counters.performance.remove(); state.counters.performance = null; }
+        if (state.counters.performance) { state.counters.performance._dragCleanup?.(); state.counters.performance.remove(); state.counters.performance = null; }
         if (!state.features.coords) stopPerformanceLoop();
       }
     },
     coords: {
       start: () => { if (!state.counters.coords) createCounter('coords'); startPerformanceLoop(); },
       cleanup: () => {
-        if (state.counters.coords) { state.counters.coords.remove(); state.counters.coords = null; }
+        if (state.counters.coords) { state.counters.coords._dragCleanup?.(); state.counters.coords.remove(); state.counters.coords = null; }
         if (!state.features.performance) stopPerformanceLoop();
       }
     },
@@ -988,14 +1006,14 @@ const SCRIPT_VERSION = '6.9';
       },
       cleanup: () => {
         clearInterval(state.intervals.antiAfk); state.intervals.antiAfk = null;
-        if (state.counters.antiAfk) { state.counters.antiAfk.remove(); state.counters.antiAfk = null; }
+        if (state.counters.antiAfk) { state.counters.antiAfk._dragCleanup?.(); state.counters.antiAfk.remove(); state.counters.antiAfk = null; }
       }
     },
     keyDisplay: {
       start: () => { if (!state.counters.keyDisplay) createKeyDisplay(); setupKeyDisplayListeners(); },
       cleanup: () => {
         teardownKeyDisplayListeners();
-        if (state.counters.keyDisplay) { state.counters.keyDisplay.remove(); state.counters.keyDisplay = null; }
+        if (state.counters.keyDisplay) { state.counters.keyDisplay._dragCleanup?.(); state.counters.keyDisplay.remove(); state.counters.keyDisplay = null; }
         Object.keys(state.keys).forEach(k => { state.keys[k] = false; });
       }
     },
