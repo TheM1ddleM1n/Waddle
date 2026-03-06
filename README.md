@@ -79,7 +79,11 @@
 
 ## 📝 Changelog
 
-### [6.9/6.10] - Bug Fixes & Polish
+### [6.10] - Format & Custom skins!
+- Added custom skin support (via localstorage)
+- formatting stuff
+
+### [6.9] - Bug Fixes & Polish
 - 🐛 `_displayedHp` resets to `0` on target switch — smooth HP bar no longer interpolates from a previous entity's health
 - 🐛 CPS detector interval now stored in `state.intervals` so it is properly cleaned up on unload
 - 🐛 `funFacts` cleanup now clears `hasShownFunFactOnJoin` so the module works correctly when toggled off and on again
