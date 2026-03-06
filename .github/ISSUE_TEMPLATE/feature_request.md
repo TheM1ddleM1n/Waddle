@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Suggest an idea for WaddleClient
+about: Please suggest an idea for WaddleClient
 title: "[Feature] "
 labels: enhancement
 assignees: TheM1ddleM1n
