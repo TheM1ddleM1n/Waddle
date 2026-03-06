@@ -33,7 +33,7 @@ List possible alternatives and their pros/cons.
 
 ## 🧩 Additional Context
 - Related features or examples from other tools/clients
-- Screenshots or mockups (if applicable)
+- Screenshots or mockup ideas (if applicable)
 - Priority level: `Nice-to-have` / `Important` / `Critical`
 
 ---
@@ -44,6 +44,6 @@ Describe an in-game scenario where this feature would be helpful.
 ---
 
 ## ✅ Checklist
-- [ ] This feature has not been requested before
-- [ ] This aligns with Waddle’s scope (JavaScript / Tampermonkey / Games API)
+- [ ] This feature has NOT been requested before
+- [ ] This aligns with Waddle’s scope (JavaScript / Tampermonkey / Miniblox API)
 - [ ] I have considered performance impact (no bottlenecks introduced)
