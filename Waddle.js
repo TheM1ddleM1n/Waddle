@@ -18,6 +18,35 @@ const SCRIPT_VERSION = '6.10';
 
   const SETTINGS_KEY = 'waddle_settings';
   const THEME_COLOR = '#00FFFF';
+  const SESSION_KEY = 'session_v1';
+  const EQUIPPED_SKIN_KEY = 'waddle_equipped_skin';
+  const SKINS = ['Remlin', 'Cat', 'Ethan', 'Sushi', 'Slime', 'Duck', 'Tester', 'Banana', 'Qhyun'];
+  const SKIN_API = 'https://session.coolmathblox.ca/accounts/set_cosmetic';
+
+  async function applySkin(skinId) {
+    const token = localStorage.getItem(SESSION_KEY);
+    if (!token) {
+      showToast('No Session Token', 'disabled', 'Log into Miniblox first!');
+      return;
+    }
+    try {
+      const res = await fetch(SKIN_API, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'authorization': token
+        },
+        body: JSON.stringify({ type: 'skin', id: skinId.toLowerCase() })
+      });
+      if (!res.ok) throw new Error(res.status);
+      await res.json();
+      localStorage.setItem(EQUIPPED_SKIN_KEY, skinId.toLowerCase());
+      showToast('Skin Applied!', 'enabled', `${skinId} equipped — reloading...`);
+      setTimeout(() => location.reload(), 1200);
+    } catch (e) {
+      showToast('Skin Failed', 'disabled', 'Could not apply skin: ' + e.message);
+    }
+  }
 
   const DEFAULT_POSITIONS = {
     performance: { left: '50px', top: '80px' },
@@ -36,6 +65,7 @@ const SCRIPT_VERSION = '6.10';
   const CATEGORIES = [
     { id: 'display', label: 'Display', icon: '📊' },
     { id: 'utilities', label: 'Utilities', icon: '🛠️' },
+    { id: 'customSkin', label: 'Custom Skin', icon: '🎨' },
     { id: 'about', label: 'About', icon: 'ℹ️' }
   ];
 
@@ -142,6 +172,7 @@ const SCRIPT_VERSION = '6.10';
 
   const KNOWN_FEATURES = new Set(Object.keys(state.features));
 
+
   function migrateSettings(raw) {
     const features = {};
     if (!raw?.features) return features;
@@ -150,6 +181,7 @@ const SCRIPT_VERSION = '6.10';
     }
     return features;
   }
+
 
   (function () {
     let _greetAttempts = 0;
@@ -171,6 +203,7 @@ const SCRIPT_VERSION = '6.10';
     }, 500);
   })();
 
+
   (function () {
     let clicks = 0;
     const CPS_THRESHOLD = 15, CHECK_INTERVAL = 1000, COOLDOWN = 2000;
@@ -187,6 +220,7 @@ const SCRIPT_VERSION = '6.10';
       }
     }, CHECK_INTERVAL);
   })();
+
 
   let _saveTimer = null;
   function saveSettings() {
@@ -261,8 +295,8 @@ const SCRIPT_VERSION = '6.10';
 .counter.dragging { cursor:grabbing; transform:scale(1.05); }
 #real-time-counter { cursor:default !important; }
 @keyframes afk-pulse {
-  0% { box-shadow:var(--shadow),0 0 0 0 rgba(0,255,255,.7); }
-  70% { box-shadow:var(--shadow),0 0 0 10px rgba(0,255,255,0); }
+  0%   { box-shadow:var(--shadow),0 0 0 0 rgba(0,255,255,.7); }
+  70%  { box-shadow:var(--shadow),0 0 0 10px rgba(0,255,255,0); }
   100% { box-shadow:var(--shadow),0 0 0 0 rgba(0,255,255,0); }
 }
 .counter.afk-pulse { animation:afk-pulse .45s ease; }
@@ -274,6 +308,21 @@ const SCRIPT_VERSION = '6.10';
 .key-box.space-box { grid-column:1 / -1; width:100%; height:36px; }
 #waddle-crosshair-container { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:5000; pointer-events:none; }
 #wb-hud-canvas { position:fixed; inset:0; pointer-events:none; z-index:4999; }
+#waddle-skin-panel { flex:1; padding:16px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; }
+.skin-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; }
+.skin-btn { background:var(--bg3); border:1px solid rgba(255,255,255,.07); border-radius:var(--radius); padding:14px 10px; cursor:pointer; text-align:center; font-size:.88rem; font-weight:var(--fw); color:var(--text-dim); transition:all .12s ease; position:relative; }
+.skin-btn:hover { border-color:var(--c-border); color:var(--text); }
+.skin-btn.equipped { border-color:var(--c); color:var(--c); background:var(--c-dim); }
+.skin-equipped-badge { position:absolute; top:6px; right:7px; font-size:.6rem; font-weight:900; color:var(--c); letter-spacing:.5px; text-transform:uppercase; }
+#skin-confirm-view { display:none; flex-direction:column; align-items:center; justify-content:center; gap:16px; flex:1; text-align:center; }
+#skin-confirm-view.show { display:flex; }
+.skin-confirm-text { font-size:1rem; color:var(--text); font-weight:600; }
+.skin-confirm-text span { color:var(--c); }
+.skin-confirm-btns { display:flex; gap:12px; }
+.skin-confirm-yes { background:#22c55e; border:none; border-radius:var(--radius); padding:9px 28px; font-size:.88rem; font-weight:700; color:#000; cursor:pointer; transition:opacity .1s; }
+.skin-confirm-yes:hover { opacity:.85; }
+.skin-confirm-no { background:var(--bg3); border:1px solid rgba(255,255,255,.15); border-radius:var(--radius); padding:9px 28px; font-size:.88rem; font-weight:700; color:var(--text-dim); cursor:pointer; transition:all .1s; }
+.skin-confirm-no:hover { border-color:var(--c-border); color:var(--text); }
     `;
     document.head.appendChild(style);
     return true;
@@ -412,25 +461,20 @@ const SCRIPT_VERSION = '6.10';
   const _faceImgCache = {};
   const _playerFaceCache = {};
   let _entityMapKey = null;
-
   let _cachedNearest = null;
   let _cachedMinDist = Infinity;
   let _lastEntityScan = 0;
   const ENTITY_SCAN_INTERVAL = 50;
-
   let _cachedPauseMenu = false;
   let _lastPauseCheck = 0;
   const PAUSE_CHECK_INTERVAL = 200;
-
   let _cachedBorderGradient = null;
   let _cachedBorderGradientKey = '';
-
   let _lastDrawnHp = -1;
   let _lastDrawnName = '';
   let _lastDrawnFaceSrc = '';
   let _lastDrawnType = '';
   let _needsRedraw = true;
-
   let _displayedHp = 0;
 
   function findEntityMapKey(world) {
@@ -451,10 +495,7 @@ const SCRIPT_VERSION = '6.10';
     const canvas = document.getElementById('wb-hud-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      showToast('Target HUD', 'info', 'Canvas 2D context unavailable');
-      return;
-    }
+    if (!ctx) { showToast('Target HUD', 'info', 'Canvas 2D context unavailable'); return; }
 
     const MAX_RANGE = 5;
     const W = 220, R = 10;
@@ -503,15 +544,12 @@ const SCRIPT_VERSION = '6.10';
       const x = (canvas.width - W) / 2;
       const y = 16;
       const maxHp = nearest.getMaxHealth?.() ?? 20;
-
       const realHp = Math.max(0, nearest.getHealth());
       if (_displayedHp === 0) _displayedHp = realHp;
       _displayedHp += (realHp - _displayedHp) * 0.15;
       const hp = _displayedHp;
       const hpPct = hp / maxHp;
-
       const barColor = hpPct > 0.5 ? '#22c55e' : hpPct > 0.25 ? '#eab308' : '#ef4444';
-
       if (
         Math.round(hp) === Math.round(_lastDrawnHp) &&
         faceName === _lastDrawnName &&
@@ -519,29 +557,24 @@ const SCRIPT_VERSION = '6.10';
         _lastDrawnType === 'entity' &&
         !_needsRedraw
       ) return;
-
       _lastDrawnHp = Math.round(hp);
       _lastDrawnName = faceName;
       _lastDrawnFaceSrc = faceSrc;
       _lastDrawnType = 'entity';
       _needsRedraw = false;
-
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.save();
-
       ctx.globalAlpha = 1;
       ctx.shadowColor = 'rgba(0,0,0,0.9)';
       ctx.shadowBlur = 18;
       drawRoundedBox(x, y, W, H_ENTITY);
       ctx.fillStyle = '#0b0b14';
       ctx.fill();
-
       ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;
       ctx.strokeStyle = getBorderGradient(x, y, H_ENTITY);
       ctx.lineWidth = 1.5;
       ctx.stroke();
-
       if (faceSrc) {
         if (!_faceImgCache[faceSrc]) {
           const img = new Image();
@@ -553,88 +586,69 @@ const SCRIPT_VERSION = '6.10';
         const img = _faceImgCache[faceSrc];
         if (img.complete && img.naturalWidth > 0) ctx.drawImage(img, x + 10, y + 10, 34, 34);
       }
-
       const nameX = faceSrc ? x + 52 : x + 10;
       ctx.font = 'bold 13px Poppins,sans-serif';
       ctx.fillStyle = '#e2e8f0';
       ctx.textAlign = 'left';
       ctx.fillText(faceName, nameX, y + 26);
-
       const barW = W - 20, barH = 8;
       const barX = x + 10, barY = y + 40;
-
       ctx.fillStyle = 'rgba(255,255,255,0.07)';
       ctx.beginPath();
       ctx.roundRect(barX, barY, barW, barH, 4);
       ctx.fill();
-
       ctx.fillStyle = barColor;
       ctx.beginPath();
       ctx.roundRect(barX, barY, Math.max(hpPct * barW, 0), barH, 4);
       ctx.fill();
-
       ctx.font = '10px Poppins,sans-serif';
       ctx.fillStyle = 'rgba(255,255,255,1)';
       ctx.fillText(`${Math.round(hp)} / ${maxHp}`, barX, barY + barH + 14);
-
       ctx.restore();
     }
 
     function drawBlockHUD(blockName) {
       const x = (canvas.width - W) / 2;
       const y = 16;
-
-      if (blockName === _lastDrawnName &&
-          _lastDrawnType === 'block' &&
-          !_needsRedraw) return;
-
+      if (blockName === _lastDrawnName && _lastDrawnType === 'block' && !_needsRedraw) return;
       _lastDrawnName = blockName;
       _lastDrawnType = 'block';
       _lastDrawnHp = -1;
       _lastDrawnFaceSrc = '';
       _needsRedraw = false;
-
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.save();
-
       ctx.globalAlpha = 1;
       ctx.shadowColor = 'rgba(0,0,0,0.9)';
       ctx.shadowBlur = 18;
       drawRoundedBox(x, y, W, H_BLOCK);
       ctx.fillStyle = '#0b0b14';
       ctx.fill();
-
       ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;
       ctx.strokeStyle = getBorderGradient(x, y, H_BLOCK);
       ctx.lineWidth = 1.5;
       ctx.stroke();
-
       ctx.font = '22px sans-serif';
       ctx.textAlign = 'left';
       ctx.fillText('🧱', x + 10, y + 32);
-
       ctx.font = 'bold 13px Poppins,sans-serif';
       ctx.fillStyle = '#e2e8f0';
       ctx.textAlign = 'left';
       ctx.fillText(blockName, x + 44, y + 21);
-
       ctx.font = '10px Poppins,sans-serif';
       ctx.fillStyle = 'rgba(255,255,255,1)';
       ctx.fillText('Block', x + 44, y + 36);
-
       ctx.restore();
     }
 
     function tick() {
       try {
         const now = performance.now();
-
         if (now - _lastPauseCheck > PAUSE_CHECK_INTERVAL) {
           _cachedPauseMenu = !!document.querySelector('.chakra-modal__content-container,[role="dialog"]');
           _lastPauseCheck = now;
         }
-
         const inGame = !!(document.pointerLockElement && !_cachedPauseMenu);
         if (!inGame) {
           if (_lastDrawnType !== '') {
@@ -645,10 +659,8 @@ const SCRIPT_VERSION = '6.10';
           requestAnimationFrame(tick);
           return;
         }
-
         const game = getGameCached(now);
         const player = game?.player;
-
         if (game?.world && player?.pos) {
           if (now - _lastEntityScan > ENTITY_SCAN_INTERVAL) {
             _lastEntityScan = now;
@@ -663,38 +675,27 @@ const SCRIPT_VERSION = '6.10';
                 const dist = player.pos.distanceTo(entity.pos);
                 if (dist < minDist) { minDist = dist; nearest = entity; }
               });
-              if (nearest !== _cachedNearest) {
-                _needsRedraw = true;
-                _displayedHp = 0;
-              }
+              if (nearest !== _cachedNearest) { _needsRedraw = true; _displayedHp = 0; }
               _cachedNearest = nearest;
               _cachedMinDist = minDist;
             }
           }
-
           if (_cachedNearest && _cachedMinDist <= MAX_RANGE) {
             const isPlayer = _cachedNearest.constructor?.name === 'ClientEntityPlayerOther';
             getDOM(now);
-
             const domSrc = _domFaceEl?.src ?? null;
             const domName = _domNameEl?.textContent ?? null;
-
             let faceSrc = null;
             let faceName;
-
             if (isPlayer) {
               const lookingAtPlayer = !!(domSrc);
               const nameKey = (lookingAtPlayer ? domName : null) || _cachedNearest.name || '';
-              if (domSrc && nameKey) {
-                _playerFaceCache[nameKey] = domSrc;
-                pruneCache(_playerFaceCache);
-              }
+              if (domSrc && nameKey) { _playerFaceCache[nameKey] = domSrc; pruneCache(_playerFaceCache); }
               faceSrc = _playerFaceCache[nameKey] ?? null;
               faceName = (lookingAtPlayer ? domName : null) || _cachedNearest.name || '???';
             } else {
               faceName = _cachedNearest.name || _cachedNearest.constructor?.name?.replace('Entity', '') || '???';
             }
-
             drawEntityHUD(_cachedNearest, faceSrc, faceName);
           } else {
             getDOM(now);
@@ -735,7 +736,11 @@ const SCRIPT_VERSION = '6.10';
     counter.appendChild(span);
     counter._textSpan = span;
     if (type === 'realTime') {
-      Object.assign(counter.style, { right: '30px', bottom: '30px', background: 'transparent', boxShadow: 'none', border: 'none', fontSize: '1.1rem', padding: '0' });
+      Object.assign(counter.style, {
+        right: '30px', bottom: '30px',
+        background: 'transparent', boxShadow: 'none', border: 'none',
+        fontSize: '1.1rem', padding: '0'
+      });
     } else {
       counter.style.left = config.pos.left;
       counter.style.top = config.pos.top;
@@ -753,14 +758,12 @@ const SCRIPT_VERSION = '6.10';
 
   function setupDragging(el) {
     let rafId = null;
-
     const onMouseUp = () => {
       if (!el._dragging) return;
       el._dragging = false;
       el.classList.remove('dragging');
       if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
     };
-
     const onMouseMove = (e) => {
       if (!el._dragging || !el.parentElement) return;
       el._pendingX = e.clientX;
@@ -774,17 +777,14 @@ const SCRIPT_VERSION = '6.10';
         });
       }
     };
-
     el.addEventListener('mousedown', (e) => {
       el._dragging = true;
       el._offsetX = e.clientX - el.getBoundingClientRect().left;
       el._offsetY = e.clientY - el.getBoundingClientRect().top;
       el.classList.add('dragging');
     }, { passive: true });
-
     window.addEventListener('mouseup', onMouseUp, { passive: true });
     window.addEventListener('mousemove', onMouseMove, { passive: true });
-
     el._dragCleanup = () => {
       window.removeEventListener('mouseup', onMouseUp);
       window.removeEventListener('mousemove', onMouseMove);
@@ -962,16 +962,31 @@ const SCRIPT_VERSION = '6.10';
 
   const featureManager = {
     performance: {
-      start: () => { if (!state.counters.performance) createCounter('performance'); startPerformanceLoop(); updatePerformanceCounter(getGameCached(0)); },
+      start: () => {
+        if (!state.counters.performance) createCounter('performance');
+        startPerformanceLoop();
+        updatePerformanceCounter(getGameCached(0));
+      },
       cleanup: () => {
-        if (state.counters.performance) { state.counters.performance._dragCleanup?.(); state.counters.performance.remove(); state.counters.performance = null; }
+        if (state.counters.performance) {
+          state.counters.performance._dragCleanup?.();
+          state.counters.performance.remove();
+          state.counters.performance = null;
+        }
         if (!state.features.coords) stopPerformanceLoop();
       }
     },
     coords: {
-      start: () => { if (!state.counters.coords) createCounter('coords'); startPerformanceLoop(); },
+      start: () => {
+        if (!state.counters.coords) createCounter('coords');
+        startPerformanceLoop();
+      },
       cleanup: () => {
-        if (state.counters.coords) { state.counters.coords._dragCleanup?.(); state.counters.coords.remove(); state.counters.coords = null; }
+        if (state.counters.coords) {
+          state.counters.coords._dragCleanup?.();
+          state.counters.coords.remove();
+          state.counters.coords = null;
+        }
         if (!state.features.performance) stopPerformanceLoop();
       }
     },
@@ -983,8 +998,12 @@ const SCRIPT_VERSION = '6.10';
         state.intervals.realTime = setInterval(updateRealTime, 1000);
       },
       cleanup: () => {
-        clearInterval(state.intervals.realTime); state.intervals.realTime = null;
-        if (state.counters.realTime) { state.counters.realTime.remove(); state.counters.realTime = null; }
+        clearInterval(state.intervals.realTime);
+        state.intervals.realTime = null;
+        if (state.counters.realTime) {
+          state.counters.realTime.remove();
+          state.counters.realTime = null;
+        }
       }
     },
     antiAfk: {
@@ -1005,15 +1024,27 @@ const SCRIPT_VERSION = '6.10';
         }, 1000);
       },
       cleanup: () => {
-        clearInterval(state.intervals.antiAfk); state.intervals.antiAfk = null;
-        if (state.counters.antiAfk) { state.counters.antiAfk._dragCleanup?.(); state.counters.antiAfk.remove(); state.counters.antiAfk = null; }
+        clearInterval(state.intervals.antiAfk);
+        state.intervals.antiAfk = null;
+        if (state.counters.antiAfk) {
+          state.counters.antiAfk._dragCleanup?.();
+          state.counters.antiAfk.remove();
+          state.counters.antiAfk = null;
+        }
       }
     },
     keyDisplay: {
-      start: () => { if (!state.counters.keyDisplay) createKeyDisplay(); setupKeyDisplayListeners(); },
+      start: () => {
+        if (!state.counters.keyDisplay) createKeyDisplay();
+        setupKeyDisplayListeners();
+      },
       cleanup: () => {
         teardownKeyDisplayListeners();
-        if (state.counters.keyDisplay) { state.counters.keyDisplay._dragCleanup?.(); state.counters.keyDisplay.remove(); state.counters.keyDisplay = null; }
+        if (state.counters.keyDisplay) {
+          state.counters.keyDisplay._dragCleanup?.();
+          state.counters.keyDisplay.remove();
+          state.counters.keyDisplay = null;
+        }
         Object.keys(state.keys).forEach(k => { state.keys[k] = false; });
       }
     },
@@ -1021,12 +1052,16 @@ const SCRIPT_VERSION = '6.10';
       start: () => {
         if (!disablePartyRequestsSystem()) {
           state.intervals.partyRetry = setInterval(() => {
-            if (disablePartyRequestsSystem()) { clearInterval(state.intervals.partyRetry); state.intervals.partyRetry = null; }
+            if (disablePartyRequestsSystem()) {
+              clearInterval(state.intervals.partyRetry);
+              state.intervals.partyRetry = null;
+            }
           }, 500);
         }
       },
       cleanup: () => {
-        clearInterval(state.intervals.partyRetry); state.intervals.partyRetry = null;
+        clearInterval(state.intervals.partyRetry);
+        state.intervals.partyRetry = null;
         restorePartyRequests();
       }
     },
@@ -1070,20 +1105,107 @@ const SCRIPT_VERSION = '6.10';
 
   const _panelCache = {};
 
+  function buildSkinPanel() {
+    const grid = document.getElementById('waddle-module-grid');
+    const title = document.getElementById('waddle-panel-title');
+    const about = document.getElementById('waddle-about');
+    let skinPanel = document.getElementById('waddle-skin-panel');
+
+    if (grid) grid.style.display = 'none';
+    if (about) about.style.display = 'none';
+    if (title) title.style.display = 'none';
+
+    if (!skinPanel) {
+      skinPanel = document.createElement('div');
+      skinPanel.id = 'waddle-skin-panel';
+
+      const equippedSkin = localStorage.getItem(EQUIPPED_SKIN_KEY) || '';
+
+      const skinGrid = document.createElement('div');
+      skinGrid.className = 'skin-grid';
+      skinGrid.id = 'skin-grid-view';
+
+      SKINS.forEach(name => {
+        const btn = document.createElement('div');
+        btn.className = 'skin-btn';
+        const label = document.createElement('span');
+        label.textContent = name;
+        btn.appendChild(label);
+        if (name.toLowerCase() === equippedSkin.toLowerCase()) {
+          btn.classList.add('equipped');
+          const badge = document.createElement('span');
+          badge.className = 'skin-equipped-badge';
+          badge.textContent = '✓ on';
+          btn.appendChild(badge);
+        }
+        btn.addEventListener('click', () => showSkinConfirm(name));
+        skinGrid.appendChild(btn);
+      });
+
+      const confirmView = document.createElement('div');
+      confirmView.id = 'skin-confirm-view';
+      confirmView.innerHTML = `
+        <div class="skin-confirm-text">Are you sure you want to equip <span id="skin-confirm-name"></span>?</div>
+        <div class="skin-confirm-btns">
+          <button class="skin-confirm-yes" id="skin-confirm-yes">Yes</button>
+          <button class="skin-confirm-no" id="skin-confirm-no">No</button>
+        </div>
+      `;
+
+      skinPanel.append(skinGrid, confirmView);
+      document.getElementById('waddle-panel').appendChild(skinPanel);
+
+      document.getElementById('skin-confirm-yes').addEventListener('click', async () => {
+        const skinName = document.getElementById('skin-confirm-name').textContent;
+        hideSkinConfirm();
+        await applySkin(skinName);
+      });
+
+      document.getElementById('skin-confirm-no').addEventListener('click', () => {
+        hideSkinConfirm();
+      });
+    }
+
+    skinPanel.style.display = 'flex';
+    skinPanel.style.flexDirection = 'column';
+    hideSkinConfirm();
+  }
+
+  function showSkinConfirm(skinName) {
+    document.getElementById('skin-grid-view').style.display = 'none';
+    document.getElementById('skin-confirm-view').classList.add('show');
+    document.getElementById('skin-confirm-name').textContent = skinName;
+  }
+
+  function hideSkinConfirm() {
+    document.getElementById('skin-grid-view').style.display = 'grid';
+    document.getElementById('skin-confirm-view').classList.remove('show');
+  }
+
   function buildModulePanel(categoryId) {
     const grid = document.getElementById('waddle-module-grid');
     const title = document.getElementById('waddle-panel-title');
-    const aboutPanel = document.getElementById('waddle-about');
-    if (!grid) return;
+    const about = document.getElementById('waddle-about');
+    const skinPanel = document.getElementById('waddle-skin-panel');
+
+    if (skinPanel) skinPanel.style.display = 'none';
+
     if (categoryId === 'about') {
-      grid.style.display = 'none';
+      if (grid) grid.style.display = 'none';
       if (title) title.style.display = 'none';
-      if (aboutPanel) aboutPanel.style.display = 'flex';
+      if (about) about.style.display = 'flex';
       return;
     }
-    grid.style.display = 'grid';
+
+    if (categoryId === 'customSkin') {
+      buildSkinPanel();
+      return;
+    }
+
+    if (grid) grid.style.display = 'grid';
+    if (about) about.style.display = 'none';
     if (title) { title.style.display = 'block'; title.textContent = categoryId; }
-    if (aboutPanel) aboutPanel.style.display = 'none';
+
     if (!_panelCache[categoryId]) {
       _panelCache[categoryId] = (FEATURE_MAP[categoryId] || []).map(({ label, feature }) => {
         const btn = document.createElement('div');
@@ -1102,6 +1224,7 @@ const SCRIPT_VERSION = '6.10';
         return btn;
       });
     }
+
     grid.innerHTML = '';
     _panelCache[categoryId].forEach(btn => {
       btn.classList.toggle('active', !!state.features[btn.dataset.feature]);
@@ -1120,14 +1243,18 @@ const SCRIPT_VERSION = '6.10';
     const overlay = document.createElement('div');
     overlay.id = 'waddle-overlay';
     overlay.dataset.version = SCRIPT_VERSION;
+
     const win = document.createElement('div');
     win.id = 'waddle-window';
+
     const sidebar = document.createElement('div');
     sidebar.id = 'waddle-sidebar';
+
     const logo = document.createElement('div');
     logo.id = 'waddle-logo';
     logo.innerHTML = `🐧 WADDLE <span>v${SCRIPT_VERSION} • Miniblox</span>`;
     sidebar.appendChild(logo);
+
     CATEGORIES.forEach(({ id, label, icon }) => {
       const cat = document.createElement('div');
       cat.className = `waddle-cat${id === state.activeCategory ? ' active' : ''}`;
@@ -1136,33 +1263,52 @@ const SCRIPT_VERSION = '6.10';
       cat.onclick = () => switchCategory(id);
       sidebar.appendChild(cat);
     });
+
     const footer = document.createElement('div');
     footer.id = 'waddle-sidebar-footer';
     footer.textContent = 'Press \\ to toggle';
     sidebar.appendChild(footer);
+
     const panel = document.createElement('div');
     panel.id = 'waddle-panel';
+
     const panelTitle = document.createElement('div');
     panelTitle.id = 'waddle-panel-title';
     panelTitle.textContent = state.activeCategory;
+
     const moduleGrid = document.createElement('div');
     moduleGrid.id = 'waddle-module-grid';
+
     const aboutPanel = document.createElement('div');
     aboutPanel.id = 'waddle-about';
     aboutPanel.style.display = 'none';
+
     const timerBlock = document.createElement('div');
     timerBlock.className = 'about-block';
     timerBlock.innerHTML = `<h3>⏱ Session Timer</h3><div id="waddle-session-timer" class="about-timer">00:00:00</div>`;
+
     const creditsBlock = document.createElement('div');
     creditsBlock.className = 'about-block';
-    creditsBlock.innerHTML = `<h3>Credits</h3><div class="about-credit"><img src="https://avatars.githubusercontent.com/Scripter132132?s=56"><div><div class="role">Original Creator</div><a href="https://github.com/Scripter132132" target="_blank">@Scripter132132</a></div></div><div class="about-credit"><img src="https://avatars.githubusercontent.com/TheM1ddleM1n?s=56"><div><div class="role" style="color:#f39c12">Enhanced By</div><a href="https://github.com/TheM1ddleM1n" target="_blank">@TheM1ddleM1n</a></div></div>`;
+    creditsBlock.innerHTML = `
+      <h3>Credits</h3>
+      <div class="about-credit">
+        <img src="https://avatars.githubusercontent.com/Scripter132132?s=56">
+        <div><div class="role">Original Creator</div><a href="https://github.com/Scripter132132" target="_blank">@Scripter132132</a></div>
+      </div>
+      <div class="about-credit">
+        <img src="https://avatars.githubusercontent.com/TheM1ddleM1n?s=56">
+        <div><div class="role" style="color:#f39c12">Enhanced By</div><a href="https://github.com/TheM1ddleM1n" target="_blank">@TheM1ddleM1n</a></div>
+      </div>
+    `;
+
     const linksBlock = document.createElement('div');
     linksBlock.className = 'about-block';
     linksBlock.innerHTML = '<h3>🔗 GitHub</h3>';
     const linksRow = document.createElement('div');
     linksRow.className = 'about-links';
-    [['Suggest Feature', 'https://github.com/TheM1ddleM1n/Waddle/issues/new?labels=enhancement'],
-     ['Report Bug', 'https://github.com/TheM1ddleM1n/Waddle/issues/new?labels=bug']
+    [
+      ['Suggest Feature', 'https://github.com/TheM1ddleM1n/Waddle/issues/new?labels=enhancement'],
+      ['Report Bug', 'https://github.com/TheM1ddleM1n/Waddle/issues/new?labels=bug']
     ].forEach(([text, url]) => {
       const btn = document.createElement('button');
       btn.className = 'about-link-btn';
@@ -1172,10 +1318,12 @@ const SCRIPT_VERSION = '6.10';
     });
     linksBlock.appendChild(linksRow);
     aboutPanel.append(timerBlock, creditsBlock, linksBlock);
+
     panel.append(panelTitle, moduleGrid, aboutPanel);
     win.append(sidebar, panel);
     overlay.appendChild(win);
     document.body.appendChild(overlay);
+
     overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('show'); });
     state.menuOverlay = overlay;
     buildModulePanel(state.activeCategory);
@@ -1188,7 +1336,8 @@ const SCRIPT_VERSION = '6.10';
     window.addEventListener('keydown', (e) => {
       if (e.key === '\\') { e.preventDefault(); toggleMenu(); }
       else if (e.key === 'Escape' && state.menuOverlay?.classList.contains('show')) {
-        e.preventDefault(); state.menuOverlay.classList.remove('show');
+        e.preventDefault();
+        state.menuOverlay.classList.remove('show');
       }
     });
   }
@@ -1232,16 +1381,13 @@ const SCRIPT_VERSION = '6.10';
       let _skyAttempts = 0;
       const MAX_SKY_ATTEMPTS = 20;
       const tryPatch = () => {
-        if (++_skyAttempts > MAX_SKY_ATTEMPTS) {
-          showToast('Space Sky', 'info', 'Could not find game scene');
-          return;
-        }
+        if (++_skyAttempts > MAX_SKY_ATTEMPTS) { showToast('Space Sky', 'info', 'Could not find game scene'); return; }
         const gs = gameRef.resolve()?.gameScene;
         if (!gs?.sky) { setTimeout(tryPatch, 500); return; }
         const loader = new THREE.CubeTextureLoader();
         loader.setPath('https://threejs.org/examples/textures/cube/MilkyWay/');
         loader.load(
-          ['dark-s_px.jpg','dark-s_nx.jpg','dark-s_py.jpg','dark-s_ny.jpg','dark-s_pz.jpg','dark-s_nz.jpg'],
+          ['dark-s_px.jpg', 'dark-s_nx.jpg', 'dark-s_py.jpg', 'dark-s_ny.jpg', 'dark-s_pz.jpg', 'dark-s_nz.jpg'],
           (cubeTexture) => {
             gs.sky._waddleOriginalUpdate = gs.sky.update.bind(gs.sky);
             gs.sky.update = function () {
@@ -1260,10 +1406,7 @@ const SCRIPT_VERSION = '6.10';
     } else {
       const script = document.createElement('script');
       script.src = 'https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js';
-      script.onload = () => {
-        if (isThreeCompatible()) doApply();
-        else showToast('Space Sky', 'info', 'Three.js version mismatch');
-      };
+      script.onload = () => { if (isThreeCompatible()) doApply(); else showToast('Space Sky', 'info', 'Three.js version mismatch'); };
       script.onerror = () => showToast('Space Sky', 'info', 'Failed to load Three.js');
       document.head.appendChild(script);
     }
