@@ -3,7 +3,7 @@
 # 🐧 Waddle
 ### The Ultimate Miniblox Enhancement Suite
 
-![Version](https://img.shields.io/badge/version-6.10-39ff14?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-6.11-39ff14?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-39ff14?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-39ff14?style=for-the-badge)
 
@@ -41,6 +41,7 @@
 | 🐧 Fun Facts | Penguin fact toast on game join |
 | 🚫 Block Party RQ | Silently drops incoming party invites |
 | 🎨 Custom Skin | Equip any skin from the menu — in one click lol |
+| 🔇 Chat Mute | Hides all incoming chat messages — toggle to restore |
 
 > All draggable widgets **remember their position** across sessions. (using localstorage)
 
@@ -50,6 +51,12 @@
 
 ## 📝 Changelog
 
+### [6.11] — Chat Mute
+- Chat Mute module added to Utilities — silently suppresses all incoming chat messages
+- Patches `game.chat.addChat` at the game object level, fully restores on disable
+- Guards against enabling before the game has loaded, with toast feedback in both states
+- Original `addChat` stored as `_waddleOriginalAddChat` on the chat object — survives menu reloads
+
 ### [6.10] — Skins & Polish
 - Custom skin picker with equipped-state guard (no double-equip prompts)
 - Draggable widget positions now persist across reloads
@@ -57,6 +64,7 @@
 - LRU cache replaces plain-object caches for face/player images
 - `applySkin` validates server response before showing success
 - Target HUD fully resets entity state on error recovery
+- SECURITY: applySkin reads the user's session token from localStorage and sends it to a third-party server (coolmathblox.ca).
 
 ### [6.9] — Bug Fixes
 - HP bar no longer interpolates from a previous entity's health on target switch
