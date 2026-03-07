@@ -17,10 +17,14 @@ const SCRIPT_VERSION = '6.10';
   document.title = `🐧 Waddle v${SCRIPT_VERSION} • Miniblox`;
 
   const SETTINGS_KEY = 'waddle_settings';
+  const DRAG_POSITIONS_KEY = 'waddle_positions';
   const THEME_COLOR = '#00FFFF';
   const SESSION_KEY = 'session_v1';
   const EQUIPPED_SKIN_KEY = 'waddle_equipped_skin';
-  const SKINS = ['Remlin', 'Cat', 'Ethan', 'Sushi', 'Slime', 'Duck', 'Tester', 'Banana', 'Qhyun'];
+
+  const SKINS = Object.freeze(['Remlin', 'Cat', 'Ethan', 'Sushi', 'Slime', 'Duck', 'Tester', 'Banana', 'Qhyun']);
+
+  // SECURITY: applySkin reads the user's session token from localStorage and sends it to a third-party server (coolmathblox.ca).
   const SKIN_API = 'https://session.coolmathblox.ca/accounts/set_cosmetic';
 
   async function applySkin(skinId) {
@@ -32,14 +36,12 @@ const SCRIPT_VERSION = '6.10';
     try {
       const res = await fetch(SKIN_API, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'authorization': token
-        },
+        headers: { 'Content-Type': 'application/json', 'authorization': token },
         body: JSON.stringify({ type: 'skin', id: skinId.toLowerCase() })
       });
       if (!res.ok) throw new Error(res.status);
-      await res.json();
+      const data = await res.json();
+      if (data?.success === false) throw new Error(data.message || 'Server rejected request');
       localStorage.setItem(EQUIPPED_SKIN_KEY, skinId.toLowerCase());
       showToast('Skin Applied!', 'enabled', `${skinId} equipped — reloading...`);
       setTimeout(() => location.reload(), 1200);
@@ -83,7 +85,7 @@ const SCRIPT_VERSION = '6.10';
     ]
   };
 
-  const FUN_FACTS = [
+  const FUN_FACTS = Object.freeze([
     'Penguins can drink seawater thanks to a special gland above their eyes.',
     'A group of penguins in the water is called a raft.',
     'On land, a group of penguins is called a waddle.',
@@ -104,7 +106,7 @@ const SCRIPT_VERSION = '6.10';
     'Molting season replaces penguins\'s feathers all at once, so they stay ashore.',
     'Not all penguins live in icy climates; several species live in temperate regions.',
     'Penguins are birds, but their bodies are specialized for swimming instead of flying.'
-  ];
+  ]);
 
   const gameRef = {
     _game: null,
@@ -138,6 +140,10 @@ const SCRIPT_VERSION = '6.10';
 
   let _lastGameValidation = 0;
   function getGameCached(now = performance.now()) {
+    if (gameRef._game && !(gameRef._game.player && gameRef._game.resourceMonitor)) {
+      gameRef._game = null;
+      _lastGameValidation = 0;
+    }
     if (!gameRef._game || now - _lastGameValidation > 2000) {
       _lastGameValidation = now;
       gameRef.resolve();
@@ -172,7 +178,6 @@ const SCRIPT_VERSION = '6.10';
 
   const KNOWN_FEATURES = new Set(Object.keys(state.features));
 
-
   function migrateSettings(raw) {
     const features = {};
     if (!raw?.features) return features;
@@ -182,7 +187,23 @@ const SCRIPT_VERSION = '6.10';
     return features;
   }
 
+  function saveDragPositions() {
+    const positions = {};
+    ['performance', 'coords', 'antiAfk'].forEach(type => {
+      const el = state.counters[type];
+      if (el) positions[type] = { left: el.style.left, top: el.style.top };
+    });
+    const kd = state.counters.keyDisplay;
+    if (kd) positions.keyDisplay = { left: kd.style.left, top: kd.style.top };
+    localStorage.setItem(DRAG_POSITIONS_KEY, JSON.stringify(positions));
+  }
 
+  function loadDragPositions() {
+    try { return JSON.parse(localStorage.getItem(DRAG_POSITIONS_KEY) || 'null') || {}; }
+    catch (_) { return {}; }
+  }
+
+  // Game chat markup: \<color>\ sets text color, \reset\ restores default
   (function () {
     let _greetAttempts = 0;
     const MAX_GREET_ATTEMPTS = 40;
@@ -203,7 +224,6 @@ const SCRIPT_VERSION = '6.10';
     }, 500);
   })();
 
-
   (function () {
     let clicks = 0;
     const CPS_THRESHOLD = 15, CHECK_INTERVAL = 1000, COOLDOWN = 2000;
@@ -220,7 +240,6 @@ const SCRIPT_VERSION = '6.10';
       }
     }, CHECK_INTERVAL);
   })();
-
 
   let _saveTimer = null;
   function saveSettings() {
@@ -312,7 +331,7 @@ const SCRIPT_VERSION = '6.10';
 .skin-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; }
 .skin-btn { background:var(--bg3); border:1px solid rgba(255,255,255,.07); border-radius:var(--radius); padding:14px 10px; cursor:pointer; text-align:center; font-size:.88rem; font-weight:var(--fw); color:var(--text-dim); transition:all .12s ease; position:relative; }
 .skin-btn:hover { border-color:var(--c-border); color:var(--text); }
-.skin-btn.equipped { border-color:var(--c); color:var(--c); background:var(--c-dim); }
+.skin-btn.equipped { border-color:var(--c); color:var(--c); background:var(--c-dim); cursor:default; }
 .skin-equipped-badge { position:absolute; top:6px; right:7px; font-size:.6rem; font-weight:900; color:var(--c); letter-spacing:.5px; text-transform:uppercase; }
 #skin-confirm-view { display:none; flex-direction:column; align-items:center; justify-content:center; gap:16px; flex:1; text-align:center; }
 #skin-confirm-view.show { display:flex; }
@@ -329,6 +348,11 @@ const SCRIPT_VERSION = '6.10';
   }
 
   function showToast(title, type = 'info', message = '') {
+    const VALID_TYPES = ['enabled', 'disabled', 'info'];
+    if (!VALID_TYPES.includes(type)) {
+      console.warn(`[Waddle] showToast: unknown type "${type}", falling back to "info"`);
+      type = 'info';
+    }
     if (!document.body) return;
     if (!state.toastContainer || !document.contains(state.toastContainer)) {
       state.toastContainer = document.getElementById('waddle-toasts') || (() => {
@@ -343,7 +367,7 @@ const SCRIPT_VERSION = '6.10';
     const iconMap = { enabled: '✓', disabled: '✗', info: '!' };
     const icon = document.createElement('div');
     icon.className = `toast-icon ${type}`;
-    icon.textContent = iconMap[type] || '!';
+    icon.textContent = iconMap[type];
     const body = document.createElement('div');
     body.className = 'toast-body';
     body.innerHTML = `<div class="toast-title">${title}</div>${message ? `<div class="toast-msg">${message}</div>` : ''}`;
@@ -449,17 +473,29 @@ const SCRIPT_VERSION = '6.10';
     window.addEventListener('resize', state._resizeHandler, { passive: true });
   }
 
-  const FACE_CACHE_MAX = 64;
-
-  function pruneCache(cache) {
-    const keys = Object.keys(cache);
-    if (keys.length > FACE_CACHE_MAX) {
-      keys.slice(0, keys.length - FACE_CACHE_MAX).forEach(k => delete cache[k]);
+  class LRUCache {
+    constructor(max) {
+      this.max = max;
+      this._map = new Map();
     }
+    get(key) {
+      if (!this._map.has(key)) return undefined;
+      const val = this._map.get(key);
+      this._map.delete(key);
+      this._map.set(key, val);
+      return val;
+    }
+    set(key, val) {
+      if (this._map.has(key)) this._map.delete(key);
+      else if (this._map.size >= this.max) this._map.delete(this._map.keys().next().value);
+      this._map.set(key, val);
+    }
+    has(key) { return this._map.has(key); }
   }
 
-  const _faceImgCache = {};
-  const _playerFaceCache = {};
+  const _faceImgCache = new LRUCache(64);
+  const _playerFaceCache = new LRUCache(64);
+
   let _entityMapKey = null;
   let _cachedNearest = null;
   let _cachedMinDist = Infinity;
@@ -576,14 +612,13 @@ const SCRIPT_VERSION = '6.10';
       ctx.lineWidth = 1.5;
       ctx.stroke();
       if (faceSrc) {
-        if (!_faceImgCache[faceSrc]) {
+        if (!_faceImgCache.has(faceSrc)) {
           const img = new Image();
           img.crossOrigin = 'anonymous';
           img.src = faceSrc;
-          _faceImgCache[faceSrc] = img;
-          pruneCache(_faceImgCache);
+          _faceImgCache.set(faceSrc, img);
         }
-        const img = _faceImgCache[faceSrc];
+        const img = _faceImgCache.get(faceSrc);
         if (img.complete && img.naturalWidth > 0) ctx.drawImage(img, x + 10, y + 10, 34, 34);
       }
       const nameX = faceSrc ? x + 52 : x + 10;
@@ -690,8 +725,8 @@ const SCRIPT_VERSION = '6.10';
             if (isPlayer) {
               const lookingAtPlayer = !!(domSrc);
               const nameKey = (lookingAtPlayer ? domName : null) || _cachedNearest.name || '';
-              if (domSrc && nameKey) { _playerFaceCache[nameKey] = domSrc; pruneCache(_playerFaceCache); }
-              faceSrc = _playerFaceCache[nameKey] ?? null;
+              if (domSrc && nameKey) _playerFaceCache.set(nameKey, domSrc);
+              faceSrc = _playerFaceCache.get(nameKey) ?? null;
               faceName = (lookingAtPlayer ? domName : null) || _cachedNearest.name || '???';
             } else {
               faceName = _cachedNearest.name || _cachedNearest.constructor?.name?.replace('Entity', '') || '???';
@@ -713,6 +748,8 @@ const SCRIPT_VERSION = '6.10';
         console.warn('[Waddle] Target HUD tick error:', err);
         _lastDrawnType = '';
         _needsRedraw = true;
+        _cachedNearest = null;
+        _displayedHp = 0;
         try { ctx.clearRect(0, 0, canvas.width, canvas.height); } catch (_) {}
         setTimeout(() => requestAnimationFrame(tick), 2000);
         return;
@@ -742,9 +779,11 @@ const SCRIPT_VERSION = '6.10';
         fontSize: '1.1rem', padding: '0'
       });
     } else {
-      counter.style.left = config.pos.left;
-      counter.style.top = config.pos.top;
-      if (config.draggable) setupDragging(counter);
+      const savedPositions = loadDragPositions();
+      const saved = savedPositions[type];
+      counter.style.left = saved?.left || config.pos.left;
+      counter.style.top = saved?.top || config.pos.top;
+      if (config.draggable) setupDragging(counter, saveDragPositions);
     }
     document.body.appendChild(counter);
     state.counters[type] = counter;
@@ -756,13 +795,14 @@ const SCRIPT_VERSION = '6.10';
     if (span) span.textContent = text;
   }
 
-  function setupDragging(el) {
+  function setupDragging(el, onDragEnd) {
     let rafId = null;
     const onMouseUp = () => {
       if (!el._dragging) return;
       el._dragging = false;
       el.classList.remove('dragging');
       if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+      onDragEnd?.();
     };
     const onMouseMove = (e) => {
       if (!el._dragging || !el.parentElement) return;
@@ -858,8 +898,10 @@ const SCRIPT_VERSION = '6.10';
     const container = document.createElement('div');
     container.id = 'key-display-container';
     container.className = 'key-display-container';
-    container.style.left = DEFAULT_POSITIONS.keyDisplay.left;
-    container.style.top = DEFAULT_POSITIONS.keyDisplay.top;
+    const savedPositions = loadDragPositions();
+    const saved = savedPositions.keyDisplay;
+    container.style.left = saved?.left || DEFAULT_POSITIONS.keyDisplay.left;
+    container.style.top = saved?.top || DEFAULT_POSITIONS.keyDisplay.top;
     const grid = document.createElement('div');
     grid.className = 'key-display-grid';
     grid.style.gridTemplateColumns = '44px 44px 44px';
@@ -895,7 +937,7 @@ const SCRIPT_VERSION = '6.10';
     container.append(grid, mouseRow, spaceBox);
     document.body.appendChild(container);
     container._keyBoxes = keyBoxes;
-    setupDragging(container);
+    setupDragging(container, saveDragPositions);
     state.counters.keyDisplay = container;
     return container;
   }
@@ -939,8 +981,7 @@ const SCRIPT_VERSION = '6.10';
     _keyListeners = null;
   }
 
-  function disablePartyRequestsSystem() {
-    const game = gameRef.resolve();
+  function applyPartyPatch(game) {
     if (!game?.party) return false;
     if (!game.party._waddleOriginalInvoke) {
       game.party._waddleOriginalInvoke = game.party.invoke;
@@ -1016,7 +1057,7 @@ const SCRIPT_VERSION = '6.10';
           state.antiAfkCountdown--;
           updateAntiAfkCounter();
           if (state.antiAfkCountdown <= 0) {
-            pressSpace();
+            if (document.pointerLockElement) pressSpace();
             state.antiAfkCountdown = 5;
             const el = state.counters.antiAfk;
             if (el) { el.classList.remove('afk-pulse'); void el.offsetWidth; el.classList.add('afk-pulse'); }
@@ -1050,14 +1091,10 @@ const SCRIPT_VERSION = '6.10';
     },
     disablePartyRequests: {
       start: () => {
-        if (!disablePartyRequestsSystem()) {
-          state.intervals.partyRetry = setInterval(() => {
-            if (disablePartyRequestsSystem()) {
-              clearInterval(state.intervals.partyRetry);
-              state.intervals.partyRetry = null;
-            }
-          }, 500);
-        }
+        applyPartyPatch(gameRef.resolve());
+        state.intervals.partyRetry = setInterval(() => {
+          applyPartyPatch(gameRef.resolve());
+        }, 2000);
       },
       cleanup: () => {
         clearInterval(state.intervals.partyRetry);
@@ -1128,17 +1165,24 @@ const SCRIPT_VERSION = '6.10';
       SKINS.forEach(name => {
         const btn = document.createElement('div');
         btn.className = 'skin-btn';
+        const isEquipped = name.toLowerCase() === equippedSkin.toLowerCase();
         const label = document.createElement('span');
         label.textContent = name;
         btn.appendChild(label);
-        if (name.toLowerCase() === equippedSkin.toLowerCase()) {
+        if (isEquipped) {
           btn.classList.add('equipped');
           const badge = document.createElement('span');
           badge.className = 'skin-equipped-badge';
           badge.textContent = '✓ on';
           btn.appendChild(badge);
         }
-        btn.addEventListener('click', () => showSkinConfirm(name));
+        btn.addEventListener('click', () => {
+          if (btn.classList.contains('equipped')) {
+            showToast('Already Equipped', 'info', `${name} is your current skin.`);
+            return;
+          }
+          showSkinConfirm(name);
+        });
         skinGrid.appendChild(btn);
       });
 
@@ -1352,7 +1396,7 @@ const SCRIPT_VERSION = '6.10';
 
   function globalCleanup() {
     Object.keys(state.features).forEach(f => { if (state.features[f]) featureManager[f]?.cleanup(); });
-    Object.values(state.intervals).forEach(id => { if (id) clearInterval(id); });
+    Object.values(state.intervals).forEach(id => { if (id != null) clearInterval(id); });
     if (state.rafId) cancelAnimationFrame(state.rafId);
     if (state._resizeHandler) window.removeEventListener('resize', state._resizeHandler);
     state._crosshairObserver?.disconnect();
@@ -1434,7 +1478,8 @@ const SCRIPT_VERSION = '6.10';
       }, 100);
       updateSessionTimer();
       state.intervals.sessionTimer = setInterval(updateSessionTimer, 1000);
-    } catch (_) {
+    } catch (err) {
+      console.error('[Waddle] Init failed:', err);
       showToast('Init failed', 'info', 'Check console');
     }
   }
