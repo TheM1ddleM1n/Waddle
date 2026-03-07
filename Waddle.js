@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Waddle (With Fun Facts!)
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
-// @version      6.10
+// @version      6.11
 // @description  The ultimate Miniblox enhancement suite with advanced API features!
 // @author       The Dream Team! (Scripter & TheM1ddleM1n)
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/Waddle/refs/heads/main/Penguin.png
@@ -9,7 +9,7 @@
 // @run-at       document-start
 // ==/UserScript==
 
-const SCRIPT_VERSION = '6.10';
+const SCRIPT_VERSION = '6.11';
 
 (function () {
   'use strict';
@@ -24,7 +24,6 @@ const SCRIPT_VERSION = '6.10';
 
   const SKINS = Object.freeze(['Remlin', 'Cat', 'Ethan', 'Sushi', 'Slime', 'Duck', 'Tester', 'Banana', 'Qhyun']);
 
-  // SECURITY: applySkin reads the user's session token from localStorage and sends it to a third-party server (coolmathblox.ca).
   const SKIN_API = 'https://session.coolmathblox.ca/accounts/set_cosmetic';
 
   async function applySkin(skinId) {
@@ -81,7 +80,8 @@ const SCRIPT_VERSION = '6.10';
     utilities: [
       { label: 'Anti-AFK', feature: 'antiAfk' },
       { label: 'Fun Facts', feature: 'funFacts' },
-      { label: 'Block Party RQ', feature: 'disablePartyRequests' }
+      { label: 'Block Party RQ', feature: 'disablePartyRequests' },
+      { label: 'Chat Mute', feature: 'muteChat' }
     ]
   };
 
@@ -155,7 +155,7 @@ const SCRIPT_VERSION = '6.10';
     features: {
       performance: false, coords: false, realTime: false,
       antiAfk: false, keyDisplay: false, disablePartyRequests: false,
-      funFacts: false
+      funFacts: false, muteChat: false
     },
     counters: { performance: null, realTime: null, coords: null, antiAfk: null, keyDisplay: null },
     menuOverlay: null,
@@ -203,7 +203,6 @@ const SCRIPT_VERSION = '6.10';
     catch (_) { return {}; }
   }
 
-  // Game chat markup: \<color>\ sets text color, \reset\ restores default
   (function () {
     let _greetAttempts = 0;
     const MAX_GREET_ATTEMPTS = 40;
@@ -1126,6 +1125,29 @@ const SCRIPT_VERSION = '6.10';
         clearInterval(state.intervals.funFacts);
         state.intervals.funFacts = null;
         state.hasShownFunFactOnJoin = false;
+      }
+    },
+    muteChat: {
+      start: () => {
+        const game = getGameCached(0);
+        if (!game?.chat) {
+          showToast('Chat Mute', 'disabled', 'Game not loaded yet!');
+          state.features.muteChat = false;
+          return;
+        }
+        if (!game.chat._waddleOriginalAddChat) {
+          game.chat._waddleOriginalAddChat = game.chat.addChat.bind(game.chat);
+        }
+        game.chat.addChat = function () {};
+        showToast('Chat Mute', 'enabled', 'Chat messages are now hidden');
+      },
+      cleanup: () => {
+        const game = getGameCached(0);
+        if (game?.chat?._waddleOriginalAddChat) {
+          game.chat.addChat = game.chat._waddleOriginalAddChat;
+          delete game.chat._waddleOriginalAddChat;
+        }
+        showToast('Chat Mute', 'disabled', 'Chat messages restored');
       }
     }
   };
