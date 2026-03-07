@@ -64,7 +64,6 @@
 - LRU cache replaces plain-object caches for face/player images
 - `applySkin` validates server response before showing success
 - Target HUD fully resets entity state on error recovery
-- SECURITY: applySkin reads the user's session token from localStorage and sends it to a third-party server (coolmathblox.ca).
 
 ### [6.9] — Bug Fixes
 - HP bar no longer interpolates from a previous entity's health on target switch
@@ -99,7 +98,7 @@
 | Enhancement & Maintenance | [@TheM1ddleM1n](https://github.com/TheM1ddleM1n) |
 | Inspired By | Scripter's NovaCore Client |
 
-> ⚠️ The custom skin feature sends your Miniblox session token to `coolmathblox.ca` to apply skins. Make sure you trust the service before using it.
+> ⚠️ SECURITY: The custom skin feature reads your Miniblox session token from localStorage and sends it to `coolmathblox.ca` to apply skins — only use if you trust the service.
 
 ---
 
