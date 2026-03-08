@@ -3,7 +3,7 @@
 # 🐧 Waddle
 ### The Ultimate Miniblox Enhancement Suite
 
-![Version](https://img.shields.io/badge/version-6.11-39ff14?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-6.12-39ff14?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-39ff14?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-39ff14?style=for-the-badge)
 
@@ -37,6 +37,7 @@
 | 📍 Coordinates | Live X Y Z, 10 updates/sec |
 | 🕐 Clock | 24-hour clock, fixed bottom-right |
 | ⌨️ Key Display | WASD + mouse buttons, lights up on press |
+| 🧭 Compass | Sliding tape compass with cardinal/intercardinal labels, heading readout, and pointer-lock auto-hide |
 | 🐧 Anti-AFK | Auto-jumps every 5s — only fires when in-game |
 | 🐧 Fun Facts | Penguin fact toast on game join |
 | 🚫 Block Party RQ | Silently drops incoming party invites |
@@ -50,6 +51,12 @@
 ---
 
 ## 📝 Changelog
+
+### [6.12] — Compass
+- Compass module added to Display — sliding tape shows a 90° arc of cardinal and intercardinal labels
+- Live heading readout in the top-right corner of the widget (e.g. `NNE 22°`) (via player yaw)
+- Auto-hides when pointer lock is not active (i.e. outside of gameplay)
+- Drag position persists across sessions via localStorage
 
 ### [6.11] — Chat Mute
 - Chat Mute module added to Utilities — silently suppresses all incoming chat messages
