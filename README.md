@@ -111,6 +111,6 @@
 
 <div align="center">
 
-🐧 **Made by the Waddle Team with ❤️** — MIT License — [Play Miniblox](https://miniblox.io/)
+🐧 **Made by the Waddle Team with 🖥️** — MIT License
 
 </div>
