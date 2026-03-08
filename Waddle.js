@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Waddle (With Fun Facts!)
+// @name         Waddle!
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
 // @version      6.11
 // @description  The ultimate Miniblox enhancement suite with advanced API features!
