@@ -181,7 +181,10 @@ const SCRIPT_VERSION = '6.12';
     hasShownFunFactOnJoin: false,
     _panelCache: {},
     _resizeHandler: null,
-    _crosshairObserver: null
+    _crosshairObserver: null,
+    _keyListeners: null,
+    _saveTimer: null,
+    _crosshairRafPending: false,
   };
 
   const KNOWN_FEATURES = new Set(Object.keys(state.features));
@@ -235,10 +238,9 @@ const SCRIPT_VERSION = '6.12';
     }, 1000);
   })();
 
-  let _saveTimer = null;
   function saveSettings() {
-    clearTimeout(_saveTimer);
-    _saveTimer = setTimeout(() => {
+    clearTimeout(state._saveTimer);
+    state._saveTimer = setTimeout(() => {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify({ version: SCRIPT_VERSION, features: state.features }));
     }, 100);
   }
@@ -397,8 +399,6 @@ const SCRIPT_VERSION = '6.12';
     if (e) e.textContent = formatSessionTime();
   }
 
-  let _crosshairRafPending = false;
-
   function makeLine(styles) {
     const d = div(null);
     Object.assign(d.style, { position: 'absolute', backgroundColor: THEME_COLOR, pointerEvents: 'none' }, styles);
@@ -433,9 +433,9 @@ const SCRIPT_VERSION = '6.12';
     document.body.appendChild(state.crosshairContainer);
     const target = document.getElementById('react') || document.body;
     state._crosshairObserver = new MutationObserver(() => {
-      if (!_crosshairRafPending) {
-        _crosshairRafPending = true;
-        requestAnimationFrame(() => { _crosshairRafPending = false; checkCrosshair(); });
+      if (!state._crosshairRafPending) {
+        state._crosshairRafPending = true;
+        requestAnimationFrame(() => { state._crosshairRafPending = false; checkCrosshair(); });
       }
     });
     state._crosshairObserver.observe(target, { childList: true, subtree: true });
@@ -470,37 +470,6 @@ const SCRIPT_VERSION = '6.12';
     has(key) { return this._map.has(key); }
   }
 
-  const _faceImgCache = new LRUCache(64);
-  const _playerFaceCache = new LRUCache(64);
-
-  let _entityMapKey = null;
-  let _cachedNearest = null;
-  let _cachedMinDist = Infinity;
-  let _lastEntityScan = 0;
-  const ENTITY_SCAN_INTERVAL = 50;
-  let _cachedPauseMenu = false;
-  let _lastPauseCheck = 0;
-  const PAUSE_CHECK_INTERVAL = 200;
-  let _cachedBorderGradient = null;
-  let _cachedBorderGradientKey = '';
-  let _lastDrawnHp = -1;
-  let _lastDrawnName = '';
-  let _lastDrawnFaceSrc = '';
-  let _lastDrawnType = '';
-  let _needsRedraw = true;
-  let _displayedHp = 0;
-
-  function findEntityMapKey(world) {
-    if (_entityMapKey && world[_entityMapKey] instanceof Map) return _entityMapKey;
-    for (const [k, v] of Object.entries(world)) {
-      if (v instanceof Map && v.size > 0) {
-        const first = v.values().next().value;
-        if (first && typeof first.getHealth === 'function' && first.pos) { _entityMapKey = k; return k; }
-      }
-    }
-    return null;
-  }
-
   function startTargetHUDLoop() {
     const canvas = document.getElementById('wb-hud-canvas');
     if (!canvas) return;
@@ -509,26 +478,57 @@ const SCRIPT_VERSION = '6.12';
 
     const MAX_RANGE = 5;
     const W = 220, R = 10, H_ENTITY = 86, H_BLOCK = 52;
+    const ENTITY_SCAN_INTERVAL = 50;
+    const PAUSE_CHECK_INTERVAL = 200;
+
+    const faceImgCache = new LRUCache(64);
+    const playerFaceCache = new LRUCache(64);
+
+    let entityMapKey = null;
+    let cachedNearest = null;
+    let cachedMinDist = Infinity;
+    let lastEntityScan = 0;
+    let cachedPauseMenu = false;
+    let lastPauseCheck = 0;
+    let cachedBorderGradient = null;
+    let cachedBorderGradientKey = '';
+    let lastDrawnHp = -1;
+    let lastDrawnName = '';
+    let lastDrawnFaceSrc = '';
+    let lastDrawnType = '';
+    let needsRedraw = true;
+    let displayedHp = 0;
+
+    function findEntityMapKey(world) {
+      if (entityMapKey && world[entityMapKey] instanceof Map) return entityMapKey;
+      for (const [k, v] of Object.entries(world)) {
+        if (v instanceof Map && v.size > 0) {
+          const first = v.values().next().value;
+          if (first && typeof first.getHealth === 'function' && first.pos) { entityMapKey = k; return k; }
+        }
+      }
+      return null;
+    }
 
     function getBorderGradient(x, y, h) {
       const key = `${x},${y},${h}`;
-      if (_cachedBorderGradient && _cachedBorderGradientKey === key) return _cachedBorderGradient;
+      if (cachedBorderGradient && cachedBorderGradientKey === key) return cachedBorderGradient;
       const g = ctx.createLinearGradient(x, y, x + W, y + h);
       g.addColorStop(0, '#7c3aed');
       g.addColorStop(1, '#2563eb');
-      _cachedBorderGradient = g;
-      _cachedBorderGradientKey = key;
+      cachedBorderGradient = g;
+      cachedBorderGradientKey = key;
       return g;
     }
 
-    let _domFaceEl = null, _domNameEl = null, _domQueryAge = 0;
+    let domFaceEl = null, domNameEl = null, domQueryAge = 0;
     const DOM_QUERY_INTERVAL = 500;
 
     function getDOM(now) {
-      if (now - _domQueryAge > DOM_QUERY_INTERVAL) {
-        _domFaceEl = document.querySelector('.css-1pj0jj0 img');
-        _domNameEl = document.querySelector('.css-1pj0jj0 p');
-        _domQueryAge = now;
+      if (now - domQueryAge > DOM_QUERY_INTERVAL) {
+        domFaceEl = document.querySelector('.css-1pj0jj0 img');
+        domNameEl = document.querySelector('.css-1pj0jj0 p');
+        domQueryAge = now;
       }
     }
 
@@ -536,23 +536,23 @@ const SCRIPT_VERSION = '6.12';
       const x = (canvas.width - W) / 2, y = 16;
       const maxHp = nearest.getMaxHealth?.() ?? 20;
       const realHp = Math.max(0, nearest.getHealth());
-      if (_displayedHp === 0) _displayedHp = realHp;
-      _displayedHp += (realHp - _displayedHp) * 0.15;
-      const hp = _displayedHp;
+      if (displayedHp === 0) displayedHp = realHp;
+      displayedHp += (realHp - displayedHp) * 0.15;
+      const hp = displayedHp;
       const hpPct = hp / maxHp;
       const barColor = hpPct > 0.5 ? '#22c55e' : hpPct > 0.25 ? '#eab308' : '#ef4444';
       if (
-        Math.round(hp) === Math.round(_lastDrawnHp) &&
-        faceName === _lastDrawnName &&
-        faceSrc === _lastDrawnFaceSrc &&
-        _lastDrawnType === 'entity' &&
-        !_needsRedraw
+        Math.round(hp) === Math.round(lastDrawnHp) &&
+        faceName === lastDrawnName &&
+        faceSrc === lastDrawnFaceSrc &&
+        lastDrawnType === 'entity' &&
+        !needsRedraw
       ) return;
-      _lastDrawnHp = Math.round(hp);
-      _lastDrawnName = faceName;
-      _lastDrawnFaceSrc = faceSrc;
-      _lastDrawnType = 'entity';
-      _needsRedraw = false;
+      lastDrawnHp = Math.round(hp);
+      lastDrawnName = faceName;
+      lastDrawnFaceSrc = faceSrc;
+      lastDrawnType = 'entity';
+      needsRedraw = false;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.save();
       ctx.shadowColor = 'rgba(0,0,0,0.9)';
@@ -566,13 +566,13 @@ const SCRIPT_VERSION = '6.12';
       ctx.lineWidth = 1.5;
       ctx.stroke();
       if (faceSrc) {
-        if (!_faceImgCache.has(faceSrc)) {
+        if (!faceImgCache.has(faceSrc)) {
           const img = new Image();
           img.crossOrigin = 'anonymous';
           img.src = faceSrc;
-          _faceImgCache.set(faceSrc, img);
+          faceImgCache.set(faceSrc, img);
         }
-        const img = _faceImgCache.get(faceSrc);
+        const img = faceImgCache.get(faceSrc);
         if (img.complete && img.naturalWidth > 0) ctx.drawImage(img, x + 10, y + 10, 34, 34);
       }
       const nameX = faceSrc ? x + 52 : x + 10;
@@ -597,12 +597,12 @@ const SCRIPT_VERSION = '6.12';
 
     function drawBlockHUD(blockName) {
       const x = (canvas.width - W) / 2, y = 16;
-      if (blockName === _lastDrawnName && _lastDrawnType === 'block' && !_needsRedraw) return;
-      _lastDrawnName = blockName;
-      _lastDrawnType = 'block';
-      _lastDrawnHp = -1;
-      _lastDrawnFaceSrc = '';
-      _needsRedraw = false;
+      if (blockName === lastDrawnName && lastDrawnType === 'block' && !needsRedraw) return;
+      lastDrawnName = blockName;
+      lastDrawnType = 'block';
+      lastDrawnHp = -1;
+      lastDrawnFaceSrc = '';
+      needsRedraw = false;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.save();
       ctx.shadowColor = 'rgba(0,0,0,0.9)';
@@ -630,21 +630,21 @@ const SCRIPT_VERSION = '6.12';
     function tick() {
       try {
         const now = performance.now();
-        if (now - _lastPauseCheck > PAUSE_CHECK_INTERVAL) {
-          _cachedPauseMenu = !!document.querySelector('.chakra-modal__content-container,[role="dialog"]');
-          _lastPauseCheck = now;
+        if (now - lastPauseCheck > PAUSE_CHECK_INTERVAL) {
+          cachedPauseMenu = !!document.querySelector('.chakra-modal__content-container,[role="dialog"]');
+          lastPauseCheck = now;
         }
-        const inGame = !!(document.pointerLockElement && !_cachedPauseMenu);
+        const inGame = !!(document.pointerLockElement && !cachedPauseMenu);
         if (!inGame) {
-          if (_lastDrawnType !== '') { ctx.clearRect(0, 0, canvas.width, canvas.height); _lastDrawnType = ''; _needsRedraw = true; }
+          if (lastDrawnType !== '') { ctx.clearRect(0, 0, canvas.width, canvas.height); lastDrawnType = ''; needsRedraw = true; }
           requestAnimationFrame(tick);
           return;
         }
         const game = gameRef.get(now);
         const player = game?.player;
         if (game?.world && player?.pos) {
-          if (now - _lastEntityScan > ENTITY_SCAN_INTERVAL) {
-            _lastEntityScan = now;
+          if (now - lastEntityScan > ENTITY_SCAN_INTERVAL) {
+            lastEntityScan = now;
             const mapKey = findEntityMapKey(game.world);
             const dump = mapKey ? game.world[mapKey] : null;
             if (dump) {
@@ -654,44 +654,44 @@ const SCRIPT_VERSION = '6.12';
                 const dist = player.pos.distanceTo(entity.pos);
                 if (dist < minDist) { minDist = dist; nearest = entity; }
               });
-              if (nearest !== _cachedNearest) { _needsRedraw = true; _displayedHp = 0; }
-              _cachedNearest = nearest;
-              _cachedMinDist = minDist;
+              if (nearest !== cachedNearest) { needsRedraw = true; displayedHp = 0; }
+              cachedNearest = nearest;
+              cachedMinDist = minDist;
             }
           }
-          if (_cachedNearest && _cachedMinDist <= MAX_RANGE) {
-            const isPlayer = _cachedNearest.constructor?.name === 'ClientEntityPlayerOther';
+          if (cachedNearest && cachedMinDist <= MAX_RANGE) {
+            const isPlayer = cachedNearest.constructor?.name === 'ClientEntityPlayerOther';
             getDOM(now);
-            const domSrc = _domFaceEl?.src ?? null;
-            const domName = _domNameEl?.textContent ?? null;
+            const domSrc = domFaceEl?.src ?? null;
+            const domName = domNameEl?.textContent ?? null;
             let faceSrc = null, faceName;
             if (isPlayer) {
-              const nameKey = (domSrc ? domName : null) || _cachedNearest.name || '';
-              if (domSrc && nameKey) _playerFaceCache.set(nameKey, domSrc);
-              faceSrc = _playerFaceCache.get(nameKey) ?? null;
-              faceName = (domSrc ? domName : null) || _cachedNearest.name || '???';
+              const nameKey = (domSrc ? domName : null) || cachedNearest.name || '';
+              if (domSrc && nameKey) playerFaceCache.set(nameKey, domSrc);
+              faceSrc = playerFaceCache.get(nameKey) ?? null;
+              faceName = (domSrc ? domName : null) || cachedNearest.name || '???';
             } else {
-              faceName = _cachedNearest.name || _cachedNearest.constructor?.name?.replace('Entity', '') || '???';
+              faceName = cachedNearest.name || cachedNearest.constructor?.name?.replace('Entity', '') || '???';
             }
-            drawEntityHUD(_cachedNearest, faceSrc, faceName);
+            drawEntityHUD(cachedNearest, faceSrc, faceName);
           } else {
             getDOM(now);
-            const blockName = _domNameEl?.textContent?.trim() ?? null;
+            const blockName = domNameEl?.textContent?.trim() ?? null;
             if (blockName) {
               drawBlockHUD(blockName);
-            } else if (_lastDrawnType !== '') {
+            } else if (lastDrawnType !== '') {
               ctx.clearRect(0, 0, canvas.width, canvas.height);
-              _lastDrawnType = '';
-              _needsRedraw = true;
+              lastDrawnType = '';
+              needsRedraw = true;
             }
           }
         }
       } catch (err) {
         console.warn('[Waddle] Target HUD tick error:', err);
-        _lastDrawnType = '';
-        _needsRedraw = true;
-        _cachedNearest = null;
-        _displayedHp = 0;
+        lastDrawnType = '';
+        needsRedraw = true;
+        cachedNearest = null;
+        displayedHp = 0;
         try { ctx.clearRect(0, 0, canvas.width, canvas.height); } catch (_) {}
         setTimeout(() => requestAnimationFrame(tick), 2000);
         return;
@@ -965,8 +965,6 @@ const SCRIPT_VERSION = '6.12';
     updateCounterText('antiAfk', `🐧 Jumping in ${state.antiAfkCountdown}s`);
   }
 
-  let _keyListeners = null;
-
   function createKeyDisplay() {
     if (!document.body) return null;
     const container = div('key-display-container');
@@ -1012,7 +1010,7 @@ const SCRIPT_VERSION = '6.12';
   }
 
   function setupKeyDisplayListeners() {
-    if (_keyListeners) return;
+    if (state._keyListeners) return;
     const kd = (e) => {
       if (state.menuOverlay?.classList.contains('show')) return;
       const k = e.key === ' ' ? 'space' : e.key.toLowerCase();
@@ -1034,16 +1032,16 @@ const SCRIPT_VERSION = '6.12';
     window.addEventListener('keyup', ku, { passive: true });
     window.addEventListener('mousedown', md, { passive: true });
     window.addEventListener('mouseup', mu, { passive: true });
-    _keyListeners = { kd, ku, md, mu };
+    state._keyListeners = { kd, ku, md, mu };
   }
 
   function teardownKeyDisplayListeners() {
-    if (!_keyListeners) return;
-    window.removeEventListener('keydown', _keyListeners.kd);
-    window.removeEventListener('keyup', _keyListeners.ku);
-    window.removeEventListener('mousedown', _keyListeners.md);
-    window.removeEventListener('mouseup', _keyListeners.mu);
-    _keyListeners = null;
+    if (!state._keyListeners) return;
+    window.removeEventListener('keydown', state._keyListeners.kd);
+    window.removeEventListener('keyup', state._keyListeners.ku);
+    window.removeEventListener('mousedown', state._keyListeners.md);
+    window.removeEventListener('mouseup', state._keyListeners.mu);
+    state._keyListeners = null;
   }
 
   function applyPartyPatch(game) {
