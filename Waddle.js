@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         Waddle!
+// @name         Waddle
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
-// @version      6.11
+// @version      6.12
 // @description  The ultimate Miniblox enhancement suite with advanced API features!
 // @author       The Dream Team! (Scripter & TheM1ddleM1n)
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/Waddle/refs/heads/main/Penguin.png
@@ -9,7 +9,7 @@
 // @run-at       document-start
 // ==/UserScript==
 
-const SCRIPT_VERSION = '6.11';
+const SCRIPT_VERSION = '6.12';
 
 (function () {
   'use strict';
@@ -23,7 +23,6 @@ const SCRIPT_VERSION = '6.11';
   const EQUIPPED_SKIN_KEY = 'waddle_equipped_skin';
 
   const SKINS = Object.freeze(['Remlin', 'Cat', 'Ethan', 'Sushi', 'Slime', 'Duck', 'Tester', 'Banana', 'Qhyun']);
-
   const SKIN_API = 'https://session.coolmathblox.ca/accounts/set_cosmetic';
 
   async function applySkin(skinId) {
@@ -53,7 +52,8 @@ const SCRIPT_VERSION = '6.11';
     performance: { left: '50px', top: '80px' },
     keyDisplay: { left: '50px', top: '150px' },
     coords: { left: '50px', top: '220px' },
-    antiAfk: { left: '50px', top: '290px' }
+    antiAfk: { left: '50px', top: '290px' },
+    compass: { left: '16px', top: '16px' },
   };
 
   const COUNTER_CONFIGS = {
@@ -75,7 +75,8 @@ const SCRIPT_VERSION = '6.11';
       { label: 'FPS & Ping', feature: 'performance' },
       { label: 'Coords', feature: 'coords' },
       { label: 'Clock', feature: 'realTime' },
-      { label: 'Key Display', feature: 'keyDisplay' }
+      { label: 'Key Display', feature: 'keyDisplay' },
+      { label: 'Compass', feature: 'compass' },
     ],
     utilities: [
       { label: 'Anti-AFK', feature: 'antiAfk' },
@@ -155,14 +156,16 @@ const SCRIPT_VERSION = '6.11';
     features: {
       performance: false, coords: false, realTime: false,
       antiAfk: false, keyDisplay: false, disablePartyRequests: false,
-      funFacts: false, muteChat: false
+      funFacts: false, muteChat: false, compass: false,
     },
-    counters: { performance: null, realTime: null, coords: null, antiAfk: null, keyDisplay: null },
+    counters: { performance: null, realTime: null, coords: null, antiAfk: null, keyDisplay: null, compass: null },
     menuOverlay: null,
     activeCategory: 'display',
     rafId: null,
     lastPerformanceUpdate: 0,
     lastCoordsUpdate: 0,
+    lastCompassUpdate: 0,
+    compassSmoothed: -1,
     intervals: {},
     startTime: Date.now(),
     antiAfkCountdown: 5,
@@ -189,7 +192,7 @@ const SCRIPT_VERSION = '6.11';
 
   function saveDragPositions() {
     const positions = {};
-    ['performance', 'coords', 'antiAfk'].forEach(type => {
+    ['performance', 'coords', 'antiAfk', 'compass'].forEach(type => {
       const el = state.counters[type];
       if (el) positions[type] = { left: el.style.left, top: el.style.top };
     });
@@ -348,10 +351,7 @@ const SCRIPT_VERSION = '6.11';
 
   function showToast(title, type = 'info', message = '') {
     const VALID_TYPES = ['enabled', 'disabled', 'info'];
-    if (!VALID_TYPES.includes(type)) {
-      console.warn(`[Waddle] showToast: unknown type "${type}", falling back to "info"`);
-      type = 'info';
-    }
+    if (!VALID_TYPES.includes(type)) { type = 'info'; }
     if (!document.body) return;
     if (!state.toastContainer || !document.contains(state.toastContainer)) {
       state.toastContainer = document.getElementById('waddle-toasts') || (() => {
@@ -830,10 +830,147 @@ const SCRIPT_VERSION = '6.11';
     };
   }
 
+  const COMPASS_MARKERS = [
+    { deg: 0,   label: 'N',  major: true  },
+    { deg: 45,  label: 'NE', major: false },
+    { deg: 90,  label: 'E',  major: true  },
+    { deg: 135, label: 'SE', major: false },
+    { deg: 180, label: 'S',  major: true  },
+    { deg: 225, label: 'SW', major: false },
+    { deg: 270, label: 'W',  major: true  },
+    { deg: 315, label: 'NW', major: false },
+    { deg: 360, label: 'N',  major: true  },
+  ];
+
+  function compassHeadingLabel(deg) {
+    const d = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+    return d[Math.round(deg / 22.5) % 16];
+  }
+
+  function getPlayerYaw(game) {
+    if (game?.player?.yaw != null) return game.player.yaw;
+    if (game?.camera?.rotation?.y != null) return game.camera.rotation.y;
+    if (game?.controls?.yaw != null) return game.controls.yaw;
+    return null;
+  }
+
+  function compassRoundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  function createCompassWidget() {
+    if (!document.body) return null;
+    const wrap = document.createElement('div');
+    wrap.id = 'compass-widget';
+    wrap.className = 'counter';
+    Object.assign(wrap.style, {
+      padding: '0', overflow: 'hidden',
+      width: '220px', height: '42px',
+      background: 'transparent', border: 'none', boxShadow: 'none',
+      display: 'none',
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = 220;
+    canvas.height = 42;
+    wrap.appendChild(canvas);
+    wrap._canvas = canvas;
+    const saved = loadDragPositions().compass;
+    wrap.style.left = saved?.left || DEFAULT_POSITIONS.compass.left;
+    wrap.style.top = saved?.top || DEFAULT_POSITIONS.compass.top;
+    setupDragging(wrap, saveDragPositions);
+    document.body.appendChild(wrap);
+    state.counters.compass = wrap;
+    state.compassSmoothed = -1;
+    return wrap;
+  }
+
+  function drawCompassWidget(deg) {
+    const wrap = state.counters.compass;
+    if (!wrap?._canvas) return;
+    const canvas = wrap._canvas;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const PPD = W / 90;
+    ctx.clearRect(0, 0, W, H);
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.85)';
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = 'rgba(12,12,18,0.96)';
+    compassRoundRect(ctx, 0, 0, W, H, 7);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(0,255,255,0.28)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+    ctx.save();
+    compassRoundRect(ctx, 1, 1, W - 2, H - 2, 6);
+    ctx.clip();
+    for (let t = 0; t < 360; t += 10) {
+      if (t % 45 === 0) continue;
+      let diff = t - deg;
+      if (diff > 180) diff -= 360;
+      if (diff < -180) diff += 360;
+      const x = W / 2 + diff * PPD;
+      if (x < -2 || x > W + 2) continue;
+      ctx.strokeStyle = 'rgba(0,255,255,0.18)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, H - 12);
+      ctx.lineTo(x, H - 7);
+      ctx.stroke();
+    }
+    for (let i = 0; i < COMPASS_MARKERS.length; i++) {
+      const m = COMPASS_MARKERS[i];
+      let diff = m.deg - deg;
+      if (diff > 180) diff -= 360;
+      if (diff < -180) diff += 360;
+      const x = W / 2 + diff * PPD;
+      if (x < -24 || x > W + 24) continue;
+      ctx.strokeStyle = m.major ? 'rgba(0,255,255,0.9)' : 'rgba(0,255,255,0.4)';
+      ctx.lineWidth = m.major ? 2 : 1;
+      ctx.beginPath();
+      ctx.moveTo(x, m.major ? H - 18 : H - 14);
+      ctx.lineTo(x, H - 6);
+      ctx.stroke();
+      ctx.font = (m.major ? 'bold 11px' : '9px') + ' Poppins,sans-serif';
+      ctx.fillStyle = m.major ? '#00FFFF' : 'rgba(0,255,255,0.45)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText(m.label, x, H - 20);
+    }
+    ctx.restore();
+    ctx.fillStyle = '#00FFFF';
+    ctx.beginPath();
+    ctx.moveTo(W / 2 - 5, 2);
+    ctx.lineTo(W / 2 + 5, 2);
+    ctx.lineTo(W / 2, 9);
+    ctx.closePath();
+    ctx.fill();
+    ctx.font = 'bold 10px Poppins,sans-serif';
+    ctx.fillStyle = '#00FFFF';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+    ctx.fillText(compassHeadingLabel(deg) + '  ' + Math.round(deg) + '\u00b0', W - 7, 3);
+  }
+
   function startPerformanceLoop() {
     if (state.rafId) return;
     const loop = (t) => {
-      if (!state.features.performance && !state.features.coords) { state.rafId = null; return; }
+      if (!state.features.performance && !state.features.coords && !state.features.compass) {
+        state.rafId = null;
+        return;
+      }
       const game = getGameCached(t);
       if (t - state.lastPerformanceUpdate >= 500 && state.counters.performance) {
         updatePerformanceCounter(game);
@@ -843,6 +980,23 @@ const SCRIPT_VERSION = '6.11';
         const pos = game?.player?.pos;
         if (pos) updateCounterText('coords', `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`);
         state.lastCoordsUpdate = t;
+      }
+      if (state.features.compass && state.counters.compass && t - state.lastCompassUpdate >= 50) {
+        state.lastCompassUpdate = t;
+        const inGame = !!document.pointerLockElement;
+        state.counters.compass.style.display = inGame ? 'block' : 'none';
+        if (inGame) {
+          const yaw = getPlayerYaw(game);
+          if (yaw != null) {
+            const target = ((yaw * 180 / Math.PI) % 360 + 360) % 360;
+            if (state.compassSmoothed < 0) state.compassSmoothed = target;
+            let delta = target - state.compassSmoothed;
+            if (delta > 180) delta -= 360;
+            if (delta < -180) delta += 360;
+            state.compassSmoothed = ((state.compassSmoothed + delta * 0.2) % 360 + 360) % 360;
+            drawCompassWidget(state.compassSmoothed);
+          }
+        }
       }
       state.rafId = requestAnimationFrame(loop);
     };
@@ -1013,7 +1167,7 @@ const SCRIPT_VERSION = '6.11';
           state.counters.performance.remove();
           state.counters.performance = null;
         }
-        if (!state.features.coords) stopPerformanceLoop();
+        if (!state.features.coords && !state.features.compass) stopPerformanceLoop();
       }
     },
     coords: {
@@ -1027,7 +1181,7 @@ const SCRIPT_VERSION = '6.11';
           state.counters.coords.remove();
           state.counters.coords = null;
         }
-        if (!state.features.performance) stopPerformanceLoop();
+        if (!state.features.performance && !state.features.compass) stopPerformanceLoop();
       }
     },
     realTime: {
@@ -1149,7 +1303,21 @@ const SCRIPT_VERSION = '6.11';
         }
         showToast('Chat Mute', 'disabled', 'Chat messages restored');
       }
-    }
+    },
+    compass: {
+      start: () => {
+        if (!state.counters.compass) createCompassWidget();
+        startPerformanceLoop();
+      },
+      cleanup: () => {
+        if (state.counters.compass) {
+          state.counters.compass._dragCleanup?.();
+          state.counters.compass.remove();
+          state.counters.compass = null;
+        }
+        if (!state.features.performance && !state.features.coords) stopPerformanceLoop();
+      }
+    },
   };
 
   function toggleFeature(featureName) {
@@ -1169,21 +1337,16 @@ const SCRIPT_VERSION = '6.11';
     const title = document.getElementById('waddle-panel-title');
     const about = document.getElementById('waddle-about');
     let skinPanel = document.getElementById('waddle-skin-panel');
-
     if (grid) grid.style.display = 'none';
     if (about) about.style.display = 'none';
     if (title) title.style.display = 'none';
-
     if (!skinPanel) {
       skinPanel = document.createElement('div');
       skinPanel.id = 'waddle-skin-panel';
-
       const equippedSkin = localStorage.getItem(EQUIPPED_SKIN_KEY) || '';
-
       const skinGrid = document.createElement('div');
       skinGrid.className = 'skin-grid';
       skinGrid.id = 'skin-grid-view';
-
       SKINS.forEach(name => {
         const btn = document.createElement('div');
         btn.className = 'skin-btn';
@@ -1207,7 +1370,6 @@ const SCRIPT_VERSION = '6.11';
         });
         skinGrid.appendChild(btn);
       });
-
       const confirmView = document.createElement('div');
       confirmView.id = 'skin-confirm-view';
       confirmView.innerHTML = `
@@ -1217,21 +1379,17 @@ const SCRIPT_VERSION = '6.11';
           <button class="skin-confirm-no" id="skin-confirm-no">No</button>
         </div>
       `;
-
       skinPanel.append(skinGrid, confirmView);
       document.getElementById('waddle-panel').appendChild(skinPanel);
-
       document.getElementById('skin-confirm-yes').addEventListener('click', async () => {
         const skinName = document.getElementById('skin-confirm-name').textContent;
         hideSkinConfirm();
         await applySkin(skinName);
       });
-
       document.getElementById('skin-confirm-no').addEventListener('click', () => {
         hideSkinConfirm();
       });
     }
-
     skinPanel.style.display = 'flex';
     skinPanel.style.flexDirection = 'column';
     hideSkinConfirm();
@@ -1253,25 +1411,20 @@ const SCRIPT_VERSION = '6.11';
     const title = document.getElementById('waddle-panel-title');
     const about = document.getElementById('waddle-about');
     const skinPanel = document.getElementById('waddle-skin-panel');
-
     if (skinPanel) skinPanel.style.display = 'none';
-
     if (categoryId === 'about') {
       if (grid) grid.style.display = 'none';
       if (title) title.style.display = 'none';
       if (about) about.style.display = 'flex';
       return;
     }
-
     if (categoryId === 'customSkin') {
       buildSkinPanel();
       return;
     }
-
     if (grid) grid.style.display = 'grid';
     if (about) about.style.display = 'none';
     if (title) { title.style.display = 'block'; title.textContent = categoryId; }
-
     if (!_panelCache[categoryId]) {
       _panelCache[categoryId] = (FEATURE_MAP[categoryId] || []).map(({ label, feature }) => {
         const btn = document.createElement('div');
@@ -1290,7 +1443,6 @@ const SCRIPT_VERSION = '6.11';
         return btn;
       });
     }
-
     grid.innerHTML = '';
     _panelCache[categoryId].forEach(btn => {
       btn.classList.toggle('active', !!state.features[btn.dataset.feature]);
@@ -1309,18 +1461,14 @@ const SCRIPT_VERSION = '6.11';
     const overlay = document.createElement('div');
     overlay.id = 'waddle-overlay';
     overlay.dataset.version = SCRIPT_VERSION;
-
     const win = document.createElement('div');
     win.id = 'waddle-window';
-
     const sidebar = document.createElement('div');
     sidebar.id = 'waddle-sidebar';
-
     const logo = document.createElement('div');
     logo.id = 'waddle-logo';
     logo.innerHTML = `🐧 WADDLE <span>v${SCRIPT_VERSION} • Miniblox</span>`;
     sidebar.appendChild(logo);
-
     CATEGORIES.forEach(({ id, label, icon }) => {
       const cat = document.createElement('div');
       cat.className = `waddle-cat${id === state.activeCategory ? ' active' : ''}`;
@@ -1329,30 +1477,23 @@ const SCRIPT_VERSION = '6.11';
       cat.onclick = () => switchCategory(id);
       sidebar.appendChild(cat);
     });
-
     const footer = document.createElement('div');
     footer.id = 'waddle-sidebar-footer';
     footer.textContent = 'Press \\ to toggle';
     sidebar.appendChild(footer);
-
     const panel = document.createElement('div');
     panel.id = 'waddle-panel';
-
     const panelTitle = document.createElement('div');
     panelTitle.id = 'waddle-panel-title';
     panelTitle.textContent = state.activeCategory;
-
     const moduleGrid = document.createElement('div');
     moduleGrid.id = 'waddle-module-grid';
-
     const aboutPanel = document.createElement('div');
     aboutPanel.id = 'waddle-about';
     aboutPanel.style.display = 'none';
-
     const timerBlock = document.createElement('div');
     timerBlock.className = 'about-block';
     timerBlock.innerHTML = `<h3>⏱ Session Timer</h3><div id="waddle-session-timer" class="about-timer">00:00:00</div>`;
-
     const creditsBlock = document.createElement('div');
     creditsBlock.className = 'about-block';
     creditsBlock.innerHTML = `
@@ -1366,7 +1507,6 @@ const SCRIPT_VERSION = '6.11';
         <div><div class="role" style="color:#f39c12">Enhanced By</div><a href="https://github.com/TheM1ddleM1n" target="_blank">@TheM1ddleM1n</a></div>
       </div>
     `;
-
     const linksBlock = document.createElement('div');
     linksBlock.className = 'about-block';
     linksBlock.innerHTML = '<h3>🔗 GitHub</h3>';
@@ -1384,12 +1524,10 @@ const SCRIPT_VERSION = '6.11';
     });
     linksBlock.appendChild(linksRow);
     aboutPanel.append(timerBlock, creditsBlock, linksBlock);
-
     panel.append(panelTitle, moduleGrid, aboutPanel);
     win.append(sidebar, panel);
     overlay.appendChild(win);
     document.body.appendChild(overlay);
-
     overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('show'); });
     state.menuOverlay = overlay;
     buildModulePanel(state.activeCategory);
@@ -1466,7 +1604,6 @@ const SCRIPT_VERSION = '6.11';
       };
       tryPatch();
     };
-
     if (isThreeCompatible()) {
       doApply();
     } else {
