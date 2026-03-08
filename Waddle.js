@@ -790,11 +790,122 @@ const SCRIPT_VERSION = '6.12';
     return d[Math.round(deg / 22.5) % 16];
   }
 
-  function getPlayerYaw(game) {
-    if (game?.player?.yaw != null) return game.player.yaw;
-    if (game?.camera?.rotation?.y != null) return game.camera.rotation.y;
-    if (game?.controls?.yaw != null) return game.controls.yaw;
-    return null;
+  function getSystemInfo() {
+    const ua = navigator.userAgent;
+
+    let os = 'Unknown OS';
+    if (/CrOS/.test(ua)) {
+      const match = ua.match(/CrOS\s+\S+\s+([\d.]+)/);
+      os = 'ChromeOS' + (match ? ' ' + match[1] : '');
+    } else if (/Windows/.test(ua)) {
+      os = 'Windows 10';
+      const uaData = navigator.userAgentData;
+      if (uaData?.getHighEntropyValues) {
+        uaData.getHighEntropyValues(['platformVersion']).then(data => {
+          const major = parseInt((data.platformVersion || '0').split('.')[0], 10);
+          const el = document.getElementById('waddle-sys-os');
+          if (el) el.textContent = major >= 13 ? 'Windows 11' : 'Windows 10';
+        }).catch(() => {});
+      }
+    } else if (/Mac OS X/.test(ua)) {
+      const match = ua.match(/Mac OS X ([\d_]+)/);
+      const version = match ? match[1].replace(/_/g, '.') : '';
+      const macNames = {
+        '15': 'Sequoia', '14': 'Sonoma', '13': 'Ventura',
+        '12': 'Monterey', '11': 'Big Sur', '10.15': 'Catalina',
+        '10.14': 'Mojave', '10.13': 'High Sierra',
+      };
+      const major = version.split('.').slice(0, version.startsWith('10') ? 2 : 1).join('.');
+      const name = macNames[major] || '';
+      os = `macOS ${version}${name ? ' (' + name + ')' : ''}`;
+    } else if (/Linux/.test(ua)) {
+      if (/Ubuntu/.test(ua)) os = 'Ubuntu Linux';
+      else if (/Fedora/.test(ua)) os = 'Fedora Linux';
+      else if (/Debian/.test(ua)) os = 'Debian Linux';
+      else if (/Arch/.test(ua)) os = 'Arch Linux';
+      else if (/Manjaro/.test(ua)) os = 'Manjaro Linux';
+      else if (/Android ([\d.]+)/.test(ua)) os = 'Android ' + RegExp.$1;
+      else os = 'Linux';
+    } else if (/iPhone OS ([\d_]+)/.test(ua)) {
+      os = 'iOS ' + RegExp.$1.replace(/_/g, '.');
+    }
+
+    let browser = 'Unknown';
+    if (/Edg\/([\d.]+)/.test(ua)) browser = 'Edge ' + RegExp.$1.split('.')[0];
+    else if (/OPR\/([\d.]+)/.test(ua)) browser = 'Opera ' + RegExp.$1.split('.')[0];
+    else if (/Firefox\/([\d.]+)/.test(ua)) browser = 'Firefox ' + RegExp.$1.split('.')[0];
+    else if (/Chrome\/([\d.]+)/.test(ua)) browser = 'Chrome ' + RegExp.$1.split('.')[0];
+    else if (/Version\/([\d.]+).*Safari/.test(ua)) browser = 'Safari ' + RegExp.$1.split('.')[0];
+
+    let gpu = 'Unknown';
+    let gpuVendor = 'Unknown';
+    let webgl2 = false;
+    try {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      if (gl) {
+        const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+        if (dbg) {
+          gpu = gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)
+            .replace(/\s*\(0x[0-9a-fA-F]+\)/g, '')
+            .replace(/\/\S+/g, '')
+            .trim();
+          gpuVendor = gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL)
+            .replace(/\s*\(0x[0-9a-fA-F]+\)/g, '')
+            .trim();
+        }
+      }
+      webgl2 = !!window.WebGL2RenderingContext;
+    } catch (_) {}
+
+    const conn = navigator.connection;
+
+    if (navigator.getBattery) {
+      navigator.getBattery().then(bat => {
+        const pct = Math.round(bat.level * 100);
+        const status = bat.charging ? '⚡ Charging' : (
+          bat.dischargingTime !== Infinity
+            ? `~${Math.round(bat.dischargingTime / 60)}m left`
+            : 'Discharging'
+        );
+        const el = document.getElementById('waddle-sys-battery');
+        if (el) el.textContent = `${pct}% — ${status}`;
+        const update = () => {
+          const p = Math.round(bat.level * 100);
+          const s = bat.charging ? '⚡ Charging' : (
+            bat.dischargingTime !== Infinity
+              ? `~${Math.round(bat.dischargingTime / 60)}m left`
+              : 'Discharging'
+          );
+          const e = document.getElementById('waddle-sys-battery');
+          if (e) e.textContent = `${p}% — ${s}`;
+        };
+        bat.addEventListener('levelchange', update);
+        bat.addEventListener('chargingchange', update);
+        bat.addEventListener('dischargingtimechange', update);
+      }).catch(() => {
+        const el = document.getElementById('waddle-sys-battery');
+        if (el) el.textContent = 'N/A';
+      });
+    }
+
+    return {
+      os,
+      browser,
+      gpu,
+      gpuVendor,
+      webgl2,
+      cores: navigator.hardwareConcurrency || '?',
+      ram: navigator.deviceMemory ? navigator.deviceMemory + ' GB' : '?',
+      screen: `${screen.width}×${screen.height}`,
+      dpr: window.devicePixelRatio || 1,
+      network: conn?.effectiveType?.toUpperCase() || '?',
+      downlink: conn?.downlink ? conn.downlink + ' Mbps' : '?',
+      rtt: conn?.rtt != null ? conn.rtt + ' ms' : '?',
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '?',
+      touch: navigator.maxTouchPoints > 0 ? `Yes (${navigator.maxTouchPoints} points)` : 'No',
+      battery: navigator.getBattery ? 'Loading...' : 'N/A',
+    };
   }
 
   function createCompassWidget() {
@@ -1060,6 +1171,13 @@ const SCRIPT_VERSION = '6.12';
       game.party.invoke = game.party._waddleOriginalInvoke;
       delete game.party._waddleOriginalInvoke;
     }
+  }
+
+  function getPlayerYaw(game) {
+    if (game?.player?.yaw != null) return game.player.yaw;
+    if (game?.camera?.rotation?.y != null) return game.camera.rotation.y;
+    if (game?.controls?.yaw != null) return game.controls.yaw;
+    return null;
   }
 
   const featureManager = {
@@ -1344,6 +1462,34 @@ const SCRIPT_VERSION = '6.12';
     aboutPanel.style.display = 'none';
     const timerBlock = div('about-block');
     timerBlock.innerHTML = `<h3>⏱ Session Timer</h3><div id="waddle-session-timer" class="about-timer">00:00:00</div>`;
+    const sys = getSystemInfo();
+    const sysBlock = div('about-block');
+    sysBlock.innerHTML = `
+      <h3>🖥️ System</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:.78rem;">
+        ${[
+          ['OS',       `<span id="waddle-sys-os">${sys.os}</span>`],
+          ['Browser',  sys.browser],
+          ['GPU',      sys.gpu],
+          ['Vendor',   sys.gpuVendor],
+          ['WebGL2',   sys.webgl2 ? '✓ Supported' : '✗ Not supported'],
+          ['Cores',    sys.cores],
+          ['RAM',      sys.ram],
+          ['Screen',   sys.screen],
+          ['DPR',      sys.dpr + 'x' + (sys.dpr >= 2 ? ' (HiDPI)' : '')],
+          ['Network',  sys.network],
+          ['Downlink', sys.downlink],
+          ['RTT',      sys.rtt],
+          ['Timezone', sys.timezone],
+          ['Touch',    sys.touch],
+          ['Battery',  `<span id="waddle-sys-battery">${sys.battery}</span>`],
+        ].map(([label, val]) => `
+          <tr>
+            <td style="color:var(--c);font-weight:700;padding:3px 10px 3px 0;width:72px;">${label}</td>
+            <td style="color:var(--text)">${val}</td>
+          </tr>`).join('')}
+      </table>
+    `;
     const creditsBlock = div('about-block');
     creditsBlock.innerHTML = `
       <h3>Credits</h3>
@@ -1368,7 +1514,7 @@ const SCRIPT_VERSION = '6.12';
       linksRow.appendChild(btn);
     });
     linksBlock.appendChild(linksRow);
-    aboutPanel.append(timerBlock, creditsBlock, linksBlock);
+    aboutPanel.append(timerBlock, sysBlock, creditsBlock, linksBlock);
     panel.append(panelTitle, moduleGrid, aboutPanel);
     win.append(sidebar, panel);
     overlay.appendChild(win);
