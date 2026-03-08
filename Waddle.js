@@ -25,12 +25,31 @@ const SCRIPT_VERSION = '6.12';
   const SKINS = Object.freeze(['Remlin', 'Cat', 'Ethan', 'Sushi', 'Slime', 'Duck', 'Tester', 'Banana', 'Qhyun']);
   const SKIN_API = 'https://session.coolmathblox.ca/accounts/set_cosmetic';
 
+  const el = (tag, cls, text) => {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  };
+  const div = (cls, text) => el('div', cls, text);
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
   async function applySkin(skinId) {
     const token = localStorage.getItem(SESSION_KEY);
-    if (!token) {
-      showToast('No Session Token', 'disabled', 'Log into Miniblox first!');
-      return;
-    }
+    if (!token) { showToast('No Session Token', 'disabled', 'Log into Miniblox first!'); return; }
     try {
       const res = await fetch(SKIN_API, {
         method: 'POST',
@@ -86,6 +105,8 @@ const SCRIPT_VERSION = '6.12';
     ]
   };
 
+  const ALL_FEATURES = [...FEATURE_MAP.display, ...FEATURE_MAP.utilities];
+
   const FUN_FACTS = Object.freeze([
     'Penguins can drink seawater thanks to a special gland above their eyes.',
     'A group of penguins in the water is called a raft.',
@@ -111,48 +132,31 @@ const SCRIPT_VERSION = '6.12';
 
   const gameRef = {
     _game: null,
-    _attempts: 0,
-    _lastTryTime: 0,
-    resolve() {
-      if (this._game) {
-        if (this._game.player && this._game.resourceMonitor) return this._game;
+    _lastValidation: 0,
+    _lastTry: 0,
+    get(now = performance.now()) {
+      if (this._game && !(this._game.player && this._game.resourceMonitor)) {
         this._game = null;
-        this._attempts = 0;
+        this._lastValidation = 0;
       }
-      const now = Date.now();
-      if (now - this._lastTryTime < 500) return null;
-      this._lastTryTime = now;
-      try {
-        const reactRoot = document.querySelector('#react');
-        if (!reactRoot) return null;
-        const fiber = Object.values(reactRoot)?.[0];
-        const game = fiber?.updateQueue?.baseState?.element?.props?.game;
-        if (game?.resourceMonitor && game?.player) {
-          this._game = game;
-          this._attempts = 0;
-          return game;
-        }
-      } catch (_) {}
-      this._attempts++;
-      return null;
+      if (!this._game || now - this._lastValidation > 2000) {
+        this._lastValidation = now;
+        this._resolve(now);
+      }
+      return this._game;
     },
-    reset() { this._attempts = 0; this._lastTryTime = 0; }
+    _resolve(now) {
+      if (now - this._lastTry < 500) return;
+      this._lastTry = now;
+      try {
+        const fiber = Object.values(document.querySelector('#react') ?? {})?.[0];
+        const game = fiber?.updateQueue?.baseState?.element?.props?.game;
+        if (game?.resourceMonitor && game?.player) this._game = game;
+      } catch (_) {}
+    }
   };
 
-  let _lastGameValidation = 0;
-  function getGameCached(now = performance.now()) {
-    if (gameRef._game && !(gameRef._game.player && gameRef._game.resourceMonitor)) {
-      gameRef._game = null;
-      _lastGameValidation = 0;
-    }
-    if (!gameRef._game || now - _lastGameValidation > 2000) {
-      _lastGameValidation = now;
-      gameRef.resolve();
-    }
-    return gameRef._game;
-  }
-
-  let state = {
+  const state = {
     features: {
       performance: false, coords: false, realTime: false,
       antiAfk: false, keyDisplay: false, disablePartyRequests: false,
@@ -175,6 +179,7 @@ const SCRIPT_VERSION = '6.12';
     hudArray: null,
     toastContainer: null,
     hasShownFunFactOnJoin: false,
+    _panelCache: {},
     _resizeHandler: null,
     _crosshairObserver: null
   };
@@ -182,22 +187,18 @@ const SCRIPT_VERSION = '6.12';
   const KNOWN_FEATURES = new Set(Object.keys(state.features));
 
   function migrateSettings(raw) {
-    const features = {};
-    if (!raw?.features) return features;
-    for (const [k, v] of Object.entries(raw.features)) {
-      if (KNOWN_FEATURES.has(k) && typeof v === 'boolean') features[k] = v;
-    }
-    return features;
+    if (!raw?.features) return {};
+    return Object.fromEntries(
+      Object.entries(raw.features).filter(([k, v]) => KNOWN_FEATURES.has(k) && typeof v === 'boolean')
+    );
   }
 
   function saveDragPositions() {
     const positions = {};
-    ['performance', 'coords', 'antiAfk', 'compass'].forEach(type => {
-      const el = state.counters[type];
-      if (el) positions[type] = { left: el.style.left, top: el.style.top };
+    ['performance', 'coords', 'antiAfk', 'compass', 'keyDisplay'].forEach(type => {
+      const e = state.counters[type];
+      if (e) positions[type] = { left: e.style.left, top: e.style.top };
     });
-    const kd = state.counters.keyDisplay;
-    if (kd) positions.keyDisplay = { left: kd.style.left, top: kd.style.top };
     localStorage.setItem(DRAG_POSITIONS_KEY, JSON.stringify(positions));
   }
 
@@ -207,40 +208,31 @@ const SCRIPT_VERSION = '6.12';
   }
 
   (function () {
-    let _greetAttempts = 0;
-    const MAX_GREET_ATTEMPTS = 40;
+    let attempts = 0;
     state.intervals.waitForGame = setInterval(() => {
-      if (++_greetAttempts > MAX_GREET_ATTEMPTS) {
-        clearInterval(state.intervals.waitForGame);
-        state.intervals.waitForGame = null;
-        return;
-      }
-      const game = gameRef.resolve();
+      if (++attempts > 40) { clearInterval(state.intervals.waitForGame); state.intervals.waitForGame = null; return; }
+      const game = gameRef.get();
       if (game?.chat && typeof game.chat.addChat === 'function') {
         clearInterval(state.intervals.waitForGame);
         state.intervals.waitForGame = null;
-        game.chat.addChat({
-          text: `\\${THEME_COLOR}\\[Server]\\reset\\ Hello and Thank you for using Waddle v${SCRIPT_VERSION}! Have Fun!`
-        });
+        game.chat.addChat({ text: `\\${THEME_COLOR}\\[Server]\\reset\\ Hello and Thank you for using Waddle v${SCRIPT_VERSION}! Have Fun!` });
       }
     }, 500);
   })();
 
   (function () {
-    let clicks = 0;
-    const CPS_THRESHOLD = 15, CHECK_INTERVAL = 1000, COOLDOWN = 2000;
-    let lastWarningTime = 0;
-    document.addEventListener('mousedown', () => { clicks++; });
+    let clicks = 0, lastWarning = 0;
+    document.addEventListener('mousedown', () => clicks++);
     state.intervals.cpsDetector = setInterval(() => {
       const cps = clicks; clicks = 0;
-      if (cps < CPS_THRESHOLD) return;
-      const game = gameRef.resolve();
       const now = Date.now();
-      if (game?.chat && typeof game.chat.addChat === 'function' && now - lastWarningTime > COOLDOWN) {
-        lastWarningTime = now;
+      if (cps < 15) return;
+      const game = gameRef.get();
+      if (game?.chat && typeof game.chat.addChat === 'function' && now - lastWarning > 2000) {
+        lastWarning = now;
         game.chat.addChat({ text: '\\#FF0000\\[Waddle Detector]\\reset\\ Fast clicks were detected.' });
       }
-    }, CHECK_INTERVAL);
+    }, 1000);
   })();
 
   let _saveTimer = null;
@@ -253,7 +245,7 @@ const SCRIPT_VERSION = '6.12';
 
   function injectStyles() {
     if (!document.head) return false;
-    const style = document.createElement('style');
+    const style = el('style');
     style.textContent = `
 * { box-sizing:border-box; }
 :root {
@@ -350,25 +342,19 @@ const SCRIPT_VERSION = '6.12';
   }
 
   function showToast(title, type = 'info', message = '') {
-    const VALID_TYPES = ['enabled', 'disabled', 'info'];
-    if (!VALID_TYPES.includes(type)) { type = 'info'; }
+    if (!['enabled', 'disabled', 'info'].includes(type)) type = 'info';
     if (!document.body) return;
     if (!state.toastContainer || !document.contains(state.toastContainer)) {
       state.toastContainer = document.getElementById('waddle-toasts') || (() => {
-        const c = document.createElement('div');
+        const c = div(null);
         c.id = 'waddle-toasts';
         document.body.appendChild(c);
         return c;
       })();
     }
-    const toast = document.createElement('div');
-    toast.className = 'waddle-toast';
-    const iconMap = { enabled: '✓', disabled: '✗', info: '!' };
-    const icon = document.createElement('div');
-    icon.className = `toast-icon ${type}`;
-    icon.textContent = iconMap[type];
-    const body = document.createElement('div');
-    body.className = 'toast-body';
+    const toast = div('waddle-toast');
+    const icon = div(`toast-icon ${type}`, { enabled: '✓', disabled: '✗', info: '!' }[type]);
+    const body = div('toast-body');
     body.innerHTML = `<div class="toast-title">${title}</div>${message ? `<div class="toast-msg">${message}</div>` : ''}`;
     toast.append(icon, body);
     state.toastContainer.appendChild(toast);
@@ -377,7 +363,7 @@ const SCRIPT_VERSION = '6.12';
 
   function initHud() {
     if (document.getElementById('waddle-hud')) return;
-    const hud = document.createElement('div');
+    const hud = div(null);
     hud.id = 'waddle-hud';
     document.body.appendChild(hud);
     state.hudArray = hud;
@@ -385,15 +371,13 @@ const SCRIPT_VERSION = '6.12';
 
   function refreshHud() {
     if (!state.hudArray) return;
-    [...(FEATURE_MAP.display || []), ...(FEATURE_MAP.utilities || [])].forEach(({ label, feature }) => {
+    ALL_FEATURES.forEach(({ label, feature }) => {
       const id = `hud-item-${feature}`;
       const existing = document.getElementById(id);
       if (state.features[feature]) {
         if (!existing) {
-          const item = document.createElement('div');
-          item.className = 'hud-item';
+          const item = div('hud-item', label);
           item.id = id;
-          item.textContent = label;
           state.hudArray.appendChild(item);
         }
       } else {
@@ -409,20 +393,20 @@ const SCRIPT_VERSION = '6.12';
   }
 
   function updateSessionTimer() {
-    const el = document.getElementById('waddle-session-timer');
-    if (el) el.textContent = formatSessionTime();
+    const e = document.getElementById('waddle-session-timer');
+    if (e) e.textContent = formatSessionTime();
   }
 
   let _crosshairRafPending = false;
 
   function makeLine(styles) {
-    const div = document.createElement('div');
-    Object.assign(div.style, { position: 'absolute', backgroundColor: THEME_COLOR, pointerEvents: 'none' }, styles);
-    return div;
+    const d = div(null);
+    Object.assign(d.style, { position: 'absolute', backgroundColor: THEME_COLOR, pointerEvents: 'none' }, styles);
+    return d;
   }
 
   function createCrosshair() {
-    const c = document.createElement('div');
+    const c = div(null);
     c.append(
       makeLine({ top: '0', left: '50%', width: '2px', height: '8px', transform: 'translateX(-50%)' }),
       makeLine({ bottom: '0', left: '50%', width: '2px', height: '8px', transform: 'translateX(-50%)' }),
@@ -443,7 +427,7 @@ const SCRIPT_VERSION = '6.12';
 
   function initializeCrosshairModule() {
     if (!document.body) return false;
-    state.crosshairContainer = document.createElement('div');
+    state.crosshairContainer = div(null);
     state.crosshairContainer.id = 'waddle-crosshair-container';
     state.crosshairContainer.appendChild(createCrosshair());
     document.body.appendChild(state.crosshairContainer);
@@ -460,23 +444,17 @@ const SCRIPT_VERSION = '6.12';
 
   function initHudCanvas() {
     if (document.getElementById('wb-hud-canvas')) return;
-    const canvas = document.createElement('canvas');
+    const canvas = el('canvas');
     canvas.id = 'wb-hud-canvas';
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     document.body.appendChild(canvas);
-    state._resizeHandler = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
+    state._resizeHandler = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
     window.addEventListener('resize', state._resizeHandler, { passive: true });
   }
 
   class LRUCache {
-    constructor(max) {
-      this.max = max;
-      this._map = new Map();
-    }
+    constructor(max) { this.max = max; this._map = new Map(); }
     get(key) {
       if (!this._map.has(key)) return undefined;
       const val = this._map.get(key);
@@ -517,10 +495,7 @@ const SCRIPT_VERSION = '6.12';
     for (const [k, v] of Object.entries(world)) {
       if (v instanceof Map && v.size > 0) {
         const first = v.values().next().value;
-        if (first && typeof first.getHealth === 'function' && first.pos) {
-          _entityMapKey = k;
-          return k;
-        }
+        if (first && typeof first.getHealth === 'function' && first.pos) { _entityMapKey = k; return k; }
       }
     }
     return null;
@@ -533,9 +508,7 @@ const SCRIPT_VERSION = '6.12';
     if (!ctx) { showToast('Target HUD', 'info', 'Canvas 2D context unavailable'); return; }
 
     const MAX_RANGE = 5;
-    const W = 220, R = 10;
-    const H_ENTITY = 86;
-    const H_BLOCK = 52;
+    const W = 220, R = 10, H_ENTITY = 86, H_BLOCK = 52;
 
     function getBorderGradient(x, y, h) {
       const key = `${x},${y},${h}`;
@@ -548,9 +521,7 @@ const SCRIPT_VERSION = '6.12';
       return g;
     }
 
-    let _domFaceEl = null;
-    let _domNameEl = null;
-    let _domQueryAge = 0;
+    let _domFaceEl = null, _domNameEl = null, _domQueryAge = 0;
     const DOM_QUERY_INTERVAL = 500;
 
     function getDOM(now) {
@@ -561,23 +532,8 @@ const SCRIPT_VERSION = '6.12';
       }
     }
 
-    function drawRoundedBox(x, y, w, h) {
-      ctx.beginPath();
-      ctx.moveTo(x + R, y);
-      ctx.lineTo(x + w - R, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + R);
-      ctx.lineTo(x + w, y + h - R);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - R, y + h);
-      ctx.lineTo(x + R, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - R);
-      ctx.lineTo(x, y + R);
-      ctx.quadraticCurveTo(x, y, x + R, y);
-      ctx.closePath();
-    }
-
     function drawEntityHUD(nearest, faceSrc, faceName) {
-      const x = (canvas.width - W) / 2;
-      const y = 16;
+      const x = (canvas.width - W) / 2, y = 16;
       const maxHp = nearest.getMaxHealth?.() ?? 20;
       const realHp = Math.max(0, nearest.getHealth());
       if (_displayedHp === 0) _displayedHp = realHp;
@@ -599,10 +555,9 @@ const SCRIPT_VERSION = '6.12';
       _needsRedraw = false;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.save();
-      ctx.globalAlpha = 1;
       ctx.shadowColor = 'rgba(0,0,0,0.9)';
       ctx.shadowBlur = 18;
-      drawRoundedBox(x, y, W, H_ENTITY);
+      roundRect(ctx, x, y, W, H_ENTITY, R);
       ctx.fillStyle = '#0b0b14';
       ctx.fill();
       ctx.shadowColor = 'transparent';
@@ -625,8 +580,7 @@ const SCRIPT_VERSION = '6.12';
       ctx.fillStyle = '#e2e8f0';
       ctx.textAlign = 'left';
       ctx.fillText(faceName, nameX, y + 26);
-      const barW = W - 20, barH = 8;
-      const barX = x + 10, barY = y + 40;
+      const barW = W - 20, barH = 8, barX = x + 10, barY = y + 40;
       ctx.fillStyle = 'rgba(255,255,255,0.07)';
       ctx.beginPath();
       ctx.roundRect(barX, barY, barW, barH, 4);
@@ -642,8 +596,7 @@ const SCRIPT_VERSION = '6.12';
     }
 
     function drawBlockHUD(blockName) {
-      const x = (canvas.width - W) / 2;
-      const y = 16;
+      const x = (canvas.width - W) / 2, y = 16;
       if (blockName === _lastDrawnName && _lastDrawnType === 'block' && !_needsRedraw) return;
       _lastDrawnName = blockName;
       _lastDrawnType = 'block';
@@ -652,10 +605,9 @@ const SCRIPT_VERSION = '6.12';
       _needsRedraw = false;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.save();
-      ctx.globalAlpha = 1;
       ctx.shadowColor = 'rgba(0,0,0,0.9)';
       ctx.shadowBlur = 18;
-      drawRoundedBox(x, y, W, H_BLOCK);
+      roundRect(ctx, x, y, W, H_BLOCK, R);
       ctx.fillStyle = '#0b0b14';
       ctx.fill();
       ctx.shadowColor = 'transparent';
@@ -668,7 +620,6 @@ const SCRIPT_VERSION = '6.12';
       ctx.fillText('🧱', x + 10, y + 32);
       ctx.font = 'bold 13px Poppins,sans-serif';
       ctx.fillStyle = '#e2e8f0';
-      ctx.textAlign = 'left';
       ctx.fillText(blockName, x + 44, y + 21);
       ctx.font = '10px Poppins,sans-serif';
       ctx.fillStyle = 'rgba(255,255,255,1)';
@@ -685,15 +636,11 @@ const SCRIPT_VERSION = '6.12';
         }
         const inGame = !!(document.pointerLockElement && !_cachedPauseMenu);
         if (!inGame) {
-          if (_lastDrawnType !== '') {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            _lastDrawnType = '';
-            _needsRedraw = true;
-          }
+          if (_lastDrawnType !== '') { ctx.clearRect(0, 0, canvas.width, canvas.height); _lastDrawnType = ''; _needsRedraw = true; }
           requestAnimationFrame(tick);
           return;
         }
-        const game = getGameCached(now);
+        const game = gameRef.get(now);
         const player = game?.player;
         if (game?.world && player?.pos) {
           if (now - _lastEntityScan > ENTITY_SCAN_INTERVAL) {
@@ -702,10 +649,8 @@ const SCRIPT_VERSION = '6.12';
             const dump = mapKey ? game.world[mapKey] : null;
             if (dump) {
               let nearest = null, minDist = Infinity;
-              dump.forEach((entity) => {
-                if (!entity || entity.id === player.id) return;
-                if (typeof entity.getHealth !== 'function') return;
-                if (!entity.pos) return;
+              dump.forEach(entity => {
+                if (!entity || entity.id === player.id || typeof entity.getHealth !== 'function' || !entity.pos) return;
                 const dist = player.pos.distanceTo(entity.pos);
                 if (dist < minDist) { minDist = dist; nearest = entity; }
               });
@@ -719,14 +664,12 @@ const SCRIPT_VERSION = '6.12';
             getDOM(now);
             const domSrc = _domFaceEl?.src ?? null;
             const domName = _domNameEl?.textContent ?? null;
-            let faceSrc = null;
-            let faceName;
+            let faceSrc = null, faceName;
             if (isPlayer) {
-              const lookingAtPlayer = !!(domSrc);
-              const nameKey = (lookingAtPlayer ? domName : null) || _cachedNearest.name || '';
+              const nameKey = (domSrc ? domName : null) || _cachedNearest.name || '';
               if (domSrc && nameKey) _playerFaceCache.set(nameKey, domSrc);
               faceSrc = _playerFaceCache.get(nameKey) ?? null;
-              faceName = (lookingAtPlayer ? domName : null) || _cachedNearest.name || '???';
+              faceName = (domSrc ? domName : null) || _cachedNearest.name || '???';
             } else {
               faceName = _cachedNearest.name || _cachedNearest.constructor?.name?.replace('Entity', '') || '???';
             }
@@ -759,27 +702,27 @@ const SCRIPT_VERSION = '6.12';
     requestAnimationFrame(tick);
   }
 
+  function removeCounter(name) {
+    const e = state.counters[name];
+    if (!e) return;
+    e._dragCleanup?.();
+    e.remove();
+    state.counters[name] = null;
+  }
+
   function createCounter(type) {
     if (!document.body) return null;
     const config = COUNTER_CONFIGS[type];
     if (!config) return null;
-    const counter = document.createElement('div');
+    const counter = div('counter');
     counter.id = config.id;
-    counter.className = 'counter';
-    const span = document.createElement('span');
-    span.className = 'counter-time-text';
-    span.textContent = config.text;
+    const span = el('span', 'counter-time-text', config.text);
     counter.appendChild(span);
     counter._textSpan = span;
     if (type === 'realTime') {
-      Object.assign(counter.style, {
-        right: '30px', bottom: '30px',
-        background: 'transparent', boxShadow: 'none', border: 'none',
-        fontSize: '1.1rem', padding: '0'
-      });
+      Object.assign(counter.style, { right: '30px', bottom: '30px', background: 'transparent', boxShadow: 'none', border: 'none', fontSize: '1.1rem', padding: '0' });
     } else {
-      const savedPositions = loadDragPositions();
-      const saved = savedPositions[type];
+      const saved = loadDragPositions()[type];
       counter.style.left = saved?.left || config.pos.left;
       counter.style.top = saved?.top || config.pos.top;
       if (config.draggable) setupDragging(counter, saveDragPositions);
@@ -794,52 +737,52 @@ const SCRIPT_VERSION = '6.12';
     if (span) span.textContent = text;
   }
 
-  function setupDragging(el, onDragEnd) {
+  function setupDragging(e, onDragEnd) {
     let rafId = null;
     const onMouseUp = () => {
-      if (!el._dragging) return;
-      el._dragging = false;
-      el.classList.remove('dragging');
+      if (!e._dragging) return;
+      e._dragging = false;
+      e.classList.remove('dragging');
       if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
       onDragEnd?.();
     };
-    const onMouseMove = (e) => {
-      if (!el._dragging || !el.parentElement) return;
-      el._pendingX = e.clientX;
-      el._pendingY = e.clientY;
+    const onMouseMove = (ev) => {
+      if (!e._dragging || !e.parentElement) return;
+      e._pendingX = ev.clientX;
+      e._pendingY = ev.clientY;
       if (!rafId) {
         rafId = requestAnimationFrame(() => {
-          const r = el.getBoundingClientRect();
-          el.style.left = `${Math.max(10, Math.min(window.innerWidth - r.width - 10, el._pendingX - el._offsetX))}px`;
-          el.style.top = `${Math.max(10, Math.min(window.innerHeight - r.height - 10, el._pendingY - el._offsetY))}px`;
+          const r = e.getBoundingClientRect();
+          e.style.left = `${Math.max(10, Math.min(window.innerWidth - r.width - 10, e._pendingX - e._offsetX))}px`;
+          e.style.top = `${Math.max(10, Math.min(window.innerHeight - r.height - 10, e._pendingY - e._offsetY))}px`;
           rafId = null;
         });
       }
     };
-    el.addEventListener('mousedown', (e) => {
-      el._dragging = true;
-      el._offsetX = e.clientX - el.getBoundingClientRect().left;
-      el._offsetY = e.clientY - el.getBoundingClientRect().top;
-      el.classList.add('dragging');
+    e.addEventListener('mousedown', (ev) => {
+      e._dragging = true;
+      e._offsetX = ev.clientX - e.getBoundingClientRect().left;
+      e._offsetY = ev.clientY - e.getBoundingClientRect().top;
+      e.classList.add('dragging');
     }, { passive: true });
     window.addEventListener('mouseup', onMouseUp, { passive: true });
     window.addEventListener('mousemove', onMouseMove, { passive: true });
-    el._dragCleanup = () => {
+    e._dragCleanup = () => {
       window.removeEventListener('mouseup', onMouseUp);
       window.removeEventListener('mousemove', onMouseMove);
     };
   }
 
   const COMPASS_MARKERS = [
-    { deg: 0,   label: 'N',  major: true  },
-    { deg: 45,  label: 'NE', major: false },
-    { deg: 90,  label: 'E',  major: true  },
+    { deg: 0, label: 'N', major: true },
+    { deg: 45, label: 'NE', major: false },
+    { deg: 90, label: 'E', major: true },
     { deg: 135, label: 'SE', major: false },
-    { deg: 180, label: 'S',  major: true  },
+    { deg: 180, label: 'S', major: true },
     { deg: 225, label: 'SW', major: false },
-    { deg: 270, label: 'W',  major: true  },
+    { deg: 270, label: 'W', major: true },
     { deg: 315, label: 'NW', major: false },
-    { deg: 360, label: 'N',  major: true  },
+    { deg: 360, label: 'N', major: true },
   ];
 
   function compassHeadingLabel(deg) {
@@ -854,32 +797,12 @@ const SCRIPT_VERSION = '6.12';
     return null;
   }
 
-  function compassRoundRect(ctx, x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    ctx.lineTo(x + r, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-    ctx.lineTo(x, y + r);
-    ctx.quadraticCurveTo(x, y, x + r, y);
-    ctx.closePath();
-  }
-
   function createCompassWidget() {
     if (!document.body) return null;
-    const wrap = document.createElement('div');
+    const wrap = div('counter');
     wrap.id = 'compass-widget';
-    wrap.className = 'counter';
-    Object.assign(wrap.style, {
-      padding: '0', overflow: 'hidden',
-      width: '220px', height: '42px',
-      background: 'transparent', border: 'none', boxShadow: 'none',
-      display: 'none',
-    });
-    const canvas = document.createElement('canvas');
+    Object.assign(wrap.style, { padding: '0', overflow: 'hidden', width: '220px', height: '42px', background: 'transparent', border: 'none', boxShadow: 'none', display: 'none' });
+    const canvas = el('canvas');
     canvas.width = 220;
     canvas.height = 42;
     wrap.appendChild(canvas);
@@ -906,7 +829,7 @@ const SCRIPT_VERSION = '6.12';
     ctx.shadowColor = 'rgba(0,0,0,0.85)';
     ctx.shadowBlur = 14;
     ctx.fillStyle = 'rgba(12,12,18,0.96)';
-    compassRoundRect(ctx, 0, 0, W, H, 7);
+    roundRect(ctx, 0, 0, W, H, 7);
     ctx.fill();
     ctx.shadowBlur = 0;
     ctx.strokeStyle = 'rgba(0,255,255,0.28)';
@@ -914,7 +837,7 @@ const SCRIPT_VERSION = '6.12';
     ctx.stroke();
     ctx.restore();
     ctx.save();
-    compassRoundRect(ctx, 1, 1, W - 2, H - 2, 6);
+    roundRect(ctx, 1, 1, W - 2, H - 2, 6);
     ctx.clip();
     for (let t = 0; t < 360; t += 10) {
       if (t % 45 === 0) continue;
@@ -964,14 +887,15 @@ const SCRIPT_VERSION = '6.12';
     ctx.fillText(compassHeadingLabel(deg) + '  ' + Math.round(deg) + '\u00b0', W - 7, 3);
   }
 
+  function needsRaf() {
+    return state.features.performance || state.features.coords || state.features.compass;
+  }
+
   function startPerformanceLoop() {
     if (state.rafId) return;
     const loop = (t) => {
-      if (!state.features.performance && !state.features.coords && !state.features.compass) {
-        state.rafId = null;
-        return;
-      }
-      const game = getGameCached(t);
+      if (!needsRaf()) { state.rafId = null; return; }
+      const game = gameRef.get(t);
       if (t - state.lastPerformanceUpdate >= 500 && state.counters.performance) {
         updatePerformanceCounter(game);
         state.lastPerformanceUpdate = t;
@@ -1028,16 +952,13 @@ const SCRIPT_VERSION = '6.12';
     const h = now.getHours();
     const m = String(now.getMinutes()).padStart(2, '0');
     const s = String(now.getSeconds()).padStart(2, '0');
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    updateCounterText('realTime', `${String(h).padStart(2, '0')}:${m}:${s} ${ampm}`);
+    updateCounterText('realTime', `${String(h).padStart(2, '0')}:${m}:${s} ${h >= 12 ? 'PM' : 'AM'}`);
   }
 
   function pressSpace() {
     const opts = { key: ' ', code: 'Space', keyCode: 32, which: 32, bubbles: true };
     [document, window].forEach(t => t.dispatchEvent(new KeyboardEvent('keydown', opts)));
-    setTimeout(() => {
-      [document, window].forEach(t => t.dispatchEvent(new KeyboardEvent('keyup', opts)));
-    }, 50);
+    setTimeout(() => { [document, window].forEach(t => t.dispatchEvent(new KeyboardEvent('keyup', opts))); }, 50);
   }
 
   function updateAntiAfkCounter() {
@@ -1048,15 +969,12 @@ const SCRIPT_VERSION = '6.12';
 
   function createKeyDisplay() {
     if (!document.body) return null;
-    const container = document.createElement('div');
+    const container = div('key-display-container');
     container.id = 'key-display-container';
-    container.className = 'key-display-container';
-    const savedPositions = loadDragPositions();
-    const saved = savedPositions.keyDisplay;
+    const saved = loadDragPositions().keyDisplay;
     container.style.left = saved?.left || DEFAULT_POSITIONS.keyDisplay.left;
     container.style.top = saved?.top || DEFAULT_POSITIONS.keyDisplay.top;
-    const grid = document.createElement('div');
-    grid.className = 'key-display-grid';
+    const grid = div('key-display-grid');
     grid.style.gridTemplateColumns = '44px 44px 44px';
     const keyBoxes = {};
     [
@@ -1065,26 +983,20 @@ const SCRIPT_VERSION = '6.12';
       { text: 'S', col: '2', row: '2', key: 's' },
       { text: 'D', col: '3', row: '2', key: 'd' }
     ].forEach(({ text, col, row, key }) => {
-      const box = document.createElement('div');
-      box.className = 'key-box';
-      box.textContent = text;
+      const box = div('key-box', text);
       box.style.gridColumn = col;
       box.style.gridRow = row;
       grid.appendChild(box);
       keyBoxes[key] = box;
     });
-    const mouseRow = document.createElement('div');
+    const mouseRow = div(null);
     mouseRow.style.cssText = 'display:grid;grid-template-columns:62px 62px;gap:5px;margin-top:5px;';
     ['LMB', 'RMB'].forEach((label, i) => {
-      const box = document.createElement('div');
-      box.className = 'key-box mouse-box';
-      box.textContent = label;
+      const box = div('key-box mouse-box', label);
       mouseRow.appendChild(box);
       keyBoxes[i === 0 ? 'lmb' : 'rmb'] = box;
     });
-    const spaceBox = document.createElement('div');
-    spaceBox.className = 'key-box space-box';
-    spaceBox.textContent = 'SPACE';
+    const spaceBox = div('key-box space-box', 'SPACE');
     spaceBox.style.marginTop = '5px';
     keyBoxes.space = spaceBox;
     container.append(grid, mouseRow, spaceBox);
@@ -1135,19 +1047,17 @@ const SCRIPT_VERSION = '6.12';
   }
 
   function applyPartyPatch(game) {
-    if (!game?.party) return false;
-    if (!game.party._waddleOriginalInvoke) {
-      game.party._waddleOriginalInvoke = game.party.invoke;
-      game.party.invoke = function (method, ...args) {
-        if (['inviteToParty', 'requestToJoinParty'].includes(method)) return;
-        return this._waddleOriginalInvoke?.(method, ...args);
-      };
-    }
+    if (!game?.party || game.party._waddleOriginalInvoke) return false;
+    game.party._waddleOriginalInvoke = game.party.invoke;
+    game.party.invoke = function (method, ...args) {
+      if (['inviteToParty', 'requestToJoinParty'].includes(method)) return;
+      return this._waddleOriginalInvoke?.(method, ...args);
+    };
     return true;
   }
 
   function restorePartyRequests() {
-    const game = gameRef.resolve();
+    const game = gameRef.get();
     if (game?.party?._waddleOriginalInvoke) {
       game.party.invoke = game.party._waddleOriginalInvoke;
       delete game.party._waddleOriginalInvoke;
@@ -1156,52 +1066,41 @@ const SCRIPT_VERSION = '6.12';
 
   const featureManager = {
     performance: {
-      start: () => {
+      start() {
         if (!state.counters.performance) createCounter('performance');
         startPerformanceLoop();
-        updatePerformanceCounter(getGameCached(0));
+        updatePerformanceCounter(gameRef.get());
       },
-      cleanup: () => {
-        if (state.counters.performance) {
-          state.counters.performance._dragCleanup?.();
-          state.counters.performance.remove();
-          state.counters.performance = null;
-        }
-        if (!state.features.coords && !state.features.compass) stopPerformanceLoop();
+      cleanup() {
+        removeCounter('performance');
+        if (!needsRaf()) stopPerformanceLoop();
       }
     },
     coords: {
-      start: () => {
+      start() {
         if (!state.counters.coords) createCounter('coords');
         startPerformanceLoop();
       },
-      cleanup: () => {
-        if (state.counters.coords) {
-          state.counters.coords._dragCleanup?.();
-          state.counters.coords.remove();
-          state.counters.coords = null;
-        }
-        if (!state.features.performance && !state.features.compass) stopPerformanceLoop();
+      cleanup() {
+        removeCounter('coords');
+        if (!needsRaf()) stopPerformanceLoop();
       }
     },
     realTime: {
-      start: () => {
+      start() {
         if (state.intervals.realTime) return;
         if (!state.counters.realTime) createCounter('realTime');
         updateRealTime();
         state.intervals.realTime = setInterval(updateRealTime, 1000);
       },
-      cleanup: () => {
+      cleanup() {
         clearInterval(state.intervals.realTime);
         state.intervals.realTime = null;
-        if (state.counters.realTime) {
-          state.counters.realTime.remove();
-          state.counters.realTime = null;
-        }
+        removeCounter('realTime');
       }
     },
     antiAfk: {
-      start: () => {
+      start() {
         if (state.intervals.antiAfk) return;
         if (!state.counters.antiAfk) createCounter('antiAfk');
         state.antiAfkCountdown = 5;
@@ -1212,91 +1111,73 @@ const SCRIPT_VERSION = '6.12';
           if (state.antiAfkCountdown <= 0) {
             if (document.pointerLockElement) pressSpace();
             state.antiAfkCountdown = 5;
-            const el = state.counters.antiAfk;
-            if (el) { el.classList.remove('afk-pulse'); void el.offsetWidth; el.classList.add('afk-pulse'); }
+            const e = state.counters.antiAfk;
+            if (e) { e.classList.remove('afk-pulse'); void e.offsetWidth; e.classList.add('afk-pulse'); }
           }
         }, 1000);
       },
-      cleanup: () => {
+      cleanup() {
         clearInterval(state.intervals.antiAfk);
         state.intervals.antiAfk = null;
-        if (state.counters.antiAfk) {
-          state.counters.antiAfk._dragCleanup?.();
-          state.counters.antiAfk.remove();
-          state.counters.antiAfk = null;
-        }
+        removeCounter('antiAfk');
       }
     },
     keyDisplay: {
-      start: () => {
+      start() {
         if (!state.counters.keyDisplay) createKeyDisplay();
         setupKeyDisplayListeners();
       },
-      cleanup: () => {
+      cleanup() {
         teardownKeyDisplayListeners();
-        if (state.counters.keyDisplay) {
-          state.counters.keyDisplay._dragCleanup?.();
-          state.counters.keyDisplay.remove();
-          state.counters.keyDisplay = null;
-        }
+        removeCounter('keyDisplay');
         Object.keys(state.keys).forEach(k => { state.keys[k] = false; });
       }
     },
     disablePartyRequests: {
-      start: () => {
-        applyPartyPatch(gameRef.resolve());
-        state.intervals.partyRetry = setInterval(() => {
-          applyPartyPatch(gameRef.resolve());
-        }, 2000);
+      start() {
+        applyPartyPatch(gameRef.get());
+        state.intervals.partyRetry = setInterval(() => applyPartyPatch(gameRef.get()), 2000);
       },
-      cleanup: () => {
+      cleanup() {
         clearInterval(state.intervals.partyRetry);
         state.intervals.partyRetry = null;
         restorePartyRequests();
       }
     },
     funFacts: {
-      start: () => {
+      start() {
         if (state.hasShownFunFactOnJoin || state.intervals.funFacts) return;
         let wasInGame = false;
         const showRandomFact = () => {
-          const fact = FUN_FACTS[Math.floor(Math.random() * FUN_FACTS.length)];
-          showToast('🐧 Fun Fact', 'info', fact);
+          showToast('🐧 Fun Fact', 'info', FUN_FACTS[Math.floor(Math.random() * FUN_FACTS.length)]);
           state.hasShownFunFactOnJoin = true;
           clearInterval(state.intervals.funFacts);
           state.intervals.funFacts = null;
         };
         const watchInGame = () => {
-          const paused = !!document.querySelector('.chakra-modal__content-container,[role="dialog"]');
-          const inGame = !!(document.pointerLockElement && !paused);
+          const inGame = !!(document.pointerLockElement && !document.querySelector('.chakra-modal__content-container,[role="dialog"]'));
           if (inGame && !wasInGame && !state.hasShownFunFactOnJoin) showRandomFact();
           wasInGame = inGame;
         };
         watchInGame();
         if (!state.hasShownFunFactOnJoin) state.intervals.funFacts = setInterval(watchInGame, 500);
       },
-      cleanup: () => {
+      cleanup() {
         clearInterval(state.intervals.funFacts);
         state.intervals.funFacts = null;
         state.hasShownFunFactOnJoin = false;
       }
     },
     muteChat: {
-      start: () => {
-        const game = getGameCached(0);
-        if (!game?.chat) {
-          showToast('Chat Mute', 'disabled', 'Game not loaded yet!');
-          state.features.muteChat = false;
-          return;
-        }
-        if (!game.chat._waddleOriginalAddChat) {
-          game.chat._waddleOriginalAddChat = game.chat.addChat.bind(game.chat);
-        }
+      start() {
+        const game = gameRef.get();
+        if (!game?.chat) { showToast('Chat Mute', 'disabled', 'Game not loaded yet!'); state.features.muteChat = false; return; }
+        if (!game.chat._waddleOriginalAddChat) game.chat._waddleOriginalAddChat = game.chat.addChat.bind(game.chat);
         game.chat.addChat = function () {};
         showToast('Chat Mute', 'enabled', 'Chat messages are now hidden');
       },
-      cleanup: () => {
-        const game = getGameCached(0);
+      cleanup() {
+        const game = gameRef.get();
         if (game?.chat?._waddleOriginalAddChat) {
           game.chat.addChat = game.chat._waddleOriginalAddChat;
           delete game.chat._waddleOriginalAddChat;
@@ -1305,17 +1186,13 @@ const SCRIPT_VERSION = '6.12';
       }
     },
     compass: {
-      start: () => {
+      start() {
         if (!state.counters.compass) createCompassWidget();
         startPerformanceLoop();
       },
-      cleanup: () => {
-        if (state.counters.compass) {
-          state.counters.compass._dragCleanup?.();
-          state.counters.compass.remove();
-          state.counters.compass = null;
-        }
-        if (!state.features.performance && !state.features.coords) stopPerformanceLoop();
+      cleanup() {
+        removeCounter('compass');
+        if (!needsRaf()) stopPerformanceLoop();
       }
     },
   };
@@ -1330,8 +1207,6 @@ const SCRIPT_VERSION = '6.12';
     return enabled;
   }
 
-  const _panelCache = {};
-
   function buildSkinPanel() {
     const grid = document.getElementById('waddle-module-grid');
     const title = document.getElementById('waddle-panel-title');
@@ -1341,36 +1216,26 @@ const SCRIPT_VERSION = '6.12';
     if (about) about.style.display = 'none';
     if (title) title.style.display = 'none';
     if (!skinPanel) {
-      skinPanel = document.createElement('div');
+      skinPanel = div(null);
       skinPanel.id = 'waddle-skin-panel';
       const equippedSkin = localStorage.getItem(EQUIPPED_SKIN_KEY) || '';
-      const skinGrid = document.createElement('div');
-      skinGrid.className = 'skin-grid';
+      const skinGrid = div('skin-grid');
       skinGrid.id = 'skin-grid-view';
       SKINS.forEach(name => {
-        const btn = document.createElement('div');
-        btn.className = 'skin-btn';
+        const btn = div('skin-btn');
         const isEquipped = name.toLowerCase() === equippedSkin.toLowerCase();
-        const label = document.createElement('span');
-        label.textContent = name;
-        btn.appendChild(label);
+        btn.appendChild(el('span', null, name));
         if (isEquipped) {
           btn.classList.add('equipped');
-          const badge = document.createElement('span');
-          badge.className = 'skin-equipped-badge';
-          badge.textContent = '✓ on';
-          btn.appendChild(badge);
+          btn.appendChild(el('span', 'skin-equipped-badge', '✓ on'));
         }
         btn.addEventListener('click', () => {
-          if (btn.classList.contains('equipped')) {
-            showToast('Already Equipped', 'info', `${name} is your current skin.`);
-            return;
-          }
+          if (btn.classList.contains('equipped')) { showToast('Already Equipped', 'info', `${name} is your current skin.`); return; }
           showSkinConfirm(name);
         });
         skinGrid.appendChild(btn);
       });
-      const confirmView = document.createElement('div');
+      const confirmView = div(null);
       confirmView.id = 'skin-confirm-view';
       confirmView.innerHTML = `
         <div class="skin-confirm-text">Are you sure you want to equip <span id="skin-confirm-name"></span>?</div>
@@ -1386,9 +1251,7 @@ const SCRIPT_VERSION = '6.12';
         hideSkinConfirm();
         await applySkin(skinName);
       });
-      document.getElementById('skin-confirm-no').addEventListener('click', () => {
-        hideSkinConfirm();
-      });
+      document.getElementById('skin-confirm-no').addEventListener('click', hideSkinConfirm);
     }
     skinPanel.style.display = 'flex';
     skinPanel.style.flexDirection = 'column';
@@ -1418,23 +1281,16 @@ const SCRIPT_VERSION = '6.12';
       if (about) about.style.display = 'flex';
       return;
     }
-    if (categoryId === 'customSkin') {
-      buildSkinPanel();
-      return;
-    }
+    if (categoryId === 'customSkin') { buildSkinPanel(); return; }
     if (grid) grid.style.display = 'grid';
     if (about) about.style.display = 'none';
     if (title) { title.style.display = 'block'; title.textContent = categoryId; }
-    if (!_panelCache[categoryId]) {
-      _panelCache[categoryId] = (FEATURE_MAP[categoryId] || []).map(({ label, feature }) => {
-        const btn = document.createElement('div');
-        btn.className = 'waddle-module';
+    if (!state._panelCache[categoryId]) {
+      state._panelCache[categoryId] = (FEATURE_MAP[categoryId] || []).map(({ label, feature }) => {
+        const btn = div('waddle-module');
         btn.dataset.feature = feature;
-        const labelEl = document.createElement('span');
-        labelEl.textContent = label;
-        const dot = document.createElement('div');
-        dot.className = 'waddle-module-dot';
-        btn.append(labelEl, dot);
+        const dot = div('waddle-module-dot');
+        btn.append(el('span', null, label), dot);
         btn.addEventListener('click', () => {
           const en = toggleFeature(feature);
           btn.classList.toggle('active', en);
@@ -1444,7 +1300,7 @@ const SCRIPT_VERSION = '6.12';
       });
     }
     grid.innerHTML = '';
-    _panelCache[categoryId].forEach(btn => {
+    state._panelCache[categoryId].forEach(btn => {
       btn.classList.toggle('active', !!state.features[btn.dataset.feature]);
       grid.appendChild(btn);
     });
@@ -1452,50 +1308,45 @@ const SCRIPT_VERSION = '6.12';
 
   function switchCategory(categoryId) {
     state.activeCategory = categoryId;
-    document.querySelectorAll('.waddle-cat').forEach(el => el.classList.toggle('active', el.dataset.cat === categoryId));
+    document.querySelectorAll('.waddle-cat').forEach(e => e.classList.toggle('active', e.dataset.cat === categoryId));
     buildModulePanel(categoryId);
   }
 
   function createMenu() {
     if (!document.body) return null;
-    const overlay = document.createElement('div');
+    const overlay = div(null);
     overlay.id = 'waddle-overlay';
     overlay.dataset.version = SCRIPT_VERSION;
-    const win = document.createElement('div');
+    const win = div(null);
     win.id = 'waddle-window';
-    const sidebar = document.createElement('div');
+    const sidebar = div(null);
     sidebar.id = 'waddle-sidebar';
-    const logo = document.createElement('div');
+    const logo = div(null);
     logo.id = 'waddle-logo';
     logo.innerHTML = `🐧 WADDLE <span>v${SCRIPT_VERSION} • Miniblox</span>`;
     sidebar.appendChild(logo);
     CATEGORIES.forEach(({ id, label, icon }) => {
-      const cat = document.createElement('div');
-      cat.className = `waddle-cat${id === state.activeCategory ? ' active' : ''}`;
+      const cat = div(`waddle-cat${id === state.activeCategory ? ' active' : ''}`);
       cat.dataset.cat = id;
       cat.innerHTML = `<span class="waddle-cat-icon">${icon}</span>${label}`;
       cat.onclick = () => switchCategory(id);
       sidebar.appendChild(cat);
     });
-    const footer = document.createElement('div');
+    const footer = div(null, 'Press \\ to toggle');
     footer.id = 'waddle-sidebar-footer';
-    footer.textContent = 'Press \\ to toggle';
     sidebar.appendChild(footer);
-    const panel = document.createElement('div');
+    const panel = div(null);
     panel.id = 'waddle-panel';
-    const panelTitle = document.createElement('div');
+    const panelTitle = div(null, state.activeCategory);
     panelTitle.id = 'waddle-panel-title';
-    panelTitle.textContent = state.activeCategory;
-    const moduleGrid = document.createElement('div');
+    const moduleGrid = div(null);
     moduleGrid.id = 'waddle-module-grid';
-    const aboutPanel = document.createElement('div');
+    const aboutPanel = div(null);
     aboutPanel.id = 'waddle-about';
     aboutPanel.style.display = 'none';
-    const timerBlock = document.createElement('div');
-    timerBlock.className = 'about-block';
+    const timerBlock = div('about-block');
     timerBlock.innerHTML = `<h3>⏱ Session Timer</h3><div id="waddle-session-timer" class="about-timer">00:00:00</div>`;
-    const creditsBlock = document.createElement('div');
-    creditsBlock.className = 'about-block';
+    const creditsBlock = div('about-block');
     creditsBlock.innerHTML = `
       <h3>Credits</h3>
       <div class="about-credit">
@@ -1507,18 +1358,14 @@ const SCRIPT_VERSION = '6.12';
         <div><div class="role" style="color:#f39c12">Enhanced By</div><a href="https://github.com/TheM1ddleM1n" target="_blank">@TheM1ddleM1n</a></div>
       </div>
     `;
-    const linksBlock = document.createElement('div');
-    linksBlock.className = 'about-block';
+    const linksBlock = div('about-block');
     linksBlock.innerHTML = '<h3>🔗 GitHub</h3>';
-    const linksRow = document.createElement('div');
-    linksRow.className = 'about-links';
+    const linksRow = div('about-links');
     [
       ['Suggest Feature', 'https://github.com/TheM1ddleM1n/Waddle/issues/new?labels=enhancement'],
       ['Report Bug', 'https://github.com/TheM1ddleM1n/Waddle/issues/new?labels=bug']
     ].forEach(([text, url]) => {
-      const btn = document.createElement('button');
-      btn.className = 'about-link-btn';
-      btn.textContent = text;
+      const btn = el('button', 'about-link-btn', text);
       btn.onclick = () => window.open(url, '_blank');
       linksRow.appendChild(btn);
     });
@@ -1539,10 +1386,7 @@ const SCRIPT_VERSION = '6.12';
   function setupKeyboardHandler() {
     window.addEventListener('keydown', (e) => {
       if (e.key === '\\') { e.preventDefault(); toggleMenu(); }
-      else if (e.key === 'Escape' && state.menuOverlay?.classList.contains('show')) {
-        e.preventDefault();
-        state.menuOverlay.classList.remove('show');
-      }
+      else if (e.key === 'Escape' && state.menuOverlay?.classList.contains('show')) { e.preventDefault(); state.menuOverlay.classList.remove('show'); }
     });
   }
 
@@ -1551,7 +1395,7 @@ const SCRIPT_VERSION = '6.12';
       const raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
       if (raw) Object.assign(state.features, migrateSettings(raw));
     } catch (_) {}
-    Object.keys(_panelCache).forEach(k => delete _panelCache[k]);
+    state._panelCache = {};
   }
 
   function globalCleanup() {
@@ -1582,37 +1426,30 @@ const SCRIPT_VERSION = '6.12';
 
   function initSpaceSky() {
     const doApply = () => {
-      let _skyAttempts = 0;
-      const MAX_SKY_ATTEMPTS = 20;
+      let attempts = 0;
       const tryPatch = () => {
-        if (++_skyAttempts > MAX_SKY_ATTEMPTS) { showToast('Space Sky', 'info', 'Could not find game scene'); return; }
-        const gs = gameRef.resolve()?.gameScene;
+        if (++attempts > 20) { showToast('Space Sky', 'info', 'Could not find game scene'); return; }
+        const gs = gameRef.get()?.gameScene;
         if (!gs?.sky) { setTimeout(tryPatch, 500); return; }
-        const loader = new THREE.CubeTextureLoader();
-        loader.setPath('https://threejs.org/examples/textures/cube/MilkyWay/');
-        loader.load(
-          ['dark-s_px.jpg', 'dark-s_nx.jpg', 'dark-s_py.jpg', 'dark-s_ny.jpg', 'dark-s_pz.jpg', 'dark-s_nz.jpg'],
-          (cubeTexture) => {
-            gs.sky._waddleOriginalUpdate = gs.sky.update.bind(gs.sky);
-            gs.sky.update = function () {
-              this._waddleOriginalUpdate();
-              this.gameScene.scene.background = cubeTexture;
-            };
-            gs.scene.background = cubeTexture;
-          }
-        );
+        new THREE.CubeTextureLoader()
+          .setPath('https://threejs.org/examples/textures/cube/MilkyWay/')
+          .load(
+            ['dark-s_px.jpg', 'dark-s_nx.jpg', 'dark-s_py.jpg', 'dark-s_ny.jpg', 'dark-s_pz.jpg', 'dark-s_nz.jpg'],
+            (cubeTexture) => {
+              gs.sky._waddleOriginalUpdate = gs.sky.update.bind(gs.sky);
+              gs.sky.update = function () { this._waddleOriginalUpdate(); this.gameScene.scene.background = cubeTexture; };
+              gs.scene.background = cubeTexture;
+            }
+          );
       };
       tryPatch();
     };
-    if (isThreeCompatible()) {
-      doApply();
-    } else {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js';
-      script.onload = () => { if (isThreeCompatible()) doApply(); else showToast('Space Sky', 'info', 'Three.js version mismatch'); };
-      script.onerror = () => showToast('Space Sky', 'info', 'Failed to load Three.js');
-      document.head.appendChild(script);
-    }
+    if (isThreeCompatible()) { doApply(); return; }
+    const script = el('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js';
+    script.onload = () => { if (isThreeCompatible()) doApply(); else showToast('Space Sky', 'info', 'Three.js version mismatch'); };
+    script.onerror = () => showToast('Space Sky', 'info', 'Failed to load Three.js');
+    document.head.appendChild(script);
   }
 
   async function safeInit() {
@@ -1642,5 +1479,6 @@ const SCRIPT_VERSION = '6.12';
       showToast('Init failed', 'info', 'Check console');
     }
   }
+
   safeInit();
 })();
