@@ -861,33 +861,60 @@ const SCRIPT_VERSION = '6.12';
     const conn = navigator.connection;
 
     if (navigator.getBattery) {
-      navigator.getBattery().then(bat => {
-        const pct = Math.round(bat.level * 100);
-        const status = bat.charging ? '⚡ Charging' : (
-          bat.dischargingTime !== Infinity
-            ? `~${Math.round(bat.dischargingTime / 60)}m left`
-            : 'Discharging'
-        );
-        const el = document.getElementById('waddle-sys-battery');
-        if (el) el.textContent = `${pct}% — ${status}`;
-        const update = () => {
-          const p = Math.round(bat.level * 100);
-          const s = bat.charging ? '⚡ Charging' : (
-            bat.dischargingTime !== Infinity
-              ? `~${Math.round(bat.dischargingTime / 60)}m left`
-              : 'Discharging'
-          );
-          const e = document.getElementById('waddle-sys-battery');
-          if (e) e.textContent = `${p}% — ${s}`;
-        };
-        bat.addEventListener('levelchange', update);
-        bat.addEventListener('chargingchange', update);
-        bat.addEventListener('dischargingtimechange', update);
-      }).catch(() => {
-        const el = document.getElementById('waddle-sys-battery');
-        if (el) el.textContent = 'N/A';
-      });
-    }
+  navigator.getBattery().then(bat => {
+
+    const getBatteryIcon = (pct) => {
+      if (pct > 50) return "🔋";
+      if (pct > 20) return "🔋";
+      return "🪫";
+    };
+
+    const getColor = (pct) => {
+      if (pct > 50) return "#22c55e"; // 🟩 green
+      if (pct > 20) return "#eab308"; // 🟨 yellow
+      return "#ef4444"; // 🟥 red
+    };
+
+    const getStatus = () => {
+      const pct = Math.round(bat.level * 100);
+      const icon = getBatteryIcon(pct);
+
+      let status = "";
+
+      if (pct === 100 && bat.charging) {
+        status = "✅ Fully Charged!";
+      } else if (bat.charging) {
+        status = "⚡ Charging";
+      } else if (pct <= 20) {
+        status = "⚠️ Plug in Charger";
+      } else if (bat.dischargingTime !== Infinity) {
+        const mins = Math.round(bat.dischargingTime / 60);
+        status = `⏱ ~${mins}m left`;
+      }
+
+      return { text: `${icon} ${pct}% ${status}`, color: getColor(pct) };
+    };
+
+    const update = () => {
+      const el = document.getElementById("waddle-sys-battery");
+      if (!el) return;
+
+      const info = getStatus();
+      el.textContent = info.text;
+      el.style.color = info.color;
+    };
+
+    update();
+
+    bat.addEventListener("levelchange", update);
+    bat.addEventListener("chargingchange", update);
+    bat.addEventListener("dischargingtimechange", update);
+
+  }).catch(() => {
+    const el = document.getElementById("waddle-sys-battery");
+    if (el) el.textContent = "Battery N/A";
+  });
+}
 
     return {
       os,
@@ -898,7 +925,6 @@ const SCRIPT_VERSION = '6.12';
       cores: navigator.hardwareConcurrency || '?',
       ram: navigator.deviceMemory ? navigator.deviceMemory + ' GB' : '?',
       screen: `${screen.width}×${screen.height}`,
-      dpr: window.devicePixelRatio || 1,
       network: conn?.effectiveType?.toUpperCase() || '?',
       downlink: conn?.downlink ? conn.downlink + ' Mbps' : '?',
       rtt: conn?.rtt != null ? conn.rtt + ' ms' : '?',
@@ -1468,21 +1494,20 @@ const SCRIPT_VERSION = '6.12';
       <h3>🖥️ System</h3>
       <table style="width:100%;border-collapse:collapse;font-size:.78rem;">
         ${[
-          ['OS',       `<span id="waddle-sys-os">${sys.os}</span>`],
-          ['Browser',  sys.browser],
-          ['GPU',      sys.gpu],
-          ['Vendor',   sys.gpuVendor],
-          ['WebGL2',   sys.webgl2 ? '✓ Supported' : '✗ Not supported'],
-          ['Cores',    sys.cores],
-          ['RAM',      sys.ram],
-          ['Screen',   sys.screen],
-          ['DPR',      sys.dpr + 'x' + (sys.dpr >= 2 ? ' (HiDPI)' : '')],
-          ['Network',  sys.network],
+          ['OS', `<span id="waddle-sys-os">${sys.os}</span>`],
+          ['Browser', sys.browser],
+          ['GPU', sys.gpu],
+          ['Vendor', sys.gpuVendor],
+          ['WebGL2', sys.webgl2 ? '✓ Supported' : '✗ Not supported'],
+          ['Cores', sys.cores],
+          ['RAM', sys.ram],
+          ['Screen', sys.screen],
+          ['Network', sys.network],
           ['Downlink', sys.downlink],
-          ['RTT',      sys.rtt],
+          ['RTT', sys.rtt],
           ['Timezone', sys.timezone],
-          ['Touch',    sys.touch],
-          ['Battery',  `<span id="waddle-sys-battery">${sys.battery}</span>`],
+          ['Touch', sys.touch],
+          ['Battery', `<span id="waddle-sys-battery">${sys.battery}</span>`],
         ].map(([label, val]) => `
           <tr>
             <td style="color:var(--c);font-weight:700;padding:3px 10px 3px 0;width:72px;">${label}</td>
