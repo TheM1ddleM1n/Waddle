@@ -66,20 +66,36 @@ const SCRIPT_VERSION = '6.12';
       showToast('Skin Failed', 'disabled', 'Could not apply skin: ' + e.message);
     }
   }
-
-  const DEFAULT_POSITIONS = {
-    performance: { left: '50px', top: '80px' },
-    keyDisplay: { left: '50px', top: '150px' },
-    coords: { left: '50px', top: '220px' },
-    antiAfk: { left: '50px', top: '290px' },
-    compass: { left: '16px', top: '16px' },
-  };
-
-  const COUNTER_CONFIGS = {
-    performance: { id: 'performance-counter', text: 'FPS: -- | PING: 0ms', pos: DEFAULT_POSITIONS.performance, draggable: true },
-    coords: { id: 'coords-counter', text: '📍 X: 0 Y: 0 Z: 0', pos: DEFAULT_POSITIONS.coords, draggable: true },
-    realTime: { id: 'real-time-counter', text: '00:00:00 AM' },
-    antiAfk: { id: 'anti-afk-counter', text: '🐧 Jumping in 5s', pos: DEFAULT_POSITIONS.antiAfk, draggable: true }
+  const WIDGET_CONFIGS = {
+    performance: {
+      id: 'performance-counter', cls: 'counter',
+      defaultText: 'FPS: -- | PING: 0ms',
+      pos: { left: '50px', top: '80px' },
+    },
+    coords: {
+      id: 'coords-counter', cls: 'counter',
+      defaultText: '📍 X: 0 Y: 0 Z: 0',
+      pos: { left: '50px', top: '220px' },
+    },
+    realTime: {
+      id: 'real-time-counter', cls: 'counter',
+      defaultText: '00:00:00 AM',
+      fixed: { right: '30px', bottom: '30px', background: 'transparent', boxShadow: 'none', border: 'none', fontSize: '1.1rem', padding: '0' },
+    },
+    antiAfk: {
+      id: 'anti-afk-counter', cls: 'counter',
+      defaultText: '🐧 Jumping in 5s',
+      pos: { left: '50px', top: '290px' },
+    },
+    compass: {
+      id: 'compass-widget', cls: 'counter',
+      pos: { left: '16px', top: '16px' },
+      canvas: { width: 220, height: 42 },
+    },
+    keyDisplay: {
+      id: 'key-display-container', cls: 'key-display-container',
+      pos: { left: '50px', top: '150px' },
+    },
   };
 
   const CATEGORIES = [
@@ -104,8 +120,6 @@ const SCRIPT_VERSION = '6.12';
       { label: 'Chat Mute', feature: 'muteChat' }
     ]
   };
-
-  const ALL_FEATURES = [...FEATURE_MAP.display, ...FEATURE_MAP.utilities];
 
   const FUN_FACTS = Object.freeze([
     'Penguins can drink seawater thanks to a special gland above their eyes.',
@@ -370,10 +384,9 @@ const SCRIPT_VERSION = '6.12';
     document.body.appendChild(hud);
     state.hudArray = hud;
   }
-
   function refreshHud() {
     if (!state.hudArray) return;
-    ALL_FEATURES.forEach(({ label, feature }) => {
+    Object.values(FEATURE_MAP).flat().forEach(({ label, feature }) => {
       const id = `hud-item-${feature}`;
       const existing = document.getElementById(id);
       if (state.features[feature]) {
@@ -709,27 +722,74 @@ const SCRIPT_VERSION = '6.12';
     e.remove();
     state.counters[name] = null;
   }
-
-  function createCounter(type) {
+  function buildKeyDisplayContent(container) {
+    const grid = div('key-display-grid');
+    grid.style.gridTemplateColumns = '44px 44px 44px';
+    const keyBoxes = {};
+    [
+      { text: 'W', col: '2', row: '1', key: 'w' },
+      { text: 'A', col: '1', row: '2', key: 'a' },
+      { text: 'S', col: '2', row: '2', key: 's' },
+      { text: 'D', col: '3', row: '2', key: 'd' }
+    ].forEach(({ text, col, row, key }) => {
+      const box = div('key-box', text);
+      box.style.gridColumn = col;
+      box.style.gridRow = row;
+      grid.appendChild(box);
+      keyBoxes[key] = box;
+    });
+    const mouseRow = div(null);
+    mouseRow.style.cssText = 'display:grid;grid-template-columns:62px 62px;gap:5px;margin-top:5px;';
+    ['LMB', 'RMB'].forEach((label, i) => {
+      const box = div('key-box mouse-box', label);
+      mouseRow.appendChild(box);
+      keyBoxes[i === 0 ? 'lmb' : 'rmb'] = box;
+    });
+    const spaceBox = div('key-box space-box', 'SPACE');
+    spaceBox.style.marginTop = '5px';
+    keyBoxes.space = spaceBox;
+    container.append(grid, mouseRow, spaceBox);
+    container._keyBoxes = keyBoxes;
+  }
+  function createWidget(type) {
     if (!document.body) return null;
-    const config = COUNTER_CONFIGS[type];
-    if (!config) return null;
-    const counter = div('counter');
-    counter.id = config.id;
-    const span = el('span', 'counter-time-text', config.text);
-    counter.appendChild(span);
-    counter._textSpan = span;
-    if (type === 'realTime') {
-      Object.assign(counter.style, { right: '30px', bottom: '30px', background: 'transparent', boxShadow: 'none', border: 'none', fontSize: '1.1rem', padding: '0' });
+    const cfg = WIDGET_CONFIGS[type];
+    if (!cfg) return null;
+    const wrap = div(cfg.cls);
+    wrap.id = cfg.id;
+
+    if (cfg.fixed) {
+      Object.assign(wrap.style, cfg.fixed);
     } else {
       const saved = loadDragPositions()[type];
-      counter.style.left = saved?.left || config.pos.left;
-      counter.style.top = saved?.top || config.pos.top;
-      if (config.draggable) setupDragging(counter, saveDragPositions);
+      wrap.style.left = saved?.left || cfg.pos.left;
+      wrap.style.top = saved?.top || cfg.pos.top;
+      setupDragging(wrap, saveDragPositions);
     }
-    document.body.appendChild(counter);
-    state.counters[type] = counter;
-    return counter;
+
+    if (cfg.canvas) {
+      Object.assign(wrap.style, {
+        padding: '0', overflow: 'hidden',
+        width: cfg.canvas.width + 'px', height: cfg.canvas.height + 'px',
+        background: 'transparent', border: 'none', boxShadow: 'none', display: 'none'
+      });
+      const canvas = el('canvas');
+      canvas.width = cfg.canvas.width;
+      canvas.height = cfg.canvas.height;
+      wrap.appendChild(canvas);
+      wrap._canvas = canvas;
+      state.compassSmoothed = -1;
+    } else if (type === 'keyDisplay') {
+      buildKeyDisplayContent(wrap);
+    } else {
+      const span = el('span', 'counter-time-text', cfg.defaultText ?? '');
+      wrap.appendChild(span);
+      wrap._textSpan = span;
+    }
+
+    document.body.appendChild(wrap);
+    state.counters[type] = wrap;
+    return wrap;
   }
 
   function updateCounterText(type, text) {
@@ -861,67 +921,37 @@ const SCRIPT_VERSION = '6.12';
     const conn = navigator.connection;
 
     if (navigator.getBattery) {
-  navigator.getBattery().then(bat => {
-
-    const getBatteryIcon = (pct) => {
-      if (pct > 50) return "🔋";
-      if (pct > 20) return "🔋";
-      return "🪫";
-    };
-
-    const getColor = (pct) => {
-      if (pct > 50) return "#22c55e"; // 🟩 green
-      if (pct > 20) return "#eab308"; // 🟨 yellow
-      return "#ef4444"; // 🟥 red
-    };
-
-    const getStatus = () => {
-      const pct = Math.round(bat.level * 100);
-      const icon = getBatteryIcon(pct);
-
-      let status = "";
-
-      if (pct === 100 && bat.charging) {
-        status = "✅ Fully Charged!";
-      } else if (bat.charging) {
-        status = "⚡ Charging";
-      } else if (pct <= 20) {
-        status = "⚠️ Plug in Charger";
-      } else if (bat.dischargingTime !== Infinity) {
-        const mins = Math.round(bat.dischargingTime / 60);
-        status = `⏱ ~${mins}m left`;
-      }
-
-      return { text: `${icon} ${pct}% ${status}`, color: getColor(pct) };
-    };
-
-    const update = () => {
-      const el = document.getElementById("waddle-sys-battery");
-      if (!el) return;
-
-      const info = getStatus();
-      el.textContent = info.text;
-      el.style.color = info.color;
-    };
-
-    update();
-
-    bat.addEventListener("levelchange", update);
-    bat.addEventListener("chargingchange", update);
-    bat.addEventListener("dischargingtimechange", update);
-
-  }).catch(() => {
-    const el = document.getElementById("waddle-sys-battery");
-    if (el) el.textContent = "Battery N/A";
-  });
-}
+      navigator.getBattery().then(bat => {
+        const getBatteryIcon = (pct) => pct > 20 ? "🔋" : "🪫";
+        const getColor = (pct) => pct > 50 ? "#22c55e" : pct > 20 ? "#eab308" : "#ef4444";
+        const getStatus = () => {
+          const pct = Math.round(bat.level * 100);
+          let status = "";
+          if (pct === 100 && bat.charging) status = "✅ Fully Charged!";
+          else if (bat.charging) status = "⚡ Charging";
+          else if (pct <= 20) status = "⚠️ Plug in Charger";
+          else if (bat.dischargingTime !== Infinity) status = `⏱ ~${Math.round(bat.dischargingTime / 60)}m left`;
+          return { text: `${getBatteryIcon(pct)} ${pct}% ${status}`, color: getColor(pct) };
+        };
+        const update = () => {
+          const el = document.getElementById("waddle-sys-battery");
+          if (!el) return;
+          const info = getStatus();
+          el.textContent = info.text;
+          el.style.color = info.color;
+        };
+        update();
+        bat.addEventListener("levelchange", update);
+        bat.addEventListener("chargingchange", update);
+        bat.addEventListener("dischargingtimechange", update);
+      }).catch(() => {
+        const el = document.getElementById("waddle-sys-battery");
+        if (el) el.textContent = "Battery N/A";
+      });
+    }
 
     return {
-      os,
-      browser,
-      gpu,
-      gpuVendor,
-      webgl2,
+      os, browser, gpu, gpuVendor, webgl2,
       cores: navigator.hardwareConcurrency || '?',
       ram: navigator.deviceMemory ? navigator.deviceMemory + ' GB' : '?',
       screen: `${screen.width}×${screen.height}`,
@@ -932,26 +962,6 @@ const SCRIPT_VERSION = '6.12';
       touch: navigator.maxTouchPoints > 0 ? `Yes (${navigator.maxTouchPoints} points)` : 'No',
       battery: navigator.getBattery ? 'Loading...' : 'N/A',
     };
-  }
-
-  function createCompassWidget() {
-    if (!document.body) return null;
-    const wrap = div('counter');
-    wrap.id = 'compass-widget';
-    Object.assign(wrap.style, { padding: '0', overflow: 'hidden', width: '220px', height: '42px', background: 'transparent', border: 'none', boxShadow: 'none', display: 'none' });
-    const canvas = el('canvas');
-    canvas.width = 220;
-    canvas.height = 42;
-    wrap.appendChild(canvas);
-    wrap._canvas = canvas;
-    const saved = loadDragPositions().compass;
-    wrap.style.left = saved?.left || DEFAULT_POSITIONS.compass.left;
-    wrap.style.top = saved?.top || DEFAULT_POSITIONS.compass.top;
-    setupDragging(wrap, saveDragPositions);
-    document.body.appendChild(wrap);
-    state.counters.compass = wrap;
-    state.compassSmoothed = -1;
-    return wrap;
   }
 
   function drawCompassWidget(deg) {
@@ -1102,83 +1112,8 @@ const SCRIPT_VERSION = '6.12';
     updateCounterText('antiAfk', `🐧 Jumping in ${state.antiAfkCountdown}s`);
   }
 
-  function createKeyDisplay() {
-    if (!document.body) return null;
-    const container = div('key-display-container');
-    container.id = 'key-display-container';
-    const saved = loadDragPositions().keyDisplay;
-    container.style.left = saved?.left || DEFAULT_POSITIONS.keyDisplay.left;
-    container.style.top = saved?.top || DEFAULT_POSITIONS.keyDisplay.top;
-    const grid = div('key-display-grid');
-    grid.style.gridTemplateColumns = '44px 44px 44px';
-    const keyBoxes = {};
-    [
-      { text: 'W', col: '2', row: '1', key: 'w' },
-      { text: 'A', col: '1', row: '2', key: 'a' },
-      { text: 'S', col: '2', row: '2', key: 's' },
-      { text: 'D', col: '3', row: '2', key: 'd' }
-    ].forEach(({ text, col, row, key }) => {
-      const box = div('key-box', text);
-      box.style.gridColumn = col;
-      box.style.gridRow = row;
-      grid.appendChild(box);
-      keyBoxes[key] = box;
-    });
-    const mouseRow = div(null);
-    mouseRow.style.cssText = 'display:grid;grid-template-columns:62px 62px;gap:5px;margin-top:5px;';
-    ['LMB', 'RMB'].forEach((label, i) => {
-      const box = div('key-box mouse-box', label);
-      mouseRow.appendChild(box);
-      keyBoxes[i === 0 ? 'lmb' : 'rmb'] = box;
-    });
-    const spaceBox = div('key-box space-box', 'SPACE');
-    spaceBox.style.marginTop = '5px';
-    keyBoxes.space = spaceBox;
-    container.append(grid, mouseRow, spaceBox);
-    document.body.appendChild(container);
-    container._keyBoxes = keyBoxes;
-    setupDragging(container, saveDragPositions);
-    state.counters.keyDisplay = container;
-    return container;
-  }
-
   function updateKeyDisplay(key, pressed) {
     state.counters.keyDisplay?._keyBoxes?.[key]?.classList.toggle('active', pressed);
-  }
-
-  function setupKeyDisplayListeners() {
-    if (state._keyListeners) return;
-    const kd = (e) => {
-      if (state.menuOverlay?.classList.contains('show')) return;
-      const k = e.key === ' ' ? 'space' : e.key.toLowerCase();
-      if (k in state.keys) { state.keys[k] = true; updateKeyDisplay(k, true); }
-    };
-    const ku = (e) => {
-      const k = e.key === ' ' ? 'space' : e.key.toLowerCase();
-      if (k in state.keys) { state.keys[k] = false; updateKeyDisplay(k, false); }
-    };
-    const md = (e) => {
-      if (e.button === 0) { state.keys.lmb = true; updateKeyDisplay('lmb', true); }
-      else if (e.button === 2) { state.keys.rmb = true; updateKeyDisplay('rmb', true); }
-    };
-    const mu = (e) => {
-      if (e.button === 0) { state.keys.lmb = false; updateKeyDisplay('lmb', false); }
-      else if (e.button === 2) { state.keys.rmb = false; updateKeyDisplay('rmb', false); }
-    };
-    window.addEventListener('keydown', kd, { passive: true });
-    window.addEventListener('keyup', ku, { passive: true });
-    window.addEventListener('mousedown', md, { passive: true });
-    window.addEventListener('mouseup', mu, { passive: true });
-    state._keyListeners = { kd, ku, md, mu };
-  }
-
-  function teardownKeyDisplayListeners() {
-    if (!state._keyListeners) return;
-    window.removeEventListener('keydown', state._keyListeners.kd);
-    window.removeEventListener('keyup', state._keyListeners.ku);
-    window.removeEventListener('mousedown', state._keyListeners.md);
-    window.removeEventListener('mouseup', state._keyListeners.mu);
-    state._keyListeners = null;
   }
 
   function applyPartyPatch(game) {
@@ -1205,33 +1140,11 @@ const SCRIPT_VERSION = '6.12';
     if (game?.controls?.yaw != null) return game.controls.yaw;
     return null;
   }
-
   const featureManager = {
-    performance: {
-      start() {
-        if (!state.counters.performance) createCounter('performance');
-        startPerformanceLoop();
-        updatePerformanceCounter(gameRef.get());
-      },
-      cleanup() {
-        removeCounter('performance');
-        if (!needsRaf()) stopPerformanceLoop();
-      }
-    },
-    coords: {
-      start() {
-        if (!state.counters.coords) createCounter('coords');
-        startPerformanceLoop();
-      },
-      cleanup() {
-        removeCounter('coords');
-        if (!needsRaf()) stopPerformanceLoop();
-      }
-    },
     realTime: {
       start() {
         if (state.intervals.realTime) return;
-        if (!state.counters.realTime) createCounter('realTime');
+        if (!state.counters.realTime) createWidget('realTime');
         updateRealTime();
         state.intervals.realTime = setInterval(updateRealTime, 1000);
       },
@@ -1244,7 +1157,7 @@ const SCRIPT_VERSION = '6.12';
     antiAfk: {
       start() {
         if (state.intervals.antiAfk) return;
-        if (!state.counters.antiAfk) createCounter('antiAfk');
+        if (!state.counters.antiAfk) createWidget('antiAfk');
         state.antiAfkCountdown = 5;
         updateAntiAfkCounter();
         state.intervals.antiAfk = setInterval(() => {
@@ -1266,11 +1179,39 @@ const SCRIPT_VERSION = '6.12';
     },
     keyDisplay: {
       start() {
-        if (!state.counters.keyDisplay) createKeyDisplay();
-        setupKeyDisplayListeners();
+        if (!state.counters.keyDisplay) createWidget('keyDisplay');
+        if (state._keyListeners) return;
+        const kd = (e) => {
+          if (state.menuOverlay?.classList.contains('show')) return;
+          const k = e.key === ' ' ? 'space' : e.key.toLowerCase();
+          if (k in state.keys) { state.keys[k] = true; updateKeyDisplay(k, true); }
+        };
+        const ku = (e) => {
+          const k = e.key === ' ' ? 'space' : e.key.toLowerCase();
+          if (k in state.keys) { state.keys[k] = false; updateKeyDisplay(k, false); }
+        };
+        const md = (e) => {
+          if (e.button === 0) { state.keys.lmb = true; updateKeyDisplay('lmb', true); }
+          else if (e.button === 2) { state.keys.rmb = true; updateKeyDisplay('rmb', true); }
+        };
+        const mu = (e) => {
+          if (e.button === 0) { state.keys.lmb = false; updateKeyDisplay('lmb', false); }
+          else if (e.button === 2) { state.keys.rmb = false; updateKeyDisplay('rmb', false); }
+        };
+        window.addEventListener('keydown', kd, { passive: true });
+        window.addEventListener('keyup', ku, { passive: true });
+        window.addEventListener('mousedown', md, { passive: true });
+        window.addEventListener('mouseup', mu, { passive: true });
+        state._keyListeners = { kd, ku, md, mu };
       },
       cleanup() {
-        teardownKeyDisplayListeners();
+        if (state._keyListeners) {
+          window.removeEventListener('keydown', state._keyListeners.kd);
+          window.removeEventListener('keyup', state._keyListeners.ku);
+          window.removeEventListener('mousedown', state._keyListeners.md);
+          window.removeEventListener('mouseup', state._keyListeners.mu);
+          state._keyListeners = null;
+        }
         removeCounter('keyDisplay');
         Object.keys(state.keys).forEach(k => { state.keys[k] = false; });
       }
@@ -1327,17 +1268,21 @@ const SCRIPT_VERSION = '6.12';
         showToast('Chat Mute', 'disabled', 'Chat messages restored');
       }
     },
-    compass: {
+  };
+  const RAF_FEATURE_ONSTART = { performance: () => updatePerformanceCounter(gameRef.get()) };
+  ['performance', 'coords', 'compass'].forEach(f => {
+    featureManager[f] = {
       start() {
-        if (!state.counters.compass) createCompassWidget();
+        if (!state.counters[f]) createWidget(f);
         startPerformanceLoop();
+        RAF_FEATURE_ONSTART[f]?.();
       },
       cleanup() {
-        removeCounter('compass');
+        removeCounter(f);
         if (!needsRaf()) stopPerformanceLoop();
       }
-    },
-  };
+    };
+  });
 
   function toggleFeature(featureName) {
     const enabled = !state.features[featureName];
