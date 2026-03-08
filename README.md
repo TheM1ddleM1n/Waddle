@@ -52,11 +52,12 @@
 
 ## 📝 Changelog
 
-### [6.12] — Compass
+### [6.12] — Compass and performance update
 - Compass module added to Display — sliding tape shows a 90° arc of cardinal and intercardinal labels
 - Live heading readout in the top-right corner of the widget (e.g. `NNE 22°`) (via player yaw)
 - Auto-hides when pointer lock is not active (i.e. outside of gameplay)
 - Drag position persists across sessions via localStorage
+- performance v2 update
 
 ### [6.11] — Chat Mute
 - Chat Mute module added to Utilities — silently suppresses all incoming chat messages
