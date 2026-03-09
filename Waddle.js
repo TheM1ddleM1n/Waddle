@@ -101,8 +101,8 @@ const SCRIPT_VERSION = '6.12';
   const CATEGORIES = [
     { id: 'display', label: 'Display', icon: '📊' },
     { id: 'utilities', label: 'Utilities', icon: '🛠️' },
-    { id: 'customSkin', label: 'Custom Skin', icon: '🎨' },
-    { id: 'about', label: 'About', icon: 'ℹ️' }
+    { id: 'customSkin', label: 'Custom Skins', icon: '🎨' },
+    { id: 'about', label: 'About Waddle', icon: 'ℹ️' }
   ];
 
   const FEATURE_MAP = {
