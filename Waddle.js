@@ -1094,13 +1094,25 @@ const SCRIPT_VERSION = '6.12';
   }
 
   function updateRealTime() {
-    if (!state.counters.realTime) return;
-    const now = new Date();
-    const h = now.getHours();
-    const m = String(now.getMinutes()).padStart(2, '0');
-    const s = String(now.getSeconds()).padStart(2, '0');
-    updateCounterText('realTime', `${String(h).padStart(2, '0')}:${m}:${s} ${h >= 12 ? 'PM' : 'AM'}`);
-  }
+  if (!state.counters.realTime) return;
+
+  const now = new Date();
+
+  // Detect user's preferred format
+  // true = 24-hour, false = 12-hour
+  const is24Hour = Intl.DateTimeFormat(undefined, { hour: 'numeric' })
+    .formatToParts(new Date(2020,0,1,13))
+    .some(part => part.type === 'hour' && parseInt(part.value) === 13);
+
+  const timeString = now.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: !is24Hour
+  });
+
+  updateCounterText('realTime', timeString);
+}
 
   function pressSpace() {
     const opts = { key: ' ', code: 'Space', keyCode: 32, which: 32, bubbles: true };
