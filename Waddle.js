@@ -1092,25 +1092,20 @@ const SCRIPT_VERSION = '6.12';
       state.lastPerformanceColor = color;
     }
   }
-
   function updateRealTime() {
   if (!state.counters.realTime) return;
-
   const now = new Date();
-
   // Detect user's preferred format
   // true = 24-hour, false = 12-hour
   const is24Hour = Intl.DateTimeFormat(undefined, { hour: 'numeric' })
     .formatToParts(new Date(2020,0,1,13))
     .some(part => part.type === 'hour' && parseInt(part.value) === 13);
-
   const timeString = now.toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
     hour12: !is24Hour
   });
-
   updateCounterText('realTime', timeString);
 }
 
