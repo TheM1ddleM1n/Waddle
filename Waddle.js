@@ -2,7 +2,7 @@
 // @name         Waddle
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
 // @version      6.12
-// @description  The ultimate Miniblox enhancement suite with advanced API features!
+// @description  The ultimate Miniblox enhancement suite featuring advanced API capabilities!
 // @author       The Dream Team! (Scripter & TheM1ddleM1n)
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/Waddle/refs/heads/main/Penguin.png
 // @match        https://miniblox.io/
@@ -115,34 +115,10 @@ const SCRIPT_VERSION = '6.12';
     ],
     utilities: [
       { label: 'Anti-AFK', feature: 'antiAfk' },
-      { label: 'Fun Facts', feature: 'funFacts' },
       { label: 'Block Party RQ', feature: 'disablePartyRequests' },
       { label: 'Chat Mute', feature: 'muteChat' }
     ]
   };
-
-  const FUN_FACTS = Object.freeze([
-    'Penguins can drink seawater thanks to a special gland above their eyes.',
-    'A group of penguins in the water is called a raft.',
-    'On land, a group of penguins is called a waddle.',
-    'Emperor penguins are the tallest penguin species on Earth.',
-    'Little blue penguins are the smallest penguins in the world.',
-    'Some penguin species can dive deeper than 500 meters.',
-    'Gentoo penguins can swim at speeds up to about 22 mph (35 km/h).',
-    'Penguins use their wings as powerful flippers to swim.',
-    'Many penguins slide on their bellies across ice to save energy.',
-    'Penguin feathers are densely packed and help keep water out.',
-    'Penguins preen often to spread waterproofing oils across their feathers.',
-    'Most penguins have countershading: dark backs and light bellies for camouflage.',
-    'Emperor penguin dads incubate eggs on their feet during Antarctic winter.',
-    'Some penguins build pebble nests and may gift stones to their mates.',
-    'The yellow-eyed penguin is one of the rarest penguin species.',
-    'Penguins can spend around half their lives in the ocean.',
-    'Penguins have excellent underwater vision compared to their land vision.',
-    'Molting season replaces penguins\'s feathers all at once, so they stay ashore.',
-    'Not all penguins live in icy climates; several species live in temperate regions.',
-    'Penguins are birds, but their bodies are specialized for swimming instead of flying.'
-  ]);
 
   const gameRef = {
     _game: null,
@@ -174,7 +150,7 @@ const SCRIPT_VERSION = '6.12';
     features: {
       performance: false, coords: false, realTime: false,
       antiAfk: false, keyDisplay: false, disablePartyRequests: false,
-      funFacts: false, muteChat: false, compass: false,
+      muteChat: false, compass: false,
     },
     counters: { performance: null, realTime: null, coords: null, antiAfk: null, keyDisplay: null, compass: null },
     menuOverlay: null,
@@ -232,7 +208,7 @@ const SCRIPT_VERSION = '6.12';
       if (game?.chat && typeof game.chat.addChat === 'function') {
         clearInterval(state.intervals.waitForGame);
         state.intervals.waitForGame = null;
-        game.chat.addChat({ text: `\\${THEME_COLOR}\\[Server]\\reset\\ Hello and Thank you for using Waddle v${SCRIPT_VERSION}! Have Fun!` });
+        game.chat.addChat({ text: `\\${THEME_COLOR}\\[Server]\\reset\\ Welcome! You're now running Waddle v${SCRIPT_VERSION}. Enjoy!` });
       }
     }, 500);
   })();
@@ -247,7 +223,7 @@ const SCRIPT_VERSION = '6.12';
       const game = gameRef.get();
       if (game?.chat && typeof game.chat.addChat === 'function' && now - lastWarning > 2000) {
         lastWarning = now;
-        game.chat.addChat({ text: '\\#FF0000\\[Waddle Detector]\\reset\\ Fast clicks were detected.' });
+        game.chat.addChat({ text: '\\#FF0000\\[Waddle Detector]\\reset\\ Fast clicks detected.' });
       }
     }, 1000);
   })();
@@ -928,7 +904,7 @@ const SCRIPT_VERSION = '6.12';
           const pct = Math.round(bat.level * 100);
           let status = "";
           if (pct === 100 && bat.charging) status = "✅ Fully Charged!";
-          else if (bat.charging) status = "⚡ Charging";
+          else if (bat.charging) status = "⚡ Charging...";
           else if (pct <= 20) status = "⚠️ Plug in Charger";
           else if (bat.dischargingTime !== Infinity) status = `⏱ ~${Math.round(bat.dischargingTime / 60)}m left`;
           return { text: `${getBatteryIcon(pct)} ${pct}% ${status}`, color: getColor(pct) };
@@ -1095,7 +1071,6 @@ const SCRIPT_VERSION = '6.12';
   function updateRealTime() {
   if (!state.counters.realTime) return;
   const now = new Date();
-  // Detect user's preferred format
   // true = 24-hour, false = 12-hour
   const is24Hour = Intl.DateTimeFormat(undefined, { hour: 'numeric' })
     .formatToParts(new Date(2020,0,1,13))
@@ -1232,30 +1207,6 @@ const SCRIPT_VERSION = '6.12';
         clearInterval(state.intervals.partyRetry);
         state.intervals.partyRetry = null;
         restorePartyRequests();
-      }
-    },
-    funFacts: {
-      start() {
-        if (state.hasShownFunFactOnJoin || state.intervals.funFacts) return;
-        let wasInGame = false;
-        const showRandomFact = () => {
-          showToast('🐧 Fun Fact', 'info', FUN_FACTS[Math.floor(Math.random() * FUN_FACTS.length)]);
-          state.hasShownFunFactOnJoin = true;
-          clearInterval(state.intervals.funFacts);
-          state.intervals.funFacts = null;
-        };
-        const watchInGame = () => {
-          const inGame = !!(document.pointerLockElement && !document.querySelector('.chakra-modal__content-container,[role="dialog"]'));
-          if (inGame && !wasInGame && !state.hasShownFunFactOnJoin) showRandomFact();
-          wasInGame = inGame;
-        };
-        watchInGame();
-        if (!state.hasShownFunFactOnJoin) state.intervals.funFacts = setInterval(watchInGame, 500);
-      },
-      cleanup() {
-        clearInterval(state.intervals.funFacts);
-        state.intervals.funFacts = null;
-        state.hasShownFunFactOnJoin = false;
       }
     },
     muteChat: {
