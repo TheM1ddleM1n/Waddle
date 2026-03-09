@@ -21,6 +21,11 @@ const SCRIPT_VERSION = '6.12';
   const THEME_COLOR = '#00FFFF';
   const SESSION_KEY = 'session_v1';
   const EQUIPPED_SKIN_KEY = 'waddle_equipped_skin';
+  const PENGUIN_CLICKER_SCORE_KEY = 'waddle_penguin_clicker_score';
+  const PENGUIN_CLICKER_HIGH_SCORE_KEY = 'waddle_penguin_clicker_high_score';
+  const PENGUIN_CLICKER_META_KEY = 'waddle_penguin_clicker_meta';
+  const PENGUIN_CLICKER_DAILY_KEY = 'waddle_penguin_clicker_daily';
+  const PENGUIN_CLICKER_SOUND_KEY = 'waddle_penguin_clicker_sound';
 
   const SKINS = Object.freeze(['Remlin', 'Cat', 'Ethan', 'Sushi', 'Slime', 'Duck', 'Tester', 'Banana', 'Qhyun']);
   const SKIN_API = 'https://session.coolmathblox.ca/accounts/set_cosmetic';
@@ -101,6 +106,7 @@ const SCRIPT_VERSION = '6.12';
   const CATEGORIES = [
     { id: 'display', label: 'Display', icon: '📊' },
     { id: 'utilities', label: 'Utilities', icon: '🛠️' },
+    { id: 'minigames', label: 'Minigames', icon: '🎮' },
     { id: 'customSkin', label: 'Custom Skin', icon: '🎨' },
     { id: 'about', label: 'About', icon: 'ℹ️' }
   ];
@@ -338,6 +344,38 @@ const SCRIPT_VERSION = '6.12';
 #waddle-crosshair-container { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:5000; pointer-events:none; }
 #wb-hud-canvas { position:fixed; inset:0; pointer-events:none; z-index:4999; }
 #waddle-skin-panel { flex:1; padding:16px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; }
+.minigame-panel { flex:1; padding:16px; display:flex; align-items:center; justify-content:center; }
+.minigame-view { width:100%; max-width:430px; display:none; flex-direction:column; align-items:center; gap:12px; background:var(--bg3); border:1px solid rgba(255,255,255,.08); border-radius:var(--radius); padding:16px; }
+.minigame-view.show { display:flex; }
+.minigame-header { width:100%; display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+.minigame-pill { background:var(--bg2); border:1px solid rgba(255,255,255,.15); border-radius:var(--radius); padding:8px; font-size:.72rem; color:var(--text-dim); text-align:center; }
+.minigame-pill strong { color:var(--c); font-size:.78rem; display:block; margin-bottom:2px; }
+.minigame-game-list { width:100%; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.minigame-game-btn { background:var(--bg2); border:1px solid rgba(255,255,255,.12); border-radius:var(--radius); padding:10px; color:var(--text); font-size:.78rem; font-weight:700; cursor:pointer; text-align:left; }
+.minigame-game-btn .meta { display:block; margin-top:3px; color:var(--text-dim); font-size:.66rem; font-weight:500; }
+.minigame-game-btn:hover { border-color:var(--c-border); }
+.penguin-face { width:130px; height:130px; border-radius:50%; background:radial-gradient(circle at 50% 35%, #fff 0%, #f2f8ff 68%, #dbefff 100%); position:relative; border:2px solid rgba(0,255,255,.25); box-shadow:var(--shadow); }
+.penguin-eye { position:absolute; width:14px; height:14px; border-radius:50%; background:#0f172a; top:46px; }
+.penguin-eye.left { left:35px; }
+.penguin-eye.right { right:35px; }
+.penguin-beak { position:absolute; left:50%; top:68px; width:22px; height:16px; transform:translateX(-50%); background:#f59e0b; clip-path:polygon(50% 100%, 0 0, 100% 0); }
+.minigame-title { font-size:1rem; font-weight:800; color:var(--c); }
+.minigame-sub { font-size:.8rem; color:var(--text-dim); text-align:center; }
+.minigame-btn { background:var(--c-dim); border:1px solid var(--c); color:var(--c); border-radius:var(--radius); padding:8px 16px; font-size:.8rem; font-weight:700; cursor:pointer; }
+.minigame-btn:hover { filter:brightness(1.15); }
+.penguin-clicker { font-size:4rem; line-height:1; cursor:pointer; user-select:none; transition:transform .12s ease; }
+.penguin-clicker.jump { animation:penguin-jump .28s ease; }
+.penguin-clicker.golden { filter:drop-shadow(0 0 10px #facc15); }
+.minigame-score { font-size:1.1rem; font-weight:800; color:var(--c); }
+.minigame-secondary { font-size:.8rem; color:var(--text); }
+.minigame-achievements { width:100%; font-size:.72rem; color:var(--text-dim); text-align:left; border-top:1px solid rgba(255,255,255,.08); padding-top:8px; }
+.minigame-challenge { width:100%; font-size:.75rem; color:var(--text); background:rgba(0,255,255,.07); border:1px solid rgba(0,255,255,.2); border-radius:var(--radius); padding:8px; text-align:center; }
+.minigame-controls { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+@keyframes penguin-jump {
+  0% { transform:translateY(0); }
+  35% { transform:translateY(-20px) scale(1.04); }
+  100% { transform:translateY(0); }
+}
 .skin-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; }
 .skin-btn { background:var(--bg3); border:1px solid rgba(255,255,255,.07); border-radius:var(--radius); padding:14px 10px; cursor:pointer; text-align:center; font-size:.88rem; font-weight:var(--fw); color:var(--text-dim); transition:all .12s ease; position:relative; }
 .skin-btn:hover { border-color:var(--c-border); color:var(--text); }
@@ -1363,12 +1401,314 @@ const SCRIPT_VERSION = '6.12';
     document.getElementById('skin-confirm-view').classList.remove('show');
   }
 
+  function getPenguinClickerScore() {
+    return Number.parseInt(localStorage.getItem(PENGUIN_CLICKER_SCORE_KEY) || '0', 10) || 0;
+  }
+
+  function setPenguinClickerScore(score) {
+    localStorage.setItem(PENGUIN_CLICKER_SCORE_KEY, String(score));
+  }
+
+  function getPenguinClickerHighScore() {
+    return Number.parseInt(localStorage.getItem(PENGUIN_CLICKER_HIGH_SCORE_KEY) || '0', 10) || 0;
+  }
+
+  function setPenguinClickerHighScore(score) {
+    localStorage.setItem(PENGUIN_CLICKER_HIGH_SCORE_KEY, String(score));
+  }
+
+  function getPenguinMeta() {
+    try {
+      return JSON.parse(localStorage.getItem(PENGUIN_CLICKER_META_KEY) || 'null') || { totalClicks: 0, bestCombo: 1, gamesPlayed: 0, lastPlayed: 'never', unlocked: [] };
+    } catch (_) {
+      return { totalClicks: 0, bestCombo: 1, gamesPlayed: 0, lastPlayed: 'never', unlocked: [] };
+    }
+  }
+
+  function setPenguinMeta(meta) {
+    localStorage.setItem(PENGUIN_CLICKER_META_KEY, JSON.stringify(meta));
+  }
+
+  function todayStamp() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function getDailyChallenge() {
+    const defaults = { date: todayStamp(), goal: 75, progress: 0, complete: false };
+    try {
+      const saved = JSON.parse(localStorage.getItem(PENGUIN_CLICKER_DAILY_KEY) || 'null') || defaults;
+      if (saved.date !== todayStamp()) return defaults;
+      return { ...defaults, ...saved };
+    } catch (_) {
+      return defaults;
+    }
+  }
+
+  function setDailyChallenge(challenge) {
+    localStorage.setItem(PENGUIN_CLICKER_DAILY_KEY, JSON.stringify(challenge));
+  }
+
+  function getSoundEnabled() {
+    return localStorage.getItem(PENGUIN_CLICKER_SOUND_KEY) !== '0';
+  }
+
+  function setSoundEnabled(enabled) {
+    localStorage.setItem(PENGUIN_CLICKER_SOUND_KEY, enabled ? '1' : '0');
+  }
+
+  function pingPenguinSound(freq = 560) {
+    if (!getSoundEnabled()) return;
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    try {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      gain.gain.value = 0.015;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.06);
+      setTimeout(() => ctx.close(), 120);
+    } catch (_) {}
+  }
+
+  function buildMinigamePanel() {
+    const panel = document.getElementById('waddle-minigame-panel') || (() => {
+      const p = div('minigame-panel');
+      p.id = 'waddle-minigame-panel';
+      const intro = div('minigame-view show');
+      intro.id = 'minigame-intro-view';
+      intro.innerHTML = `
+        <div class="minigame-header">
+          <div class="minigame-pill"><strong id="mini-stat-total">0</strong>Total Clicks</div>
+          <div class="minigame-pill"><strong id="mini-stat-best">0</strong>Best Score</div>
+          <div class="minigame-pill"><strong id="mini-stat-combo">x1</strong>Best Combo</div>
+        </div>
+        <div class="penguin-face">
+          <div class="penguin-eye left"></div>
+          <div class="penguin-eye right"></div>
+          <div class="penguin-beak"></div>
+        </div>
+        <div class="minigame-title">Penguin Clicker Arcade</div>
+        <div class="minigame-sub">Choose a game, then tap penguin when it says click me!</div>
+        <div class="minigame-game-list">
+          <button class="minigame-game-btn" id="minigame-penguin-btn">🐧 Penguin Clicker <span class="meta">Core game</span></button>
+          <button class="minigame-game-btn" id="minigame-rush-btn">⏱️ 10s Rush <span class="meta">Speed challenge</span></button>
+        </div>
+      `;
+      const game = div('minigame-view');
+      game.id = 'minigame-game-view';
+      game.innerHTML = `
+        <div class="minigame-title" id="minigame-mode-title">Click me!</div>
+        <div id="penguin-clicker" class="penguin-clicker" role="button" aria-label="Penguin clicker">🐧</div>
+        <div id="penguin-score" class="minigame-score">Score: 0</div>
+        <div id="penguin-combo" class="minigame-secondary">Combo: x1</div>
+        <div id="penguin-high" class="minigame-secondary">High score: 0</div>
+        <div id="penguin-challenge" class="minigame-challenge">Daily: 0 / 75</div>
+        <div class="minigame-controls">
+          <button class="minigame-btn" id="minigame-sound-btn">🔊 Sound: On</button>
+          <button class="minigame-btn" id="minigame-reset-btn">↺ Reset Score</button>
+          <button class="minigame-btn" id="minigame-back-btn">← Back</button>
+        </div>
+        <div id="penguin-achievements" class="minigame-achievements">Achievements: None yet</div>
+      `;
+      p.append(intro, game);
+      document.getElementById('waddle-panel').appendChild(p);
+      return p;
+    })();
+
+    const introView = document.getElementById('minigame-intro-view');
+    const gameView = document.getElementById('minigame-game-view');
+    const scoreEl = document.getElementById('penguin-score');
+    const comboEl = document.getElementById('penguin-combo');
+    const highEl = document.getElementById('penguin-high');
+    const challengeEl = document.getElementById('penguin-challenge');
+    const achEl = document.getElementById('penguin-achievements');
+    const penguin = document.getElementById('penguin-clicker');
+    const backBtn = document.getElementById('minigame-back-btn');
+    const rushBtn = document.getElementById('minigame-rush-btn');
+    const penguinBtn = document.getElementById('minigame-penguin-btn');
+    const soundBtn = document.getElementById('minigame-sound-btn');
+    const resetBtn = document.getElementById('minigame-reset-btn');
+    const modeTitle = document.getElementById('minigame-mode-title');
+
+    const achievements = [
+      { id: 'first', score: 10, label: 'First Waddle (10)' },
+      { id: 'frenzy', score: 100, label: 'Flipper Frenzy (100)' },
+      { id: 'legend', score: 1000, label: 'Ice Legend (1000)' },
+    ];
+
+    let combo = 1;
+    let lastClickTime = 0;
+    let mode = 'classic';
+    let rushEndAt = 0;
+    let rushTimer = null;
+
+    const updateIntroStats = () => {
+      const meta = getPenguinMeta();
+      document.getElementById('mini-stat-total').textContent = String(meta.totalClicks || 0);
+      document.getElementById('mini-stat-best').textContent = String(getPenguinClickerHighScore());
+      document.getElementById('mini-stat-combo').textContent = `x${meta.bestCombo || 1}`;
+    };
+
+    const renderState = () => {
+      const score = getPenguinClickerScore();
+      const high = getPenguinClickerHighScore();
+      const challenge = getDailyChallenge();
+      const meta = getPenguinMeta();
+      scoreEl.textContent = `Score: ${score}`;
+      comboEl.textContent = `Combo: x${combo}`;
+      highEl.textContent = `High score: ${high}`;
+      challengeEl.textContent = `Daily Challenge (${challenge.goal}): ${challenge.progress} / ${challenge.goal}${challenge.complete ? ' ✓' : ''}`;
+      achEl.textContent = `Achievements: ${meta.unlocked?.length ? meta.unlocked.join(', ') : 'None yet'}`;
+      soundBtn.textContent = `🔊 Sound: ${getSoundEnabled() ? 'On' : 'Off'}`;
+      updateIntroStats();
+    };
+
+    const unlockAchievements = (score) => {
+      const meta = getPenguinMeta();
+      meta.unlocked = Array.isArray(meta.unlocked) ? meta.unlocked : [];
+      achievements.forEach(a => {
+        if (score >= a.score && !meta.unlocked.includes(a.label)) {
+          meta.unlocked.push(a.label);
+          showToast('Achievement Unlocked', 'enabled', a.label);
+        }
+      });
+      setPenguinMeta(meta);
+    };
+
+    const openGame = (nextMode) => {
+      mode = nextMode;
+      combo = 1;
+      rushEndAt = 0;
+      clearInterval(rushTimer);
+      rushTimer = null;
+      modeTitle.textContent = mode === 'rush' ? '10s Rush • Click Fast!' : 'Click me!';
+      introView.classList.remove('show');
+      gameView.classList.add('show');
+
+      const meta = getPenguinMeta();
+      meta.gamesPlayed = (meta.gamesPlayed || 0) + 1;
+      meta.lastPlayed = new Date().toLocaleString();
+      setPenguinMeta(meta);
+
+      if (mode === 'rush') {
+        setPenguinClickerScore(0);
+        rushEndAt = Date.now() + 10000;
+        rushTimer = setInterval(() => {
+          const left = Math.max(0, Math.ceil((rushEndAt - Date.now()) / 1000));
+          modeTitle.textContent = left > 0 ? `10s Rush • ${left}s` : '10s Rush • Finished';
+          if (left <= 0) {
+            clearInterval(rushTimer);
+            rushTimer = null;
+            showToast('Rush Complete', 'info', `Final score: ${getPenguinClickerScore()}`);
+          }
+        }, 200);
+      }
+      renderState();
+    };
+
+    if (!penguinBtn.dataset.bound) {
+      penguinBtn.dataset.bound = '1';
+      penguinBtn.addEventListener('click', () => openGame('classic'));
+    }
+
+    if (!rushBtn.dataset.bound) {
+      rushBtn.dataset.bound = '1';
+      rushBtn.addEventListener('click', () => openGame('rush'));
+    }
+
+    if (!backBtn.dataset.bound) {
+      backBtn.dataset.bound = '1';
+      backBtn.addEventListener('click', () => {
+        clearInterval(rushTimer);
+        rushTimer = null;
+        gameView.classList.remove('show');
+        introView.classList.add('show');
+        updateIntroStats();
+      });
+    }
+
+    if (!soundBtn.dataset.bound) {
+      soundBtn.dataset.bound = '1';
+      soundBtn.addEventListener('click', () => {
+        setSoundEnabled(!getSoundEnabled());
+        renderState();
+      });
+    }
+
+    if (!resetBtn.dataset.bound) {
+      resetBtn.dataset.bound = '1';
+      resetBtn.addEventListener('click', () => {
+        setPenguinClickerScore(0);
+        combo = 1;
+        renderState();
+        showToast('Penguin Clicker', 'info', 'Score reset to zero');
+      });
+    }
+
+    if (!penguin.dataset.bound) {
+      penguin.dataset.bound = '1';
+      penguin.addEventListener('click', () => {
+        if (mode === 'rush' && Date.now() > rushEndAt) return;
+        const now = Date.now();
+        combo = now - lastClickTime < 700 ? Math.min(combo + 1, 5) : 1;
+        lastClickTime = now;
+
+        const bonus = Math.random() < 0.08;
+        let gained = combo;
+        if (bonus) {
+          gained += 10;
+          penguin.classList.add('golden');
+          setTimeout(() => penguin.classList.remove('golden'), 260);
+          showToast('Golden Penguin!', 'enabled', '+10 bonus');
+          pingPenguinSound(820);
+        } else {
+          pingPenguinSound(560 + combo * 25);
+        }
+
+        const nextScore = getPenguinClickerScore() + gained;
+        setPenguinClickerScore(nextScore);
+        if (nextScore > getPenguinClickerHighScore()) setPenguinClickerHighScore(nextScore);
+
+        const meta = getPenguinMeta();
+        meta.totalClicks = (meta.totalClicks || 0) + 1;
+        meta.bestCombo = Math.max(meta.bestCombo || 1, combo);
+        setPenguinMeta(meta);
+
+        const challenge = getDailyChallenge();
+        challenge.progress = Math.min(challenge.goal, (challenge.progress || 0) + 1);
+        if (!challenge.complete && challenge.progress >= challenge.goal) {
+          challenge.complete = true;
+          showToast('Daily Challenge Complete', 'enabled', `Reached ${challenge.goal} clicks today!`);
+        }
+        setDailyChallenge(challenge);
+
+        unlockAchievements(nextScore);
+        renderState();
+        penguin.classList.remove('jump');
+        void penguin.offsetWidth;
+        penguin.classList.add('jump');
+      });
+    }
+
+    panel.style.display = 'flex';
+    introView.classList.add('show');
+    gameView.classList.remove('show');
+    updateIntroStats();
+  }
+
   function buildModulePanel(categoryId) {
     const grid = document.getElementById('waddle-module-grid');
     const title = document.getElementById('waddle-panel-title');
     const about = document.getElementById('waddle-about');
     const skinPanel = document.getElementById('waddle-skin-panel');
+    const minigamePanel = document.getElementById('waddle-minigame-panel');
     if (skinPanel) skinPanel.style.display = 'none';
+    if (minigamePanel) minigamePanel.style.display = 'none';
     if (categoryId === 'about') {
       if (grid) grid.style.display = 'none';
       if (title) title.style.display = 'none';
@@ -1376,6 +1716,13 @@ const SCRIPT_VERSION = '6.12';
       return;
     }
     if (categoryId === 'customSkin') { buildSkinPanel(); return; }
+    if (categoryId === 'minigames') {
+      if (grid) grid.style.display = 'none';
+      if (about) about.style.display = 'none';
+      if (title) title.style.display = 'none';
+      buildMinigamePanel();
+      return;
+    }
     if (grid) grid.style.display = 'grid';
     if (about) about.style.display = 'none';
     if (title) { title.style.display = 'block'; title.textContent = categoryId; }
