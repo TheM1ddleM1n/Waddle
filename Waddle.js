@@ -21,6 +21,7 @@ const SCRIPT_VERSION = '6.12';
   const THEME_COLOR = '#00FFFF';
   const SESSION_KEY = 'session_v1';
   const EQUIPPED_SKIN_KEY = 'waddle_equipped_skin';
+  const PENGUIN_CLICKER_SCORE_KEY = 'waddle_penguin_clicker_score';
 
   const SKINS = Object.freeze(['Remlin', 'Cat', 'Ethan', 'Sushi', 'Slime', 'Duck', 'Tester', 'Banana', 'Qhyun']);
   const SKIN_API = 'https://session.coolmathblox.ca/accounts/set_cosmetic';
@@ -101,6 +102,7 @@ const SCRIPT_VERSION = '6.12';
   const CATEGORIES = [
     { id: 'display', label: 'Display', icon: '📊' },
     { id: 'utilities', label: 'Utilities', icon: '🛠️' },
+    { id: 'minigames', label: 'Minigames', icon: '🎮' },
     { id: 'customSkin', label: 'Custom Skin', icon: '🎨' },
     { id: 'about', label: 'About', icon: 'ℹ️' }
   ];
@@ -338,6 +340,26 @@ const SCRIPT_VERSION = '6.12';
 #waddle-crosshair-container { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:5000; pointer-events:none; }
 #wb-hud-canvas { position:fixed; inset:0; pointer-events:none; z-index:4999; }
 #waddle-skin-panel { flex:1; padding:16px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; }
+.minigame-panel { flex:1; padding:16px; display:flex; align-items:center; justify-content:center; }
+.minigame-view { width:100%; max-width:360px; display:none; flex-direction:column; align-items:center; gap:14px; background:var(--bg3); border:1px solid rgba(255,255,255,.08); border-radius:var(--radius); padding:16px; }
+.minigame-view.show { display:flex; }
+.penguin-face { width:130px; height:130px; border-radius:50%; background:radial-gradient(circle at 50% 35%, #fff 0%, #f2f8ff 68%, #dbefff 100%); position:relative; border:2px solid rgba(0,255,255,.25); box-shadow:var(--shadow); }
+.penguin-eye { position:absolute; width:14px; height:14px; border-radius:50%; background:#0f172a; top:46px; }
+.penguin-eye.left { left:35px; }
+.penguin-eye.right { right:35px; }
+.penguin-beak { position:absolute; left:50%; top:68px; width:22px; height:16px; transform:translateX(-50%); background:#f59e0b; clip-path:polygon(50% 100%, 0 0, 100% 0); }
+.minigame-title { font-size:1rem; font-weight:800; color:var(--c); }
+.minigame-sub { font-size:.8rem; color:var(--text-dim); text-align:center; }
+.minigame-btn { background:var(--c-dim); border:1px solid var(--c); color:var(--c); border-radius:var(--radius); padding:8px 18px; font-size:.84rem; font-weight:700; cursor:pointer; }
+.minigame-btn:hover { filter:brightness(1.15); }
+.penguin-clicker { font-size:4rem; line-height:1; cursor:pointer; user-select:none; transition:transform .12s ease; }
+.penguin-clicker.jump { animation:penguin-jump .28s ease; }
+.minigame-score { font-size:1.2rem; font-weight:800; color:var(--c); }
+@keyframes penguin-jump {
+  0% { transform:translateY(0); }
+  35% { transform:translateY(-20px) scale(1.04); }
+  100% { transform:translateY(0); }
+}
 .skin-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; }
 .skin-btn { background:var(--bg3); border:1px solid rgba(255,255,255,.07); border-radius:var(--radius); padding:14px 10px; cursor:pointer; text-align:center; font-size:.88rem; font-weight:var(--fw); color:var(--text-dim); transition:all .12s ease; position:relative; }
 .skin-btn:hover { border-color:var(--c-border); color:var(--text); }
@@ -1363,12 +1385,97 @@ const SCRIPT_VERSION = '6.12';
     document.getElementById('skin-confirm-view').classList.remove('show');
   }
 
+  function getPenguinClickerScore() {
+    return Number.parseInt(localStorage.getItem(PENGUIN_CLICKER_SCORE_KEY) || '0', 10) || 0;
+  }
+
+  function setPenguinClickerScore(score) {
+    localStorage.setItem(PENGUIN_CLICKER_SCORE_KEY, String(score));
+  }
+
+  function buildMinigamePanel() {
+    const panel = document.getElementById('waddle-minigame-panel') || (() => {
+      const p = div('minigame-panel');
+      p.id = 'waddle-minigame-panel';
+      const intro = div('minigame-view show');
+      intro.id = 'minigame-intro-view';
+      intro.innerHTML = `
+        <div class="penguin-face">
+          <div class="penguin-eye left"></div>
+          <div class="penguin-eye right"></div>
+          <div class="penguin-beak"></div>
+        </div>
+        <div class="minigame-title">Penguin Clicker</div>
+        <div class="minigame-sub">Tap play, then click the penguin when it says click me!</div>
+        <button class="minigame-btn" id="minigame-play-btn">▶ Play</button>
+      `;
+      const game = div('minigame-view');
+      game.id = 'minigame-game-view';
+      game.innerHTML = `
+        <div class="minigame-title">Click me!</div>
+        <div id="penguin-clicker" class="penguin-clicker" role="button" aria-label="Penguin clicker">🐧</div>
+        <div id="penguin-score" class="minigame-score">Score: 0</div>
+        <button class="minigame-btn" id="minigame-back-btn">← Back</button>
+      `;
+      p.append(intro, game);
+      document.getElementById('waddle-panel').appendChild(p);
+      return p;
+    })();
+
+    const introView = document.getElementById('minigame-intro-view');
+    const gameView = document.getElementById('minigame-game-view');
+    const scoreEl = document.getElementById('penguin-score');
+    const penguin = document.getElementById('penguin-clicker');
+    const playBtn = document.getElementById('minigame-play-btn');
+    const backBtn = document.getElementById('minigame-back-btn');
+
+    const syncScore = () => {
+      scoreEl.textContent = `Score: ${getPenguinClickerScore()}`;
+    };
+
+    if (!playBtn.dataset.bound) {
+      playBtn.dataset.bound = '1';
+      playBtn.addEventListener('click', () => {
+        introView.classList.remove('show');
+        gameView.classList.add('show');
+        syncScore();
+      });
+    }
+
+    if (!backBtn.dataset.bound) {
+      backBtn.dataset.bound = '1';
+      backBtn.addEventListener('click', () => {
+        gameView.classList.remove('show');
+        introView.classList.add('show');
+      });
+    }
+
+    if (!penguin.dataset.bound) {
+      penguin.dataset.bound = '1';
+      penguin.addEventListener('click', () => {
+        const nextScore = getPenguinClickerScore() + 1;
+        setPenguinClickerScore(nextScore);
+        syncScore();
+        penguin.classList.remove('jump');
+        void penguin.offsetWidth;
+        penguin.classList.add('jump');
+      });
+    }
+
+    syncScore();
+    panel.style.display = 'flex';
+    introView.classList.add('show');
+    gameView.classList.remove('show');
+  }
+
   function buildModulePanel(categoryId) {
     const grid = document.getElementById('waddle-module-grid');
     const title = document.getElementById('waddle-panel-title');
     const about = document.getElementById('waddle-about');
     const skinPanel = document.getElementById('waddle-skin-panel');
+    const minigamePanel = document.getElementById('waddle-minigame-panel');
     if (skinPanel) skinPanel.style.display = 'none';
+    if (minigamePanel) minigamePanel.style.display = 'none';
     if (categoryId === 'about') {
       if (grid) grid.style.display = 'none';
       if (title) title.style.display = 'none';
@@ -1376,6 +1483,13 @@ const SCRIPT_VERSION = '6.12';
       return;
     }
     if (categoryId === 'customSkin') { buildSkinPanel(); return; }
+    if (categoryId === 'minigames') {
+      if (grid) grid.style.display = 'none';
+      if (about) about.style.display = 'none';
+      if (title) title.style.display = 'none';
+      buildMinigamePanel();
+      return;
+    }
     if (grid) grid.style.display = 'grid';
     if (about) about.style.display = 'none';
     if (title) { title.style.display = 'block'; title.textContent = categoryId; }
