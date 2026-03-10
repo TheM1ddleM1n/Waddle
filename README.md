@@ -87,11 +87,9 @@
 - Error boundary in Target HUD loop with 2s restart backoff
 - Settings versioning strips unknown keys from older configs
 
-### [6.5] — Space Sky
+### [6.5] — Space Sky + TargetHUD
 - MilkyWay cubemap skybox via Three.js `sky.update` patch
 - Removed custom health/food/XP overlay — native bars restored
-
-### [6.4] — Target HUD
 - Canvas-based Target HUD for players, mobs, and blocks
 - Player face cached from DOM, persists when looking away
 - Entity always takes priority over block display
