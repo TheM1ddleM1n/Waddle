@@ -1244,13 +1244,18 @@ const SCRIPT_VERSION = '6.12';
   });
 
   function toggleFeature(featureName) {
-    const enabled = !state.features[featureName];
-    state.features[featureName] = enabled;
-    if (enabled) featureManager[featureName]?.start();
-    else featureManager[featureName]?.cleanup();
+    const requestedEnabled = !state.features[featureName];
+    state.features[featureName] = requestedEnabled;
+    if (requestedEnabled) {
+      const startResult = featureManager[featureName]?.start?.();
+      if (startResult === false || !state.features[featureName]) state.features[featureName] = false;
+    } else {
+      featureManager[featureName]?.cleanup?.();
+      state.features[featureName] = false;
+    }
     saveSettings();
     refreshHud();
-    return enabled;
+    return state.features[featureName];
   }
 
   function buildSkinPanel() {
