@@ -66,6 +66,7 @@ const SCRIPT_VERSION = '6.12';
       showToast('Skin Failed', 'disabled', 'Could not apply skin: ' + e.message);
     }
   }
+
   const WIDGET_CONFIGS = {
     performance: {
       id: 'performance-counter', cls: 'counter',
@@ -96,6 +97,10 @@ const SCRIPT_VERSION = '6.12';
       id: 'key-display-container', cls: 'key-display-container',
       pos: { left: '50px', top: '150px' },
     },
+    cps: {
+      id: 'cps-widget', cls: 'counter',
+      pos: { left: '120px', top: '150px' },
+    },
   };
 
   const CATEGORIES = [
@@ -110,8 +115,9 @@ const SCRIPT_VERSION = '6.12';
       { label: 'FPS & Ping', feature: 'performance' },
       { label: 'Coords', feature: 'coords' },
       { label: 'Clock', feature: 'realTime' },
-      { label: 'Key Display', feature: 'keyDisplay' },
+      { label: 'KeyStrokes', feature: 'keyDisplay' },
       { label: 'Compass', feature: 'compass' },
+      { label: 'CPS', feature: 'cps' },
     ],
     utilities: [
       { label: 'Anti-AFK', feature: 'antiAfk' },
@@ -150,9 +156,9 @@ const SCRIPT_VERSION = '6.12';
     features: {
       performance: false, coords: false, realTime: false,
       antiAfk: false, keyDisplay: false, disablePartyRequests: false,
-      muteChat: false, compass: false,
+      muteChat: false, compass: false, cps: false,
     },
-    counters: { performance: null, realTime: null, coords: null, antiAfk: null, keyDisplay: null, compass: null },
+    counters: { performance: null, realTime: null, coords: null, antiAfk: null, keyDisplay: null, compass: null, cps: null },
     menuOverlay: null,
     activeCategory: 'display',
     rafId: null,
@@ -164,7 +170,9 @@ const SCRIPT_VERSION = '6.12';
     startTime: Date.now(),
     antiAfkCountdown: 5,
     lastPerformanceColor: '#00FF00',
-    keys: { w: false, a: false, s: false, d: false, space: false, lmb: false, rmb: false },
+    keys: { w: false, a: false, s: false, d: false, space: false },
+    cpsLmbTimes: [],
+    cpsRmbTimes: [],
     crosshairContainer: null,
     hudArray: null,
     toastContainer: null,
@@ -172,6 +180,7 @@ const SCRIPT_VERSION = '6.12';
     _resizeHandler: null,
     _crosshairObserver: null,
     _keyListeners: null,
+    _cpsListeners: null,
     _saveTimer: null,
     _crosshairRafPending: false,
   };
@@ -187,7 +196,7 @@ const SCRIPT_VERSION = '6.12';
 
   function saveDragPositions() {
     const positions = {};
-    ['performance', 'coords', 'antiAfk', 'compass', 'keyDisplay'].forEach(type => {
+    ['performance', 'coords', 'antiAfk', 'compass', 'keyDisplay', 'cps'].forEach(type => {
       const e = state.counters[type];
       if (e) positions[type] = { left: e.style.left, top: e.style.top };
     });
@@ -230,7 +239,7 @@ const SCRIPT_VERSION = '6.12';
   function saveSettings() {
     clearTimeout(state._saveTimer);
     state._saveTimer = setTimeout(() => {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify({ version: SCRIPT_VERSION, features: state.features }));
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify({ features: state.features }));
     }, 100);
   }
 
@@ -299,8 +308,8 @@ const SCRIPT_VERSION = '6.12';
 .counter.dragging { cursor:grabbing; transform:scale(1.05); }
 #real-time-counter { cursor:default !important; }
 @keyframes afk-pulse {
-  0%   { box-shadow:var(--shadow),0 0 0 0 rgba(0,255,255,.7); }
-  70%  { box-shadow:var(--shadow),0 0 0 10px rgba(0,255,255,0); }
+  0% { box-shadow:var(--shadow),0 0 0 0 rgba(0,255,255,.7); }
+  70% { box-shadow:var(--shadow),0 0 0 10px rgba(0,255,255,0); }
   100% { box-shadow:var(--shadow),0 0 0 0 rgba(0,255,255,0); }
 }
 .counter.afk-pulse { animation:afk-pulse .45s ease; }
@@ -308,8 +317,7 @@ const SCRIPT_VERSION = '6.12';
 .key-display-grid { display:grid; gap:5px; }
 .key-box { background:var(--bg2); border:2px solid rgba(255,255,255,.12); border-radius:var(--radius); display:flex; align-items:center; justify-content:center; font-weight:900; font-size:.72rem; color:var(--text-dim); width:44px; height:44px; }
 .key-box.active { background:var(--c-dim); border-color:var(--c); color:var(--c); box-shadow:var(--glow); }
-.key-box.mouse-box { width:62px; }
-.key-box.space-box { grid-column:1 / -1; width:100%; height:36px; }
+.key-box.space-box { width:100%; height:36px; margin-top:5px; }
 #waddle-crosshair-container { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:5000; pointer-events:none; }
 #wb-hud-canvas { position:fixed; inset:0; pointer-events:none; z-index:4999; }
 #waddle-skin-panel { flex:1; padding:16px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; }
@@ -327,6 +335,11 @@ const SCRIPT_VERSION = '6.12';
 .skin-confirm-yes:hover { opacity:.85; }
 .skin-confirm-no { background:var(--bg3); border:1px solid rgba(255,255,255,.15); border-radius:var(--radius); padding:9px 28px; font-size:.88rem; font-weight:700; color:var(--text-dim); cursor:pointer; transition:all .1s; }
 .skin-confirm-no:hover { border-color:var(--c-border); color:var(--text); }
+#cps-widget { padding:8px; display:flex; flex-direction:column; align-items:center; gap:4px; }
+.cps-counts { display:flex; justify-content:space-around; width:40px; }
+.cps-side { display:flex; flex-direction:column; align-items:center; gap:1px; }
+.cps-val { font-size:.9rem; font-weight:900; color:var(--c); line-height:1; }
+.cps-lbl { font-size:.58rem; color:var(--text-dim); letter-spacing:.5px; text-transform:uppercase; }
     `;
     document.head.appendChild(style);
     return true;
@@ -360,6 +373,7 @@ const SCRIPT_VERSION = '6.12';
     document.body.appendChild(hud);
     state.hudArray = hud;
   }
+
   function refreshHud() {
     if (!state.hudArray) return;
     Object.values(FEATURE_MAP).flat().forEach(({ label, feature }) => {
@@ -377,15 +391,13 @@ const SCRIPT_VERSION = '6.12';
     });
   }
 
-  function formatSessionTime() {
-    const s = Math.floor((Date.now() - state.startTime) / 1000);
-    return [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60]
-      .map(n => String(n).padStart(2, '0')).join(':');
-  }
-
   function updateSessionTimer() {
     const e = document.getElementById('waddle-session-timer');
-    if (e) e.textContent = formatSessionTime();
+    if (e) {
+      const s = Math.floor((Date.now() - state.startTime) / 1000);
+      e.textContent = [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60]
+        .map(n => String(n).padStart(2, '0')).join(':');
+    }
   }
 
   function makeLine(styles) {
@@ -698,6 +710,7 @@ const SCRIPT_VERSION = '6.12';
     e.remove();
     state.counters[name] = null;
   }
+
   function buildKeyDisplayContent(container) {
     const grid = div('key-display-grid');
     grid.style.gridTemplateColumns = '44px 44px 44px';
@@ -714,19 +727,35 @@ const SCRIPT_VERSION = '6.12';
       grid.appendChild(box);
       keyBoxes[key] = box;
     });
-    const mouseRow = div(null);
-    mouseRow.style.cssText = 'display:grid;grid-template-columns:62px 62px;gap:5px;margin-top:5px;';
-    ['LMB', 'RMB'].forEach((label, i) => {
-      const box = div('key-box mouse-box', label);
-      mouseRow.appendChild(box);
-      keyBoxes[i === 0 ? 'lmb' : 'rmb'] = box;
-    });
     const spaceBox = div('key-box space-box', 'SPACE');
-    spaceBox.style.marginTop = '5px';
     keyBoxes.space = spaceBox;
-    container.append(grid, mouseRow, spaceBox);
+    container.append(grid, spaceBox);
     container._keyBoxes = keyBoxes;
   }
+
+  function buildCpsContent(container) {
+    container.innerHTML = `
+      <svg viewBox="0 0 40 60" width="40" height="60" style="display:block;margin:0 auto 6px;overflow:visible">
+        <path d="M20,2 C9,2 2,8 2,20 L2,44 C2,54 9,58 20,58 C31,58 38,54 38,44 L38,20 C38,8 31,2 20,2 Z"
+              fill="#0b0b14" stroke="rgba(0,255,255,0.3)" stroke-width="1.5"/>
+        <path id="cps-svg-lmb"
+              d="M20,2 C9,2 2,8 2,20 L2,28 L20,28 Z"
+              fill="rgba(0,255,255,0.05)" style="transition:fill .07s ease"/>
+        <path id="cps-svg-rmb"
+              d="M20,2 C31,2 38,8 38,20 L38,28 L20,28 Z"
+              fill="rgba(0,255,255,0.05)" style="transition:fill .07s ease"/>
+        <line x1="20" y1="2" x2="20" y2="28" stroke="rgba(0,255,255,0.28)" stroke-width="1"/>
+        <line x1="2" y1="28" x2="38" y2="28" stroke="rgba(0,255,255,0.18)" stroke-width="1"/>
+        <rect x="16" y="11" width="8" height="18" rx="4"
+              fill="rgba(0,255,255,0.2)" stroke="rgba(0,255,255,0.45)" stroke-width="1"/>
+      </svg>
+      <div class="cps-counts">
+        <span class="cps-side"><span class="cps-val" id="cps-lmb-val">0</span><span class="cps-lbl">L</span></span>
+        <span class="cps-side"><span class="cps-val" id="cps-rmb-val">0</span><span class="cps-lbl">R</span></span>
+      </div>
+    `;
+  }
+
   function createWidget(type) {
     if (!document.body) return null;
     const cfg = WIDGET_CONFIGS[type];
@@ -757,6 +786,8 @@ const SCRIPT_VERSION = '6.12';
       state.compassSmoothed = -1;
     } else if (type === 'keyDisplay') {
       buildKeyDisplayContent(wrap);
+    } else if (type === 'cps') {
+      buildCpsContent(wrap);
     } else {
       const span = el('span', 'counter-time-text', cfg.defaultText ?? '');
       wrap.appendChild(span);
@@ -828,7 +859,6 @@ const SCRIPT_VERSION = '6.12';
 
   function getSystemInfo() {
     const ua = navigator.userAgent;
-
     let os = 'Unknown OS';
     if (/CrOS/.test(ua)) {
       const match = ua.match(/CrOS\s+\S+\s+([\d.]+)/);
@@ -846,11 +876,7 @@ const SCRIPT_VERSION = '6.12';
     } else if (/Mac OS X/.test(ua)) {
       const match = ua.match(/Mac OS X ([\d_]+)/);
       const version = match ? match[1].replace(/_/g, '.') : '';
-      const macNames = {
-        '15': 'Sequoia', '14': 'Sonoma', '13': 'Ventura',
-        '12': 'Monterey', '11': 'Big Sur', '10.15': 'Catalina',
-        '10.14': 'Mojave', '10.13': 'High Sierra',
-      };
+      const macNames = { '15':'Sequoia','14':'Sonoma','13':'Ventura','12':'Monterey','11':'Big Sur','10.15':'Catalina','10.14':'Mojave','10.13':'High Sierra' };
       const major = version.split('.').slice(0, version.startsWith('10') ? 2 : 1).join('.');
       const name = macNames[major] || '';
       os = `macOS ${version}${name ? ' (' + name + ')' : ''}`;
@@ -865,37 +891,26 @@ const SCRIPT_VERSION = '6.12';
     } else if (/iPhone OS ([\d_]+)/.test(ua)) {
       os = 'iOS ' + RegExp.$1.replace(/_/g, '.');
     }
-
     let browser = 'Unknown';
     if (/Edg\/([\d.]+)/.test(ua)) browser = 'Edge ' + RegExp.$1.split('.')[0];
     else if (/OPR\/([\d.]+)/.test(ua)) browser = 'Opera ' + RegExp.$1.split('.')[0];
     else if (/Firefox\/([\d.]+)/.test(ua)) browser = 'Firefox ' + RegExp.$1.split('.')[0];
     else if (/Chrome\/([\d.]+)/.test(ua)) browser = 'Chrome ' + RegExp.$1.split('.')[0];
     else if (/Version\/([\d.]+).*Safari/.test(ua)) browser = 'Safari ' + RegExp.$1.split('.')[0];
-
-    let gpu = 'Unknown';
-    let gpuVendor = 'Unknown';
-    let webgl2 = false;
+    let gpu = 'Unknown', gpuVendor = 'Unknown', webgl2 = false;
     try {
       const canvas = document.createElement('canvas');
       const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
       if (gl) {
         const dbg = gl.getExtension('WEBGL_debug_renderer_info');
         if (dbg) {
-          gpu = gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)
-            .replace(/\s*\(0x[0-9a-fA-F]+\)/g, '')
-            .replace(/\/\S+/g, '')
-            .trim();
-          gpuVendor = gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL)
-            .replace(/\s*\(0x[0-9a-fA-F]+\)/g, '')
-            .trim();
+          gpu = gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL).replace(/\s*\(0x[0-9a-fA-F]+\)/g, '').replace(/\/\S+/g, '').trim();
+          gpuVendor = gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL).replace(/\s*\(0x[0-9a-fA-F]+\)/g, '').trim();
         }
       }
       webgl2 = !!window.WebGL2RenderingContext;
     } catch (_) {}
-
     const conn = navigator.connection;
-
     if (navigator.getBattery) {
       navigator.getBattery().then(bat => {
         const getBatteryIcon = (pct) => pct > 20 ? "🔋" : "🪫";
@@ -925,7 +940,6 @@ const SCRIPT_VERSION = '6.12';
         if (el) el.textContent = "Battery N/A";
       });
     }
-
     return {
       os, browser, gpu, gpuVendor, webgl2,
       cores: navigator.hardwareConcurrency || '?',
@@ -1033,7 +1047,10 @@ const SCRIPT_VERSION = '6.12';
         const inGame = !!document.pointerLockElement;
         state.counters.compass.style.display = inGame ? 'block' : 'none';
         if (inGame) {
-          const yaw = getPlayerYaw(game);
+          let yaw = null;
+          if (game?.player?.yaw != null) yaw = game.player.yaw;
+          else if (game?.camera?.rotation?.y != null) yaw = game.camera.rotation.y;
+          else if (game?.controls?.yaw != null) yaw = game.controls.yaw;
           if (yaw != null) {
             const target = ((yaw * 180 / Math.PI) % 360 + 360) % 360;
             if (state.compassSmoothed < 0) state.compassSmoothed = target;
@@ -1068,26 +1085,20 @@ const SCRIPT_VERSION = '6.12';
       state.lastPerformanceColor = color;
     }
   }
+
   function updateRealTime() {
-  if (!state.counters.realTime) return;
-  const now = new Date();
-  // true = 24-hour, false = 12-hour
-  const is24Hour = Intl.DateTimeFormat(undefined, { hour: 'numeric' })
-    .formatToParts(new Date(2020,0,1,13))
-    .some(part => part.type === 'hour' && parseInt(part.value) === 13);
-  const timeString = now.toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: !is24Hour
-  });
-  updateCounterText('realTime', timeString);
-}
+    if (!state.counters.realTime) return;
+    const now = new Date();
+    const is24Hour = Intl.DateTimeFormat(undefined, { hour: 'numeric' })
+      .formatToParts(new Date(2020, 0, 1, 13))
+      .some(part => part.type === 'hour' && parseInt(part.value) === 13);
+    updateCounterText('realTime', now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !is24Hour }));
+  }
 
   function pressSpace() {
     const opts = { key: ' ', code: 'Space', keyCode: 32, which: 32, bubbles: true };
-    [document, window].forEach(t => t.dispatchEvent(new KeyboardEvent('keydown', opts)));
-    setTimeout(() => { [document, window].forEach(t => t.dispatchEvent(new KeyboardEvent('keyup', opts))); }, 50);
+    window.dispatchEvent(new KeyboardEvent('keydown', opts));
+    setTimeout(() => window.dispatchEvent(new KeyboardEvent('keyup', opts)), 50);
   }
 
   function updateAntiAfkCounter() {
@@ -1116,12 +1127,6 @@ const SCRIPT_VERSION = '6.12';
     }
   }
 
-  function getPlayerYaw(game) {
-    if (game?.player?.yaw != null) return game.player.yaw;
-    if (game?.camera?.rotation?.y != null) return game.camera.rotation.y;
-    if (game?.controls?.yaw != null) return game.controls.yaw;
-    return null;
-  }
   const featureManager = {
     realTime: {
       start() {
@@ -1172,32 +1177,64 @@ const SCRIPT_VERSION = '6.12';
           const k = e.key === ' ' ? 'space' : e.key.toLowerCase();
           if (k in state.keys) { state.keys[k] = false; updateKeyDisplay(k, false); }
         };
-        const md = (e) => {
-          if (e.button === 0) { state.keys.lmb = true; updateKeyDisplay('lmb', true); }
-          else if (e.button === 2) { state.keys.rmb = true; updateKeyDisplay('rmb', true); }
-        };
-        const mu = (e) => {
-          if (e.button === 0) { state.keys.lmb = false; updateKeyDisplay('lmb', false); }
-          else if (e.button === 2) { state.keys.rmb = false; updateKeyDisplay('rmb', false); }
-        };
         window.addEventListener('keydown', kd, { passive: true });
         window.addEventListener('keyup', ku, { passive: true });
-        window.addEventListener('mousedown', md, { passive: true });
-        window.addEventListener('mouseup', mu, { passive: true });
-        state._keyListeners = { kd, ku, md, mu };
+        state._keyListeners = { kd, ku };
       },
       cleanup() {
         if (state._keyListeners) {
           window.removeEventListener('keydown', state._keyListeners.kd);
           window.removeEventListener('keyup', state._keyListeners.ku);
-          window.removeEventListener('mousedown', state._keyListeners.md);
-          window.removeEventListener('mouseup', state._keyListeners.mu);
           state._keyListeners = null;
         }
         removeCounter('keyDisplay');
         Object.keys(state.keys).forEach(k => { state.keys[k] = false; });
       }
     },
+    cps: {
+  start() {
+    if (!state.counters.cps) createWidget('cps');
+    if (state._cpsListeners) return;
+    const updateSvgFill = (buttons) => {
+      const lEl = document.getElementById('cps-svg-lmb');
+      const rEl = document.getElementById('cps-svg-rmb');
+      if (lEl) lEl.style.fill = (buttons & 1) ? 'rgba(0,255,255,0.32)' : 'rgba(0,255,255,0.05)';
+      if (rEl) rEl.style.fill = (buttons & 2) ? 'rgba(0,255,255,0.32)' : 'rgba(0,255,255,0.05)';
+    };
+    const md = (e) => {
+      const now = performance.now();
+      if (e.button === 0) state.cpsLmbTimes.push(now);
+      else if (e.button === 2) state.cpsRmbTimes.push(now);
+      updateSvgFill(e.buttons);
+    };
+    const mu = (e) => updateSvgFill(e.buttons);
+    window.addEventListener('mousedown', md, { passive: true });
+    window.addEventListener('mouseup', mu, { passive: true });
+    state._cpsListeners = { md, mu };
+    state.intervals.cps = setInterval(() => {
+      const now = performance.now();
+      const trim = arr => { while (arr.length && now - arr[0] > 1000) arr.shift(); };
+      trim(state.cpsLmbTimes);
+      trim(state.cpsRmbTimes);
+      const lEl = document.getElementById('cps-lmb-val');
+      const rEl = document.getElementById('cps-rmb-val');
+      if (lEl) lEl.textContent = state.cpsLmbTimes.length;
+      if (rEl) rEl.textContent = state.cpsRmbTimes.length;
+    }, 100);
+  },
+  cleanup() {
+    clearInterval(state.intervals.cps);
+    state.intervals.cps = null;
+    if (state._cpsListeners) {
+      window.removeEventListener('mousedown', state._cpsListeners.md);
+      window.removeEventListener('mouseup', state._cpsListeners.mu);
+      state._cpsListeners = null;
+    }
+    state.cpsLmbTimes = [];
+    state.cpsRmbTimes = [];
+    removeCounter('cps');
+  }
+},
     disablePartyRequests: {
       start() {
         applyPartyPatch(gameRef.get());
@@ -1227,13 +1264,13 @@ const SCRIPT_VERSION = '6.12';
       }
     },
   };
-  const RAF_FEATURE_ONSTART = { performance: () => updatePerformanceCounter(gameRef.get()) };
+
   ['performance', 'coords', 'compass'].forEach(f => {
     featureManager[f] = {
       start() {
         if (!state.counters[f]) createWidget(f);
         startPerformanceLoop();
-        RAF_FEATURE_ONSTART[f]?.();
+        if (f === 'performance') updatePerformanceCounter(gameRef.get());
       },
       cleanup() {
         removeCounter(f);
@@ -1461,38 +1498,26 @@ const SCRIPT_VERSION = '6.12';
   function toggleMenu() { state.menuOverlay?.classList.toggle('show'); }
 
   function setupKeyboardHandler() {
-  function isTyping() {
-    const el = document.activeElement;
-    if (!el) return false;
-    return (
-      el.tagName === "INPUT" ||
-      el.tagName === "TEXTAREA" ||
-      el.isContentEditable
-    );
+    function isTyping() {
+      const el = document.activeElement;
+      if (!el) return false;
+      return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
+    }
+    window.addEventListener('keydown', (e) => {
+      if (isTyping() || e.repeat) return;
+      if (e.key === '\\') { e.preventDefault(); toggleMenu(); return; }
+      if (e.key === 'Escape' && state.menuOverlay?.classList.contains('show')) {
+        e.preventDefault();
+        state.menuOverlay.classList.remove('show');
+      }
+    });
   }
-
-  window.addEventListener("keydown", (e) => {
-    if (isTyping() || e.repeat) return;
-
-    if (e.key === "\\") {
-      e.preventDefault();
-      toggleMenu();
-      return;
-    }
-
-    if (e.key === "Escape" && state.menuOverlay?.classList.contains("show")) {
-      e.preventDefault();
-      state.menuOverlay.classList.remove("show");
-    }
-  });
-}
 
   function restoreSavedState() {
     try {
       const raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
       if (raw) Object.assign(state.features, migrateSettings(raw));
     } catch (_) {}
-    state._panelCache = {};
   }
 
   function globalCleanup() {
