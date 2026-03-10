@@ -11,7 +11,7 @@ Provide a clear and concise description of the feature you would like to see add
 
 ---
 
-## 🎯 Why Is This Useful?
+## 🎯 Why Would This Be Useful?
 Explain the problem this feature would solve or the benefit it would provide to users.
 
 ---
