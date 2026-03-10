@@ -168,7 +168,6 @@ const SCRIPT_VERSION = '6.12';
     crosshairContainer: null,
     hudArray: null,
     toastContainer: null,
-    hasShownFunFactOnJoin: false,
     _panelCache: {},
     _resizeHandler: null,
     _crosshairObserver: null,
