@@ -345,7 +345,8 @@ const SCRIPT_VERSION = '6.12';
       })();
     }
     const toast = div('waddle-toast');
-    const icon = div(`toast-icon ${type}`, { enabled: '✓', disabled: '✗', info: '!' }[type]);
+    const icon = div(`toast-icon ${type}`);
+    icon.textContent = { enabled:'✓', disabled:'✗', info:'!' }[type];
     const body = div('toast-body');
     body.innerHTML = `<div class="toast-title">${title}</div>${message ? `<div class="toast-msg">${message}</div>` : ''}`;
     toast.append(icon, body);
@@ -1456,11 +1457,31 @@ const SCRIPT_VERSION = '6.12';
   function toggleMenu() { state.menuOverlay?.classList.toggle('show'); }
 
   function setupKeyboardHandler() {
-    window.addEventListener('keydown', (e) => {
-      if (e.key === '\\') { e.preventDefault(); toggleMenu(); }
-      else if (e.key === 'Escape' && state.menuOverlay?.classList.contains('show')) { e.preventDefault(); state.menuOverlay.classList.remove('show'); }
-    });
+  function isTyping() {
+    const el = document.activeElement;
+    if (!el) return false;
+    return (
+      el.tagName === "INPUT" ||
+      el.tagName === "TEXTAREA" ||
+      el.isContentEditable
+    );
   }
+
+  window.addEventListener("keydown", (e) => {
+    if (isTyping() || e.repeat) return;
+
+    if (e.key === "\\") {
+      e.preventDefault();
+      toggleMenu();
+      return;
+    }
+
+    if (e.key === "Escape" && state.menuOverlay?.classList.contains("show")) {
+      e.preventDefault();
+      state.menuOverlay.classList.remove("show");
+    }
+  });
+}
 
   function restoreSavedState() {
     try {
