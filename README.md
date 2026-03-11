@@ -3,7 +3,7 @@
 # 🐧 Waddle
 ### The Ultimate Miniblox Enhancement Suite
 
-![Version](https://img.shields.io/badge/version-6.12-39ff14?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-6.14-39ff14?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-39ff14?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-39ff14?style=for-the-badge)
 
@@ -51,6 +51,11 @@
 ---
 
 ## 📝 Changelog
+
+### [6.14] — Speedometer
+- Speedometer added to Display — shows ground speed in blocks/second
+- Derived from position delta rather than velocity property for reliability
+- Shares the coords 100ms tick rate, no extra timer needed
 
 ### [6.12] — Compass
 - Sliding tape compass with cardinal/intercardinal labels and live heading readout (`NNE 22°`)
