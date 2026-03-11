@@ -88,6 +88,11 @@ const SCRIPT_VERSION = '6.12';
       defaultText: '🐧 Jumping in 5s',
       pos: { left: '50px', top: '290px' },
     },
+    speedometer: {
+      id: 'speedometer-counter', cls: 'counter',
+      defaultText: '⚡ 0.00 b/s',
+      pos: { left: '50px', top: '360px' },
+    },
     compass: {
       id: 'compass-widget', cls: 'counter',
       pos: { left: '16px', top: '16px' },
@@ -118,6 +123,7 @@ const SCRIPT_VERSION = '6.12';
       { label: 'KeyStrokes', feature: 'keyDisplay' },
       { label: 'Compass', feature: 'compass' },
       { label: 'CPS', feature: 'cps' },
+      { label: 'Speedometer', feature: 'speedometer' },
     ],
     utilities: [
       { label: 'Anti-AFK', feature: 'antiAfk' },
@@ -156,9 +162,9 @@ const SCRIPT_VERSION = '6.12';
     features: {
       performance: false, coords: false, realTime: false,
       antiAfk: false, keyDisplay: false, disablePartyRequests: false,
-      muteChat: false, compass: false, cps: false,
+      muteChat: false, compass: false, cps: false, speedometer: false,
     },
-    counters: { performance: null, realTime: null, coords: null, antiAfk: null, keyDisplay: null, compass: null, cps: null },
+    counters: { performance: null, realTime: null, coords: null, antiAfk: null, keyDisplay: null, compass: null, cps: null, speedometer: null },
     menuOverlay: null,
     activeCategory: 'display',
     rafId: null,
@@ -183,6 +189,8 @@ const SCRIPT_VERSION = '6.12';
     _cpsListeners: null,
     _saveTimer: null,
     _crosshairRafPending: false,
+    _lastSpeedPos: null,
+    _lastSpeedTime: 0,
   };
 
   const KNOWN_FEATURES = new Set(Object.keys(state.features));
@@ -196,7 +204,7 @@ const SCRIPT_VERSION = '6.12';
 
   function saveDragPositions() {
     const positions = {};
-    ['performance', 'coords', 'antiAfk', 'compass', 'keyDisplay', 'cps'].forEach(type => {
+    ['performance', 'coords', 'antiAfk', 'compass', 'keyDisplay', 'cps', 'speedometer'].forEach(type => {
       const e = state.counters[type];
       if (e) positions[type] = { left: e.style.left, top: e.style.top };
     });
@@ -219,21 +227,6 @@ const SCRIPT_VERSION = '6.12';
         game.chat.addChat({ text: `\\${THEME_COLOR}\\[Server]\\reset\\ Welcome! You're now running Waddle v${SCRIPT_VERSION}. Enjoy!` });
       }
     }, 500);
-  })();
-
-  (function () {
-    let clicks = 0, lastWarning = 0;
-    document.addEventListener('mousedown', () => clicks++);
-    state.intervals.cpsDetector = setInterval(() => {
-      const cps = clicks; clicks = 0;
-      const now = Date.now();
-      if (cps < 15) return;
-      const game = gameRef.get();
-      if (game?.chat && typeof game.chat.addChat === 'function' && now - lastWarning > 2000) {
-        lastWarning = now;
-        game.chat.addChat({ text: '\\#FF0000\\[Waddle Detector]\\reset\\ Fast clicks detected.' });
-      }
-    }, 1000);
   })();
 
   function saveSettings() {
@@ -422,7 +415,6 @@ const SCRIPT_VERSION = '6.12';
     const defaultCrosshair = document.querySelector('.css-xhoozx');
     const pauseMenu = document.querySelector('.chakra-modal__content-container,[role="dialog"]');
     const inGame = !!(defaultCrosshair && !pauseMenu && document.pointerLockElement);
-    if (defaultCrosshair) defaultCrosshair.style.display = 'none';
     state.crosshairContainer.style.display = inGame ? 'block' : 'none';
   }
 
@@ -1025,7 +1017,8 @@ const SCRIPT_VERSION = '6.12';
   }
 
   function needsRaf() {
-    return state.features.performance || state.features.coords || state.features.compass;
+    return state.features.performance || state.features.coords ||
+           state.features.compass || state.features.speedometer;
   }
 
   function startPerformanceLoop() {
@@ -1037,11 +1030,26 @@ const SCRIPT_VERSION = '6.12';
         updatePerformanceCounter(game);
         state.lastPerformanceUpdate = t;
       }
-      if (t - state.lastCoordsUpdate >= 100 && state.counters.coords) {
-        const pos = game?.player?.pos;
-        if (pos) updateCounterText('coords', `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`);
-        state.lastCoordsUpdate = t;
-      }
+      if (t - state.lastCoordsUpdate >= 100) {
+  const pos = game?.player?.pos;
+  if (pos && state.counters.coords) {
+    updateCounterText('coords', `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`);
+  }
+  if (state.counters.speedometer) {
+    if (pos && state._lastSpeedPos) {
+      const dx = pos.x - state._lastSpeedPos.x;
+      const dz = pos.z - state._lastSpeedPos.z;
+      const dt = (t - state._lastSpeedTime) / 1000;
+      const speed = dt > 0 ? Math.sqrt(dx * dx + dz * dz) / dt : 0;
+      updateCounterText('speedometer', `⚡ ${speed.toFixed(2)} b/s`);
+    }
+    if (pos) {
+      state._lastSpeedPos = { x: pos.x, z: pos.z };
+      state._lastSpeedTime = t;
+    }
+  }
+  state.lastCoordsUpdate = t;
+}
       if (state.features.compass && state.counters.compass && t - state.lastCompassUpdate >= 50) {
         state.lastCompassUpdate = t;
         const inGame = !!document.pointerLockElement;
@@ -1192,49 +1200,49 @@ const SCRIPT_VERSION = '6.12';
       }
     },
     cps: {
-  start() {
-    if (!state.counters.cps) createWidget('cps');
-    if (state._cpsListeners) return;
-    const updateSvgFill = (buttons) => {
-      const lEl = document.getElementById('cps-svg-lmb');
-      const rEl = document.getElementById('cps-svg-rmb');
-      if (lEl) lEl.style.fill = (buttons & 1) ? 'rgba(0,255,255,0.32)' : 'rgba(0,255,255,0.05)';
-      if (rEl) rEl.style.fill = (buttons & 2) ? 'rgba(0,255,255,0.32)' : 'rgba(0,255,255,0.05)';
-    };
-    const md = (e) => {
-      const now = performance.now();
-      if (e.button === 0) state.cpsLmbTimes.push(now);
-      else if (e.button === 2) state.cpsRmbTimes.push(now);
-      updateSvgFill(e.buttons);
-    };
-    const mu = (e) => updateSvgFill(e.buttons);
-    window.addEventListener('mousedown', md, { passive: true });
-    window.addEventListener('mouseup', mu, { passive: true });
-    state._cpsListeners = { md, mu };
-    state.intervals.cps = setInterval(() => {
-      const now = performance.now();
-      const trim = arr => { while (arr.length && now - arr[0] > 1000) arr.shift(); };
-      trim(state.cpsLmbTimes);
-      trim(state.cpsRmbTimes);
-      const lEl = document.getElementById('cps-lmb-val');
-      const rEl = document.getElementById('cps-rmb-val');
-      if (lEl) lEl.textContent = state.cpsLmbTimes.length;
-      if (rEl) rEl.textContent = state.cpsRmbTimes.length;
-    }, 100);
-  },
-  cleanup() {
-    clearInterval(state.intervals.cps);
-    state.intervals.cps = null;
-    if (state._cpsListeners) {
-      window.removeEventListener('mousedown', state._cpsListeners.md);
-      window.removeEventListener('mouseup', state._cpsListeners.mu);
-      state._cpsListeners = null;
-    }
-    state.cpsLmbTimes = [];
-    state.cpsRmbTimes = [];
-    removeCounter('cps');
-  }
-},
+      start() {
+        if (!state.counters.cps) createWidget('cps');
+        if (state._cpsListeners) return;
+        const updateSvgFill = (buttons) => {
+          const lEl = document.getElementById('cps-svg-lmb');
+          const rEl = document.getElementById('cps-svg-rmb');
+          if (lEl) lEl.style.fill = (buttons & 1) ? 'rgba(0,255,255,0.32)' : 'rgba(0,255,255,0.05)';
+          if (rEl) rEl.style.fill = (buttons & 2) ? 'rgba(0,255,255,0.32)' : 'rgba(0,255,255,0.05)';
+        };
+        const md = (e) => {
+          const now = performance.now();
+          if (e.button === 0) state.cpsLmbTimes.push(now);
+          else if (e.button === 2) state.cpsRmbTimes.push(now);
+          updateSvgFill(e.buttons);
+        };
+        const mu = (e) => updateSvgFill(e.buttons);
+        window.addEventListener('mousedown', md, { passive: true });
+        window.addEventListener('mouseup', mu, { passive: true });
+        state._cpsListeners = { md, mu };
+        state.intervals.cps = setInterval(() => {
+          const now = performance.now();
+          const trim = arr => { while (arr.length && now - arr[0] > 1000) arr.shift(); };
+          trim(state.cpsLmbTimes);
+          trim(state.cpsRmbTimes);
+          const lEl = document.getElementById('cps-lmb-val');
+          const rEl = document.getElementById('cps-rmb-val');
+          if (lEl) lEl.textContent = state.cpsLmbTimes.length;
+          if (rEl) rEl.textContent = state.cpsRmbTimes.length;
+        }, 100);
+      },
+      cleanup() {
+        clearInterval(state.intervals.cps);
+        state.intervals.cps = null;
+        if (state._cpsListeners) {
+          window.removeEventListener('mousedown', state._cpsListeners.md);
+          window.removeEventListener('mouseup', state._cpsListeners.mu);
+          state._cpsListeners = null;
+        }
+        state.cpsLmbTimes = [];
+        state.cpsRmbTimes = [];
+        removeCounter('cps');
+      }
+    },
     disablePartyRequests: {
       start() {
         applyPartyPatch(gameRef.get());
@@ -1265,7 +1273,7 @@ const SCRIPT_VERSION = '6.12';
     },
   };
 
-  ['performance', 'coords', 'compass'].forEach(f => {
+  ['performance', 'coords', 'compass', 'speedometer'].forEach(f => {
     featureManager[f] = {
       start() {
         if (!state.counters[f]) createWidget(f);
