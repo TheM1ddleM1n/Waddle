@@ -74,8 +74,8 @@ function setSkinBannerName(banner, name) {
   }
 
   async function applySkin(skinId) {
-    const token = localStorage.getItem(SESSION_KEY); // I will make a workaround idk when.
-    if (!token) { showToast('No Session Token', 'disabled', 'Log into Miniblox first!'); return; } // Comment: you have to run token/skin.js FIRST (on my MBskin repo) before this will work!
+    const token = localStorage.getItem(SESSION_KEY);
+    if (!token) { showToast('No Session Token', 'disabled', 'Log into Miniblox first!'); return; }
     try {
       const res = await fetch(SKIN_API, {
         method: 'POST',
