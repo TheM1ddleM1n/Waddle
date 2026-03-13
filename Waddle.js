@@ -21,8 +21,34 @@ const SCRIPT_VERSION = '6.15';
   const THEME_COLOR = '#00FFFF';
   const SESSION_KEY = 'session_v1';
   const EQUIPPED_SKIN_KEY = 'waddle_equipped_skin';
+  const WADDLE_USERNAME_KEY = 'waddle_username';
 
-  const SKINS = Object.freeze(['Remlin', 'Cat', 'Ethan', 'Sushi', 'Slime', 'Duck', 'Tester', 'Banana', 'Qhyun']);
+function getPlayerUsername() {
+  try {
+    const game = gameRef.get();
+    const playerId = game?.player?.id;
+    const sorted = game?.playerList?.sortedPlayerData;
+    if (sorted?.length && playerId != null) {
+      for (let i = 0; i < sorted.length; i++) {
+        if (sorted[i]?.id === playerId) {
+          const name = sorted[i].name;
+          if (name) localStorage.setItem(WADDLE_USERNAME_KEY, name);
+          return name;
+        }
+      }
+    }
+  } catch (_) {}
+  return localStorage.getItem(WADDLE_USERNAME_KEY) || null;
+}
+
+function setSkinBannerName(banner, name) {
+  if (!banner) return;
+  banner.innerHTML = name
+    ? `<span style="color:var(--c)">🐧</span> Logged in as <span style="color:var(--c);margin-left:4px">${name}</span>`
+    : `<span style="color:var(--text-dim)">🐧 Username not detected yet — enter a game first.</span>`;
+}
+
+  const SKINS = Object.freeze(['Remlin', 'Cat', 'Ethan', 'Sushi', 'Duck', 'Tester', 'Banana', 'Qhyun']);
   const SKIN_API = 'https://session.coolmathblox.ca/accounts/set_cosmetic';
 
   const el = (tag, cls, text) => {
@@ -1292,55 +1318,119 @@ const SCRIPT_VERSION = '6.15';
   }
 
   function buildSkinPanel() {
-    const grid = document.getElementById('waddle-module-grid');
-    const title = document.getElementById('waddle-panel-title');
-    const about = document.getElementById('waddle-about');
-    let skinPanel = document.getElementById('waddle-skin-panel');
-    if (grid) grid.style.display = 'none';
-    if (about) about.style.display = 'none';
-    if (title) title.style.display = 'none';
-    if (!skinPanel) {
-      skinPanel = div(null);
-      skinPanel.id = 'waddle-skin-panel';
-      const equippedSkin = localStorage.getItem(EQUIPPED_SKIN_KEY) || '';
-      const skinGrid = div('skin-grid');
-      skinGrid.id = 'skin-grid-view';
-      SKINS.forEach(name => {
-        const btn = div('skin-btn');
-        const isEquipped = name.toLowerCase() === equippedSkin.toLowerCase();
-        btn.appendChild(el('span', null, name));
-        if (isEquipped) {
-          btn.classList.add('equipped');
-          btn.appendChild(el('span', 'skin-equipped-badge', '✓ on'));
-        }
-        btn.addEventListener('click', () => {
-          if (btn.classList.contains('equipped')) { showToast('Already Equipped', 'info', `${name} is your current skin.`); return; }
-          showSkinConfirm(name);
-        });
-        skinGrid.appendChild(btn);
-      });
-      const confirmView = div(null);
-      confirmView.id = 'skin-confirm-view';
-      confirmView.innerHTML = `
-        <div class="skin-confirm-text">Are you sure you want to equip <span id="skin-confirm-name"></span>?</div>
-        <div class="skin-confirm-btns">
-          <button class="skin-confirm-yes" id="skin-confirm-yes">Yes</button>
-          <button class="skin-confirm-no" id="skin-confirm-no">No</button>
-        </div>
-      `;
-      skinPanel.append(skinGrid, confirmView);
-      document.getElementById('waddle-panel').appendChild(skinPanel);
-      document.getElementById('skin-confirm-yes').addEventListener('click', async () => {
-        const skinName = document.getElementById('skin-confirm-name').textContent;
-        hideSkinConfirm();
-        await applySkin(skinName);
-      });
-      document.getElementById('skin-confirm-no').addEventListener('click', hideSkinConfirm);
-    }
-    skinPanel.style.display = 'flex';
-    skinPanel.style.flexDirection = 'column';
-    hideSkinConfirm();
+  const grid = document.getElementById('waddle-module-grid');
+  const title = document.getElementById('waddle-panel-title');
+  const about = document.getElementById('waddle-about');
+  let skinPanel = document.getElementById('waddle-skin-panel');
+
+  if (grid) grid.style.display = 'none';
+  if (about) about.style.display = 'none';
+  if (title) title.style.display = 'none';
+
+  const isFirstTime = !localStorage.getItem(EQUIPPED_SKIN_KEY);
+  const hasToken = !!localStorage.getItem(SESSION_KEY);
+
+  if (isFirstTime && hasToken) {
+    const username = getPlayerUsername();
+    showToast(
+      'Token Found!',
+      'enabled',
+      username
+        ? `Auto-detected as ${username} — token automatically applied!`
+        : 'Token found and automatically applied!'
+    );
+  } else if (isFirstTime && !hasToken) {
+    showToast('No Token', 'disabled', 'Log into Miniblox first, then re-open skins.');
   }
+
+  if (!skinPanel) {
+    skinPanel = div(null);
+    skinPanel.id = 'waddle-skin-panel';
+
+    const username = getPlayerUsername();
+const userBanner = div(null);
+Object.assign(userBanner.style, {
+  fontSize: '.75rem',
+  fontWeight: '700',
+  color: 'var(--text-dim)',
+  marginBottom: '6px',
+  padding: '6px 10px',
+  background: 'var(--bg3)',
+  border: '1px solid rgba(255,255,255,.07)',
+  borderRadius: 'var(--radius)',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '6px'
+});
+userBanner.id = 'skin-user-banner';
+setSkinBannerName(userBanner, username);
+if (!username) {
+  const poll = setInterval(() => {
+    const found = getPlayerUsername();
+    if (found) { setSkinBannerName(userBanner, found); clearInterval(poll); }
+    if (!document.contains(userBanner)) clearInterval(poll);
+  }, 1000);
+}
+skinPanel.appendChild(userBanner);
+
+    const equippedSkin = localStorage.getItem(EQUIPPED_SKIN_KEY) || '';
+    const skinGrid = div('skin-grid');
+    skinGrid.id = 'skin-grid-view';
+
+    SKINS.forEach(name => {
+      const btn = div('skin-btn');
+      const isEquipped = name.toLowerCase() === equippedSkin.toLowerCase();
+      btn.appendChild(el('span', null, name));
+      if (isEquipped) {
+        btn.classList.add('equipped');
+        btn.appendChild(el('span', 'skin-equipped-badge', '✓ on'));
+      }
+      btn.addEventListener('click', () => {
+        if (btn.classList.contains('equipped')) {
+          showToast('Already Equipped', 'info', `${name} is your current skin.`);
+          return;
+        }
+        showSkinConfirm(name);
+      });
+      skinGrid.appendChild(btn);
+    });
+
+    const confirmView = div(null);
+    confirmView.id = 'skin-confirm-view';
+    confirmView.innerHTML = `
+      <div class="skin-confirm-text">Are you sure you want to equip <span id="skin-confirm-name"></span>?</div>
+      <div class="skin-confirm-btns">
+        <button class="skin-confirm-yes" id="skin-confirm-yes">Yes</button>
+        <button class="skin-confirm-no" id="skin-confirm-no">No</button>
+      </div>
+    `;
+
+    skinPanel.append(skinGrid, confirmView);
+    document.getElementById('waddle-panel').appendChild(skinPanel);
+
+    document.getElementById('skin-confirm-yes').addEventListener('click', async () => {
+      const skinName = document.getElementById('skin-confirm-name').textContent;
+      hideSkinConfirm();
+      await applySkin(skinName);
+    });
+    document.getElementById('skin-confirm-no').addEventListener('click', hideSkinConfirm);
+  } else {
+  const banner = document.getElementById('skin-user-banner');
+  const refreshed = getPlayerUsername();
+  setSkinBannerName(banner, refreshed);
+  if (!refreshed) {
+    const poll = setInterval(() => {
+      const found = getPlayerUsername();
+      if (found) { setSkinBannerName(banner, found); clearInterval(poll); }
+      if (!document.contains(banner)) clearInterval(poll);
+    }, 1000);
+  }
+}
+
+  skinPanel.style.display = 'flex';
+  skinPanel.style.flexDirection = 'column';
+  hideSkinConfirm();
+}
 
   function showSkinConfirm(skinName) {
     document.getElementById('skin-grid-view').style.display = 'none';
