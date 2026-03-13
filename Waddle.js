@@ -173,7 +173,6 @@ const SCRIPT_VERSION = '6.14';
     lastCompassUpdate: 0,
     compassSmoothed: -1,
     intervals: {},
-    startTime: Date.now(),
     antiAfkCountdown: 5,
     lastPerformanceColor: '#00FF00',
     keys: { w: false, a: false, s: false, d: false, space: false },
@@ -278,7 +277,6 @@ const SCRIPT_VERSION = '6.14';
 .about-credit a { color:#aaa; font-size:.8rem; text-decoration:none; }
 .about-credit a:hover { color:var(--c); }
 .about-credit .role { font-size:.65rem; color:var(--c); font-weight:700; }
-.about-timer { font-size:2rem; font-weight:900; color:var(--c); font-family:'Courier New',monospace; text-shadow:var(--glow); text-align:center; padding:4px 0; }
 .about-links { display:flex; gap:8px; flex-wrap:wrap; }
 .about-link-btn { background:var(--bg); border:1px solid var(--c-border); color:var(--c); border-radius:var(--radius); padding:6px 14px; font-size:.75rem; font-weight:var(--fw); cursor:pointer; transition:all .1s ease; }
 .about-link-btn:hover { background:var(--c-dim); }
@@ -382,15 +380,6 @@ const SCRIPT_VERSION = '6.14';
         existing?.remove();
       }
     });
-  }
-
-  function updateSessionTimer() {
-    const e = document.getElementById('waddle-session-timer');
-    if (e) {
-      const s = Math.floor((Date.now() - state.startTime) / 1000);
-      e.textContent = [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60]
-        .map(n => String(n).padStart(2, '0')).join(':');
-    }
   }
 
   function makeLine(styles) {
@@ -1031,25 +1020,25 @@ const SCRIPT_VERSION = '6.14';
         state.lastPerformanceUpdate = t;
       }
       if (t - state.lastCoordsUpdate >= 100) {
-  const pos = game?.player?.pos;
-  if (pos && state.counters.coords) {
-    updateCounterText('coords', `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`);
-  }
-  if (state.counters.speedometer) {
-    if (pos && state._lastSpeedPos) {
-      const dx = pos.x - state._lastSpeedPos.x;
-      const dz = pos.z - state._lastSpeedPos.z;
-      const dt = (t - state._lastSpeedTime) / 1000;
-      const speed = dt > 0 ? Math.sqrt(dx * dx + dz * dz) / dt : 0;
-      updateCounterText('speedometer', `⚡ ${speed.toFixed(2)} b/s`);
-    }
-    if (pos) {
-      state._lastSpeedPos = { x: pos.x, z: pos.z };
-      state._lastSpeedTime = t;
-    }
-  }
-  state.lastCoordsUpdate = t;
-}
+        const pos = game?.player?.pos;
+        if (pos && state.counters.coords) {
+          updateCounterText('coords', `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`);
+        }
+        if (state.counters.speedometer) {
+          if (pos && state._lastSpeedPos) {
+            const dx = pos.x - state._lastSpeedPos.x;
+            const dz = pos.z - state._lastSpeedPos.z;
+            const dt = (t - state._lastSpeedTime) / 1000;
+            const speed = dt > 0 ? Math.sqrt(dx * dx + dz * dz) / dt : 0;
+            updateCounterText('speedometer', `⚡ ${speed.toFixed(2)} b/s`);
+          }
+          if (pos) {
+            state._lastSpeedPos = { x: pos.x, z: pos.z };
+            state._lastSpeedTime = t;
+          }
+        }
+        state.lastCoordsUpdate = t;
+      }
       if (state.features.compass && state.counters.compass && t - state.lastCompassUpdate >= 50) {
         state.lastCompassUpdate = t;
         const inGame = !!document.pointerLockElement;
@@ -1439,8 +1428,6 @@ const SCRIPT_VERSION = '6.14';
     const aboutPanel = div(null);
     aboutPanel.id = 'waddle-about';
     aboutPanel.style.display = 'none';
-    const timerBlock = div('about-block');
-    timerBlock.innerHTML = `<h3>⏱ Session Timer</h3><div id="waddle-session-timer" class="about-timer">00:00:00</div>`;
     const sys = getSystemInfo();
     const sysBlock = div('about-block');
     sysBlock.innerHTML = `
@@ -1492,7 +1479,7 @@ const SCRIPT_VERSION = '6.14';
       linksRow.appendChild(btn);
     });
     linksBlock.appendChild(linksRow);
-    aboutPanel.append(timerBlock, sysBlock, creditsBlock, linksBlock);
+    aboutPanel.append(sysBlock, creditsBlock, linksBlock);
     panel.append(panelTitle, moduleGrid, aboutPanel);
     win.append(sidebar, panel);
     overlay.appendChild(win);
@@ -1602,8 +1589,6 @@ const SCRIPT_VERSION = '6.14';
         });
         refreshHud();
       }, 100);
-      updateSessionTimer();
-      state.intervals.sessionTimer = setInterval(updateSessionTimer, 1000);
     } catch (err) {
       console.error('[Waddle] Init failed:', err);
       showToast('Init failed', 'info', 'Check console');
