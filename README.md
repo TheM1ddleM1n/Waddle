@@ -69,7 +69,7 @@
 - Custom skin picker with equipped-state guard
 - Draggable widget positions persist across reloads
 - Anti-AFK only fires when pointer is locked, LRU cache for face/player images
-- Comment: you have to run token/skin.js FIRST (on my MBskin repo) before this will work!
+- Im going to make this VERY OBVIOUS TO PLAYERS: you have to RUN in CONSOLE (by pressing F12) token/skin.js FIRST (on my MBskin repo) before this will work.
 
 ### [6.9] — Bug Fixes
 - HP bar no longer bleeds health from previous target on switch
