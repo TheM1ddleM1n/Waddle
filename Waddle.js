@@ -49,7 +49,7 @@ const SCRIPT_VERSION = '6.15';
 
   async function applySkin(skinId) {
     const token = localStorage.getItem(SESSION_KEY);
-    if (!token) { showToast('No Session Token', 'disabled', 'Log into Miniblox first!'); return; }
+    if (!token) { showToast('No Session Token', 'disabled', 'Log into Miniblox first!'); return; } // Comment: you have to run token/skin.js FIRST (on my MBskin repo) before this will work!
     try {
       const res = await fetch(SKIN_API, {
         method: 'POST',
