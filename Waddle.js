@@ -1,20 +1,20 @@
 // ==UserScript==
 // @name         Waddle
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
-// @version      6.14
-// @description  The ultimate Miniblox enhancement suite featuring advanced API capabilities!
-// @author       The Dream Team! (Scripter & TheM1ddleM1n)
+// @version      6.15
+// @description  The ultimate Miniblox enhancement suite! 🤑
+// @author       Scripter, TheM1ddleM1n (Waddle team!)
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/Waddle/refs/heads/main/Penguin.png
 // @match        https://miniblox.io/
 // @run-at       document-start
 // ==/UserScript==
 
-const SCRIPT_VERSION = '6.14';
+const SCRIPT_VERSION = '6.15';
 
 (function () {
   'use strict';
 
-  document.title = `🐧 Waddle v${SCRIPT_VERSION} • Miniblox`;
+  document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
 
   const SETTINGS_KEY = 'waddle_settings';
   const DRAG_POSITIONS_KEY = 'waddle_positions';
