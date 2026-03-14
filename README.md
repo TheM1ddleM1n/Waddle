@@ -37,7 +37,6 @@
 | 📍 Coordinates | Live X Y Z, 10 updates/sec |
 | 🕐 Clock | 24-hour clock, fixed bottom-right |
 | ⌨️ Key Display | WASD + mouse buttons, lights up on press |
-| 🧭 Compass | Sliding tape compass with cardinal/intercardinal labels, heading readout, and pointer-lock auto-hide |
 | 🐧 Anti-AFK | Auto-jumps every 5s — only fires when in-game |
 | 🐧 Fun Facts | Penguin fact toast on game join |
 | 🚫 Block Party RQ | Silently drops incoming party invites |
@@ -56,10 +55,6 @@
 - Speedometer added to Display — shows ground speed in blocks/second
 - Derived from position delta rather than velocity property for reliability
 - Shares the coords 100ms tick rate, no extra timer needed
-
-### [6.12] — Compass
-- Sliding tape compass with cardinal/intercardinal labels and live heading readout (`NNE 22°`)
-- Auto-hides outside gameplay, position persists via localStorage
 - Performance v2 update
 
 ### [6.11] — Chat Mute
