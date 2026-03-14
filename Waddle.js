@@ -71,21 +71,21 @@ const SCRIPT_VERSION = '6.15';
   }
 
   function setSkinBannerName(banner, name) {
-  if (!banner) return;
-  if (!name) {
-    banner.innerHTML = `<span style="color:var(--text-dim)">Username not detected yet — enter a game first.</span>`;
-    return;
+    if (!banner) return;
+    if (!name) {
+      banner.innerHTML = `<span style="color:var(--text-dim)">Username not detected yet — enter a game first.</span>`;
+      return;
+    }
+    const level = localStorage.getItem(WADDLE_LEVEL_KEY);
+    const rank = localStorage.getItem(WADDLE_RANK_KEY);
+    const rankBadge = rank
+      ? `<span style="background:var(--c-dim);border:1px solid var(--c-border);color:var(--c);font-size:.6rem;font-weight:700;padding:1px 6px;border-radius:4px;margin-right:6px;text-transform:uppercase;letter-spacing:.5px;">${rank}</span>`
+      : '';
+    const levelBadge = level
+      ? `<span style="color:var(--text-dim);font-size:.68rem;margin-right:6px">Lv.${level}</span>`
+      : '';
+    banner.innerHTML = `${rankBadge}${levelBadge}<span style="color:var(--c)">${name}</span>`;
   }
-  const level = localStorage.getItem(WADDLE_LEVEL_KEY);
-  const rank = localStorage.getItem(WADDLE_RANK_KEY);
-  const rankBadge = rank
-    ? `<span style="background:var(--c-dim);border:1px solid var(--c-border);color:var(--c);font-size:.6rem;font-weight:700;padding:1px 6px;border-radius:4px;margin-right:6px;text-transform:uppercase;letter-spacing:.5px;">${rank}</span>`
-    : '';
-  const levelBadge = level
-    ? `<span style="color:var(--text-dim);font-size:.68rem;margin-right:6px">Lv.${level}</span>`
-    : '';
-  banner.innerHTML = `${rankBadge}${levelBadge}<span style="color:var(--c)">${name}</span>`;
-}
 
   async function applySkin(skinId) {
     const token = localStorage.getItem(SESSION_KEY);
@@ -115,12 +115,11 @@ const SCRIPT_VERSION = '6.15';
   const WIDGET_CONFIGS = {
     performance: {
       id: 'performance-counter', cls: 'counter',
-      defaultText: 'FPS: -- | PING: 0ms',
       pos: { left: '50px', top: '80px' },
     },
     coords: {
       id: 'coords-counter', cls: 'counter',
-      defaultText: '📍 X: 0 Y: 0 Z: 0',
+      defaultText: '📍 X: 0 Y: 0 Z: 0 | 0ms',
       pos: { left: '50px', top: '220px' },
     },
     realTime: {
@@ -142,10 +141,6 @@ const SCRIPT_VERSION = '6.15';
       id: 'key-display-container', cls: 'key-display-container',
       pos: { left: '50px', top: '150px' },
     },
-    cps: {
-      id: 'cps-widget', cls: 'counter',
-      pos: { left: '120px', top: '150px' },
-    },
   };
 
   const CATEGORIES = [
@@ -157,11 +152,10 @@ const SCRIPT_VERSION = '6.15';
 
   const FEATURE_MAP = {
     display: [
-      { label: 'FPS & Ping', feature: 'performance' },
-      { label: 'Coords', feature: 'coords' },
+      { label: 'FPS & CPS', feature: 'performance' },
+      { label: 'Coords + Ping', feature: 'coords' },
       { label: 'Clock', feature: 'realTime' },
       { label: 'KeyStrokes', feature: 'keyDisplay' },
-      { label: 'CPS', feature: 'cps' },
       { label: 'Speedometer', feature: 'speedometer' },
     ],
     utilities: [
@@ -201,9 +195,9 @@ const SCRIPT_VERSION = '6.15';
     features: {
       performance: false, coords: false, realTime: false,
       antiAfk: false, keyDisplay: false, disablePartyRequests: false,
-      muteChat: false, cps: false, speedometer: false,
+      muteChat: false, speedometer: false,
     },
-    counters: { performance: null, realTime: null, coords: null, antiAfk: null, keyDisplay: null, cps: null, speedometer: null },
+    counters: { performance: null, realTime: null, coords: null, antiAfk: null, keyDisplay: null, speedometer: null },
     menuOverlay: null,
     activeCategory: 'display',
     rafId: null,
@@ -227,6 +221,7 @@ const SCRIPT_VERSION = '6.15';
     _crosshairRafPending: false,
     _lastSpeedPos: null,
     _lastSpeedTime: 0,
+    _lastPing: 0,
   };
 
   const KNOWN_FEATURES = new Set(Object.keys(state.features));
@@ -240,7 +235,7 @@ const SCRIPT_VERSION = '6.15';
 
   function saveDragPositions() {
     const positions = {};
-    ['performance', 'coords', 'antiAfk', 'keyDisplay', 'cps', 'speedometer'].forEach(type => {
+    ['performance', 'coords', 'antiAfk', 'keyDisplay', 'speedometer'].forEach(type => {
       const e = state.counters[type];
       if (e) positions[type] = { left: e.style.left, top: e.style.top };
     });
@@ -363,11 +358,6 @@ const SCRIPT_VERSION = '6.15';
 .skin-confirm-yes:hover { opacity:.85; }
 .skin-confirm-no { background:var(--bg3); border:1px solid rgba(255,255,255,.15); border-radius:var(--radius); padding:9px 28px; font-size:.88rem; font-weight:700; color:var(--text-dim); cursor:pointer; transition:all .1s; }
 .skin-confirm-no:hover { border-color:var(--c-border); color:var(--text); }
-#cps-widget { padding:8px; display:flex; flex-direction:column; align-items:center; gap:4px; }
-.cps-counts { display:flex; justify-content:space-around; width:40px; }
-.cps-side { display:flex; flex-direction:column; align-items:center; gap:1px; }
-.cps-val { font-size:.9rem; font-weight:900; color:var(--c); line-height:1; }
-.cps-lbl { font-size:.58rem; color:var(--text-dim); letter-spacing:.5px; text-transform:uppercase; }
     `;
     document.head.appendChild(style);
     return true;
@@ -751,25 +741,34 @@ const SCRIPT_VERSION = '6.15';
     container._keyBoxes = keyBoxes;
   }
 
-  function buildCpsContent(container) {
+  function buildFpsCpsContent(container) {
+    container.style.padding = '8px 10px';
     container.innerHTML = `
-      <svg viewBox="0 0 40 60" width="40" height="60" style="display:block;margin:0 auto 6px;overflow:visible">
-        <path d="M20,2 C9,2 2,8 2,20 L2,44 C2,54 9,58 20,58 C31,58 38,54 38,44 L38,20 C38,8 31,2 20,2 Z"
-              fill="#0b0b14" stroke="rgba(0,255,255,0.3)" stroke-width="1.5"/>
-        <path id="cps-svg-lmb"
-              d="M20,2 C9,2 2,8 2,20 L2,28 L20,28 Z"
-              fill="rgba(0,255,255,0.05)" style="transition:fill .07s ease"/>
-        <path id="cps-svg-rmb"
-              d="M20,2 C31,2 38,8 38,20 L38,28 L20,28 Z"
-              fill="rgba(0,255,255,0.05)" style="transition:fill .07s ease"/>
-        <line x1="20" y1="2" x2="20" y2="28" stroke="rgba(0,255,255,0.28)" stroke-width="1"/>
-        <line x1="2" y1="28" x2="38" y2="28" stroke="rgba(0,255,255,0.18)" stroke-width="1"/>
-        <rect x="16" y="11" width="8" height="18" rx="4"
-              fill="rgba(0,255,255,0.2)" stroke="rgba(0,255,255,0.45)" stroke-width="1"/>
-      </svg>
-      <div class="cps-counts">
-        <span class="cps-side"><span class="cps-val" id="cps-lmb-val">0</span><span class="cps-lbl">L</span></span>
-        <span class="cps-side"><span class="cps-val" id="cps-rmb-val">0</span><span class="cps-lbl">R</span></span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div id="fps-val" style="font-size:.85rem;font-weight:900;color:var(--c);line-height:1.2;white-space:nowrap">FPS: --</div>
+        <div style="width:1px;height:32px;background:var(--c-border);flex-shrink:0"></div>
+        <svg viewBox="0 0 40 60" width="26" height="39" style="display:block;flex-shrink:0;overflow:visible">
+          <path d="M20,2 C9,2 2,8 2,20 L2,44 C2,54 9,58 20,58 C31,58 38,54 38,44 L38,20 C38,8 31,2 20,2 Z"
+                fill="#0b0b14" stroke="rgba(0,255,255,0.3)" stroke-width="1.5"/>
+          <path id="cps-svg-lmb" d="M20,2 C9,2 2,8 2,20 L2,28 L20,28 Z"
+                fill="rgba(0,255,255,0.05)" style="transition:fill .07s ease"/>
+          <path id="cps-svg-rmb" d="M20,2 C31,2 38,8 38,20 L38,28 L20,28 Z"
+                fill="rgba(0,255,255,0.05)" style="transition:fill .07s ease"/>
+          <line x1="20" y1="2" x2="20" y2="28" stroke="rgba(0,255,255,0.28)" stroke-width="1"/>
+          <line x1="2" y1="28" x2="38" y2="28" stroke="rgba(0,255,255,0.18)" stroke-width="1"/>
+          <rect x="16" y="11" width="8" height="18" rx="4"
+                fill="rgba(0,255,255,0.2)" stroke="rgba(0,255,255,0.45)" stroke-width="1"/>
+        </svg>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <div style="display:flex;align-items:baseline;gap:2px">
+            <span id="cps-lmb-val" style="font-size:.88rem;font-weight:900;color:var(--c);line-height:1">0</span>
+            <span style="font-size:.55rem;color:var(--text-dim);letter-spacing:.5px">L</span>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:2px">
+            <span id="cps-rmb-val" style="font-size:.88rem;font-weight:900;color:var(--c);line-height:1">0</span>
+            <span style="font-size:.55rem;color:var(--text-dim);letter-spacing:.5px">R</span>
+          </div>
+        </div>
       </div>
     `;
   }
@@ -790,21 +789,10 @@ const SCRIPT_VERSION = '6.15';
       setupDragging(wrap, saveDragPositions);
     }
 
-    if (cfg.canvas) {
-      Object.assign(wrap.style, {
-        padding: '0', overflow: 'hidden',
-        width: cfg.canvas.width + 'px', height: cfg.canvas.height + 'px',
-        background: 'transparent', border: 'none', boxShadow: 'none', display: 'none'
-      });
-      const canvas = el('canvas');
-      canvas.width = cfg.canvas.width;
-      canvas.height = cfg.canvas.height;
-      wrap.appendChild(canvas);
-      wrap._canvas = canvas;
+    if (type === 'performance') {
+      buildFpsCpsContent(wrap);
     } else if (type === 'keyDisplay') {
       buildKeyDisplayContent(wrap);
-    } else if (type === 'cps') {
-      buildCpsContent(wrap);
     } else {
       const span = el('span', 'counter-time-text', cfg.defaultText ?? '');
       wrap.appendChild(span);
@@ -958,77 +946,70 @@ const SCRIPT_VERSION = '6.15';
     return state.features.performance || state.features.coords || state.features.speedometer;
   }
 
-function startPerformanceLoop() {
-  if (state.rafId) return;
-
-  const loop = (t) => {
-    if (!needsRaf()) {
-      state.rafId = null;
-      return;
-    }
-    const game = gameRef.get(t);
-    if (t - state.lastPerformanceUpdate >= 500 && state.counters.performance) {
-      updatePerformanceCounter(game);
-      state.lastPerformanceUpdate = t;
-    }
-    if (t - state.lastCoordsUpdate >= 100) {
-      const pos = game?.player?.pos;
-
-      if (pos && state.counters.coords) {
-        updateCounterText(
-          'coords',
-          `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`
-        );
+  function startPerformanceLoop() {
+    if (state.rafId) return;
+    const loop = (t) => {
+      if (!needsRaf()) {
+        state.rafId = null;
+        return;
       }
-
-      if (state.counters.speedometer) {
-        if (pos && state._lastSpeedPos) {
-          const dx = pos.x - state._lastSpeedPos.x;
-          const dz = pos.z - state._lastSpeedPos.z;
-          const dt = (t - state._lastSpeedTime) / 1000;
-          const speed = dt > 0 ? Math.sqrt(dx * dx + dz * dz) / dt : 0;
-          updateCounterText('speedometer', `⚡ ${speed.toFixed(2)} b/s`);
-        }
-
-        if (pos) {
-          state._lastSpeedPos = { x: pos.x, z: pos.z };
-          state._lastSpeedTime = t;
-        }
+      const game = gameRef.get(t);
+      if (t - state.lastPerformanceUpdate >= 500 && state.counters.performance) {
+        updatePerformanceCounter(game);
+        state.lastPerformanceUpdate = t;
       }
-
-      state.lastCoordsUpdate = t;
-    }
+      if (t - state.lastCoordsUpdate >= 100) {
+        const pos = game?.player?.pos;
+        if (pos && state.counters.coords) {
+          const ping = Math.round(game?.resourceMonitor?.filteredPing || 0);
+          updateCounterText(
+            'coords',
+            `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)} | ${ping}ms`
+          );
+        }
+        if (state.counters.speedometer) {
+          if (pos && state._lastSpeedPos) {
+            const dx = pos.x - state._lastSpeedPos.x;
+            const dz = pos.z - state._lastSpeedPos.z;
+            const dt = (t - state._lastSpeedTime) / 1000;
+            const speed = dt > 0 ? Math.sqrt(dx * dx + dz * dz) / dt : 0;
+            updateCounterText('speedometer', `⚡ ${speed.toFixed(2)} b/s`);
+          }
+          if (pos) {
+            state._lastSpeedPos = { x: pos.x, z: pos.z };
+            state._lastSpeedTime = t;
+          }
+        }
+        state.lastCoordsUpdate = t;
+      }
+      state.rafId = requestAnimationFrame(loop);
+    };
     state.rafId = requestAnimationFrame(loop);
-  };
-
-  state.rafId = requestAnimationFrame(loop);
-}
-
-function stopPerformanceLoop() {
-  if (state.rafId) {
-    cancelAnimationFrame(state.rafId);
-    state.rafId = null;
   }
-}
 
-function updatePerformanceCounter(game) {
-  if (!game || !state.counters.performance) return;
-
-  const fps = Math.round(game.resourceMonitor?.filteredFPS || 0);
-  const ping = Math.round(game.resourceMonitor?.filteredPing || 0);
-  let color = '#00FF00';
-
-  if (fps < 30 || ping > 200) color = '#FF0000';
-  else if (fps < 60 || ping > 100) color = '#FFFF00';
-
-  updateCounterText('performance', `FPS: ${game.inGame ? fps : '--'} | PING: ${ping}ms`);
-
-  if (state.lastPerformanceColor !== color) {
-    state.counters.performance.style.borderColor = color;
-    state.counters.performance.style.color = color;
-    state.lastPerformanceColor = color;
+  function stopPerformanceLoop() {
+    if (state.rafId) {
+      cancelAnimationFrame(state.rafId);
+      state.rafId = null;
+    }
   }
-}
+
+  function updatePerformanceCounter(game) {
+    if (!game || !state.counters.performance) return;
+    const fps = Math.round(game.resourceMonitor?.filteredFPS || 0);
+    const ping = Math.round(game.resourceMonitor?.filteredPing || 0);
+    state._lastPing = ping;
+    let color = '#00FF00';
+    if (fps < 30 || ping > 200) color = '#FF0000';
+    else if (fps < 60 || ping > 100) color = '#FFFF00';
+    const fpsEl = document.getElementById('fps-val');
+    if (fpsEl) fpsEl.textContent = `FPS: ${game.inGame ? fps : '--'}`;
+    if (state.lastPerformanceColor !== color) {
+      state.counters.performance.style.borderColor = color;
+      if (fpsEl) fpsEl.style.color = color;
+      state.lastPerformanceColor = color;
+    }
+  }
 
   function updateRealTime() {
     if (!state.counters.realTime) return;
@@ -1072,6 +1053,54 @@ function updatePerformanceCounter(game) {
   }
 
   const featureManager = {
+    performance: {
+      start() {
+        if (!state.counters.performance) createWidget('performance');
+        startPerformanceLoop();
+        updatePerformanceCounter(gameRef.get());
+        if (!state._cpsListeners) {
+          const updateSvgFill = (buttons) => {
+            const lEl = document.getElementById('cps-svg-lmb');
+            const rEl = document.getElementById('cps-svg-rmb');
+            if (lEl) lEl.style.fill = (buttons & 1) ? 'rgba(0,255,255,0.32)' : 'rgba(0,255,255,0.05)';
+            if (rEl) rEl.style.fill = (buttons & 2) ? 'rgba(0,255,255,0.32)' : 'rgba(0,255,255,0.05)';
+          };
+          const md = (e) => {
+            const now = performance.now();
+            if (e.button === 0) state.cpsLmbTimes.push(now);
+            else if (e.button === 2) state.cpsRmbTimes.push(now);
+            updateSvgFill(e.buttons);
+          };
+          const mu = (e) => updateSvgFill(e.buttons);
+          window.addEventListener('mousedown', md, { passive: true });
+          window.addEventListener('mouseup', mu, { passive: true });
+          state._cpsListeners = { md, mu };
+          state.intervals.cps = setInterval(() => {
+            const now = performance.now();
+            const trim = arr => { while (arr.length && now - arr[0] > 1000) arr.shift(); };
+            trim(state.cpsLmbTimes);
+            trim(state.cpsRmbTimes);
+            const lEl = document.getElementById('cps-lmb-val');
+            const rEl = document.getElementById('cps-rmb-val');
+            if (lEl) lEl.textContent = state.cpsLmbTimes.length;
+            if (rEl) rEl.textContent = state.cpsRmbTimes.length;
+          }, 100);
+        }
+      },
+      cleanup() {
+        removeCounter('performance');
+        if (!needsRaf()) stopPerformanceLoop();
+        clearInterval(state.intervals.cps);
+        state.intervals.cps = null;
+        if (state._cpsListeners) {
+          window.removeEventListener('mousedown', state._cpsListeners.md);
+          window.removeEventListener('mouseup', state._cpsListeners.mu);
+          state._cpsListeners = null;
+        }
+        state.cpsLmbTimes = [];
+        state.cpsRmbTimes = [];
+      }
+    },
     realTime: {
       start() {
         if (state.intervals.realTime) return;
@@ -1135,50 +1164,6 @@ function updatePerformanceCounter(game) {
         Object.keys(state.keys).forEach(k => { state.keys[k] = false; });
       }
     },
-    cps: {
-      start() {
-        if (!state.counters.cps) createWidget('cps');
-        if (state._cpsListeners) return;
-        const updateSvgFill = (buttons) => {
-          const lEl = document.getElementById('cps-svg-lmb');
-          const rEl = document.getElementById('cps-svg-rmb');
-          if (lEl) lEl.style.fill = (buttons & 1) ? 'rgba(0,255,255,0.32)' : 'rgba(0,255,255,0.05)';
-          if (rEl) rEl.style.fill = (buttons & 2) ? 'rgba(0,255,255,0.32)' : 'rgba(0,255,255,0.05)';
-        };
-        const md = (e) => {
-          const now = performance.now();
-          if (e.button === 0) state.cpsLmbTimes.push(now);
-          else if (e.button === 2) state.cpsRmbTimes.push(now);
-          updateSvgFill(e.buttons);
-        };
-        const mu = (e) => updateSvgFill(e.buttons);
-        window.addEventListener('mousedown', md, { passive: true });
-        window.addEventListener('mouseup', mu, { passive: true });
-        state._cpsListeners = { md, mu };
-        state.intervals.cps = setInterval(() => {
-          const now = performance.now();
-          const trim = arr => { while (arr.length && now - arr[0] > 1000) arr.shift(); };
-          trim(state.cpsLmbTimes);
-          trim(state.cpsRmbTimes);
-          const lEl = document.getElementById('cps-lmb-val');
-          const rEl = document.getElementById('cps-rmb-val');
-          if (lEl) lEl.textContent = state.cpsLmbTimes.length;
-          if (rEl) rEl.textContent = state.cpsRmbTimes.length;
-        }, 100);
-      },
-      cleanup() {
-        clearInterval(state.intervals.cps);
-        state.intervals.cps = null;
-        if (state._cpsListeners) {
-          window.removeEventListener('mousedown', state._cpsListeners.md);
-          window.removeEventListener('mouseup', state._cpsListeners.mu);
-          state._cpsListeners = null;
-        }
-        state.cpsLmbTimes = [];
-        state.cpsRmbTimes = [];
-        removeCounter('cps');
-      }
-    },
     disablePartyRequests: {
       start() {
         applyPartyPatch(gameRef.get());
@@ -1209,12 +1194,11 @@ function updatePerformanceCounter(game) {
     },
   };
 
-  ['performance', 'coords', 'speedometer'].forEach(f => {
+  ['coords', 'speedometer'].forEach(f => {
     featureManager[f] = {
       start() {
         if (!state.counters[f]) createWidget(f);
         startPerformanceLoop();
-        if (f === 'performance') updatePerformanceCounter(gameRef.get());
       },
       cleanup() {
         removeCounter(f);
