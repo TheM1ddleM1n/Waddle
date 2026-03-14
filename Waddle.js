@@ -138,11 +138,6 @@ const SCRIPT_VERSION = '6.15';
       defaultText: '⚡ 0.00 b/s',
       pos: { left: '50px', top: '360px' },
     },
-    compass: {
-      id: 'compass-widget', cls: 'counter',
-      pos: { left: '16px', top: '16px' },
-      canvas: { width: 220, height: 42 },
-    },
     keyDisplay: {
       id: 'key-display-container', cls: 'key-display-container',
       pos: { left: '50px', top: '150px' },
@@ -166,7 +161,6 @@ const SCRIPT_VERSION = '6.15';
       { label: 'Coords', feature: 'coords' },
       { label: 'Clock', feature: 'realTime' },
       { label: 'KeyStrokes', feature: 'keyDisplay' },
-      { label: 'Compass', feature: 'compass' },
       { label: 'CPS', feature: 'cps' },
       { label: 'Speedometer', feature: 'speedometer' },
     ],
@@ -207,16 +201,14 @@ const SCRIPT_VERSION = '6.15';
     features: {
       performance: false, coords: false, realTime: false,
       antiAfk: false, keyDisplay: false, disablePartyRequests: false,
-      muteChat: false, compass: false, cps: false, speedometer: false,
+      muteChat: false, cps: false, speedometer: false,
     },
-    counters: { performance: null, realTime: null, coords: null, antiAfk: null, keyDisplay: null, compass: null, cps: null, speedometer: null },
+    counters: { performance: null, realTime: null, coords: null, antiAfk: null, keyDisplay: null, cps: null, speedometer: null },
     menuOverlay: null,
     activeCategory: 'display',
     rafId: null,
     lastPerformanceUpdate: 0,
     lastCoordsUpdate: 0,
-    lastCompassUpdate: 0,
-    compassSmoothed: -1,
     intervals: {},
     antiAfkCountdown: 5,
     lastPerformanceColor: '#00FF00',
@@ -248,7 +240,7 @@ const SCRIPT_VERSION = '6.15';
 
   function saveDragPositions() {
     const positions = {};
-    ['performance', 'coords', 'antiAfk', 'compass', 'keyDisplay', 'cps', 'speedometer'].forEach(type => {
+    ['performance', 'coords', 'antiAfk', 'keyDisplay', 'cps', 'speedometer'].forEach(type => {
       const e = state.counters[type];
       if (e) positions[type] = { left: e.style.left, top: e.style.top };
     });
@@ -809,7 +801,6 @@ const SCRIPT_VERSION = '6.15';
       canvas.height = cfg.canvas.height;
       wrap.appendChild(canvas);
       wrap._canvas = canvas;
-      state.compassSmoothed = -1;
     } else if (type === 'keyDisplay') {
       buildKeyDisplayContent(wrap);
     } else if (type === 'cps') {
@@ -864,23 +855,6 @@ const SCRIPT_VERSION = '6.15';
       window.removeEventListener('mouseup', onMouseUp);
       window.removeEventListener('mousemove', onMouseMove);
     };
-  }
-
-  const COMPASS_MARKERS = [
-    { deg: 0, label: 'N', major: true },
-    { deg: 45, label: 'NE', major: false },
-    { deg: 90, label: 'E', major: true },
-    { deg: 135, label: 'SE', major: false },
-    { deg: 180, label: 'S', major: true },
-    { deg: 225, label: 'SW', major: false },
-    { deg: 270, label: 'W', major: true },
-    { deg: 315, label: 'NW', major: false },
-    { deg: 360, label: 'N', major: true },
-  ];
-
-  function compassHeadingLabel(deg) {
-    const d = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
-    return d[Math.round(deg / 22.5) % 16];
   }
 
   function getSystemInfo() {
@@ -980,153 +954,81 @@ const SCRIPT_VERSION = '6.15';
     };
   }
 
-  function drawCompassWidget(deg) {
-    const wrap = state.counters.compass;
-    if (!wrap?._canvas) return;
-    const canvas = wrap._canvas;
-    const ctx = canvas.getContext('2d');
-    const W = canvas.width, H = canvas.height;
-    const PPD = W / 90;
-    ctx.clearRect(0, 0, W, H);
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.85)';
-    ctx.shadowBlur = 14;
-    ctx.fillStyle = 'rgba(12,12,18,0.96)';
-    roundRect(ctx, 0, 0, W, H, 7);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = 'rgba(0,255,255,0.28)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.restore();
-    ctx.save();
-    roundRect(ctx, 1, 1, W - 2, H - 2, 6);
-    ctx.clip();
-    for (let t = 0; t < 360; t += 10) {
-      if (t % 45 === 0) continue;
-      let diff = t - deg;
-      if (diff > 180) diff -= 360;
-      if (diff < -180) diff += 360;
-      const x = W / 2 + diff * PPD;
-      if (x < -2 || x > W + 2) continue;
-      ctx.strokeStyle = 'rgba(0,255,255,0.18)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(x, H - 12);
-      ctx.lineTo(x, H - 7);
-      ctx.stroke();
-    }
-    for (let i = 0; i < COMPASS_MARKERS.length; i++) {
-      const m = COMPASS_MARKERS[i];
-      let diff = m.deg - deg;
-      if (diff > 180) diff -= 360;
-      if (diff < -180) diff += 360;
-      const x = W / 2 + diff * PPD;
-      if (x < -24 || x > W + 24) continue;
-      ctx.strokeStyle = m.major ? 'rgba(0,255,255,0.9)' : 'rgba(0,255,255,0.4)';
-      ctx.lineWidth = m.major ? 2 : 1;
-      ctx.beginPath();
-      ctx.moveTo(x, m.major ? H - 18 : H - 14);
-      ctx.lineTo(x, H - 6);
-      ctx.stroke();
-      ctx.font = (m.major ? 'bold 11px' : '9px') + ' Poppins,sans-serif';
-      ctx.fillStyle = m.major ? '#00FFFF' : 'rgba(0,255,255,0.45)';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'alphabetic';
-      ctx.fillText(m.label, x, H - 20);
-    }
-    ctx.restore();
-    ctx.fillStyle = '#00FFFF';
-    ctx.beginPath();
-    ctx.moveTo(W / 2 - 5, 2);
-    ctx.lineTo(W / 2 + 5, 2);
-    ctx.lineTo(W / 2, 9);
-    ctx.closePath();
-    ctx.fill();
-    ctx.font = 'bold 10px Poppins,sans-serif';
-    ctx.fillStyle = '#00FFFF';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'top';
-    ctx.fillText(compassHeadingLabel(deg) + '  ' + Math.round(deg) + '\u00b0', W - 7, 3);
-  }
-
   function needsRaf() {
-    return state.features.performance || state.features.coords ||
-           state.features.compass || state.features.speedometer;
+    return state.features.performance || state.features.coords || state.features.speedometer;
   }
 
-  function startPerformanceLoop() {
-    if (state.rafId) return;
-    const loop = (t) => {
-      if (!needsRaf()) { state.rafId = null; return; }
-      const game = gameRef.get(t);
-      if (t - state.lastPerformanceUpdate >= 500 && state.counters.performance) {
-        updatePerformanceCounter(game);
-        state.lastPerformanceUpdate = t;
-      }
-      if (t - state.lastCoordsUpdate >= 100) {
-        const pos = game?.player?.pos;
-        if (pos && state.counters.coords) {
-          updateCounterText('coords', `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`);
-        }
-        if (state.counters.speedometer) {
-          if (pos && state._lastSpeedPos) {
-            const dx = pos.x - state._lastSpeedPos.x;
-            const dz = pos.z - state._lastSpeedPos.z;
-            const dt = (t - state._lastSpeedTime) / 1000;
-            const speed = dt > 0 ? Math.sqrt(dx * dx + dz * dz) / dt : 0;
-            updateCounterText('speedometer', `⚡ ${speed.toFixed(2)} b/s`);
-          }
-          if (pos) {
-            state._lastSpeedPos = { x: pos.x, z: pos.z };
-            state._lastSpeedTime = t;
-          }
-        }
-        state.lastCoordsUpdate = t;
-      }
-      if (state.features.compass && state.counters.compass && t - state.lastCompassUpdate >= 50) {
-        state.lastCompassUpdate = t;
-        const inGame = !!document.pointerLockElement;
-        state.counters.compass.style.display = inGame ? 'block' : 'none';
-        if (inGame) {
-          let yaw = null;
-          if (game?.player?.yaw != null) yaw = game.player.yaw;
-          else if (game?.camera?.rotation?.y != null) yaw = game.camera.rotation.y;
-          else if (game?.controls?.yaw != null) yaw = game.controls.yaw;
-          if (yaw != null) {
-            const target = ((yaw * 180 / Math.PI) % 360 + 360) % 360;
-            if (state.compassSmoothed < 0) state.compassSmoothed = target;
-            let delta = target - state.compassSmoothed;
-            if (delta > 180) delta -= 360;
-            if (delta < -180) delta += 360;
-            state.compassSmoothed = ((state.compassSmoothed + delta * 0.2) % 360 + 360) % 360;
-            drawCompassWidget(state.compassSmoothed);
-          }
-        }
-      }
-      state.rafId = requestAnimationFrame(loop);
-    };
-    state.rafId = requestAnimationFrame(loop);
-  }
+function startPerformanceLoop() {
+  if (state.rafId) return;
 
-  function stopPerformanceLoop() {
-    if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null; }
-  }
-
-  function updatePerformanceCounter(game) {
-    if (!game || !state.counters.performance) return;
-    const fps = Math.round(game.resourceMonitor?.filteredFPS || 0);
-    const ping = Math.round(game.resourceMonitor?.filteredPing || 0);
-    let color = '#00FF00';
-    if (fps < 30 || ping > 200) color = '#FF0000';
-    else if (fps < 60 || ping > 100) color = '#FFFF00';
-    updateCounterText('performance', `FPS: ${game.inGame ? fps : '--'} | PING: ${ping}ms`);
-    if (state.lastPerformanceColor !== color) {
-      state.counters.performance.style.borderColor = color;
-      state.counters.performance.style.color = color;
-      state.lastPerformanceColor = color;
+  const loop = (t) => {
+    if (!needsRaf()) {
+      state.rafId = null;
+      return;
     }
+    const game = gameRef.get(t);
+    if (t - state.lastPerformanceUpdate >= 500 && state.counters.performance) {
+      updatePerformanceCounter(game);
+      state.lastPerformanceUpdate = t;
+    }
+    if (t - state.lastCoordsUpdate >= 100) {
+      const pos = game?.player?.pos;
+
+      if (pos && state.counters.coords) {
+        updateCounterText(
+          'coords',
+          `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`
+        );
+      }
+
+      if (state.counters.speedometer) {
+        if (pos && state._lastSpeedPos) {
+          const dx = pos.x - state._lastSpeedPos.x;
+          const dz = pos.z - state._lastSpeedPos.z;
+          const dt = (t - state._lastSpeedTime) / 1000;
+          const speed = dt > 0 ? Math.sqrt(dx * dx + dz * dz) / dt : 0;
+          updateCounterText('speedometer', `⚡ ${speed.toFixed(2)} b/s`);
+        }
+
+        if (pos) {
+          state._lastSpeedPos = { x: pos.x, z: pos.z };
+          state._lastSpeedTime = t;
+        }
+      }
+
+      state.lastCoordsUpdate = t;
+    }
+    state.rafId = requestAnimationFrame(loop);
+  };
+
+  state.rafId = requestAnimationFrame(loop);
+}
+
+function stopPerformanceLoop() {
+  if (state.rafId) {
+    cancelAnimationFrame(state.rafId);
+    state.rafId = null;
   }
+}
+
+function updatePerformanceCounter(game) {
+  if (!game || !state.counters.performance) return;
+
+  const fps = Math.round(game.resourceMonitor?.filteredFPS || 0);
+  const ping = Math.round(game.resourceMonitor?.filteredPing || 0);
+  let color = '#00FF00';
+
+  if (fps < 30 || ping > 200) color = '#FF0000';
+  else if (fps < 60 || ping > 100) color = '#FFFF00';
+
+  updateCounterText('performance', `FPS: ${game.inGame ? fps : '--'} | PING: ${ping}ms`);
+
+  if (state.lastPerformanceColor !== color) {
+    state.counters.performance.style.borderColor = color;
+    state.counters.performance.style.color = color;
+    state.lastPerformanceColor = color;
+  }
+}
 
   function updateRealTime() {
     if (!state.counters.realTime) return;
@@ -1307,7 +1209,7 @@ const SCRIPT_VERSION = '6.15';
     },
   };
 
-  ['performance', 'coords', 'compass', 'speedometer'].forEach(f => {
+  ['performance', 'coords', 'speedometer'].forEach(f => {
     featureManager[f] = {
       start() {
         if (!state.counters[f]) createWidget(f);
