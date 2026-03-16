@@ -51,6 +51,10 @@
 
 ## 📝 Changelog
 
+### [6.16] Skins Update
+- Updated sidebar panel to Skins 👗
+- etc etc
+
 ### [6.14] — Speedometer
 - Speedometer added to Display — shows ground speed in blocks/second
 - Derived from position delta rather than velocity property for reliability
