@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Waddle
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
-// @version      6.15
+// @version      6.16
 // @description  The ultimate Miniblox enhancement suite! 🤑
 // @author       Scripter, TheM1ddleM1n (Waddle team!)
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/Waddle/refs/heads/main/Penguin.png
@@ -9,7 +9,7 @@
 // @run-at       document-start
 // ==/UserScript==
 
-const SCRIPT_VERSION = '6.15';
+const SCRIPT_VERSION = '6.16';
 
 (function () {
   'use strict';
@@ -25,7 +25,15 @@ const SCRIPT_VERSION = '6.15';
   const WADDLE_LEVEL_KEY = 'waddle_level';
   const WADDLE_RANK_KEY = 'waddle_rank';
 
-  const SKINS = Object.freeze(['Remlin', 'Cat', 'Ethan', 'Sushi', 'Duck', 'Tester', 'Banana', 'Qhyun']);
+  const STANDARD_SKINS = Object.freeze([
+    'Alice','Bob','Techno','BigGelo','Corrupted','Diana','Dr. Strange','Endoskeleton',
+    'Ganyu','George','Holly','Hutao','Jake','James','Klee','Kyoko','Adele','Chris',
+    'Deadpool','Galactus','Heather','Ironman','Joe','Levi','Lexi','Natalie','Remus',
+    'Sara','Transformer','Vindicate','Adventure Guy','Aether','Apex','Ariel','Aurora',
+    'Celeste','Cody','Ember','Finn','Glory','Hunter','Katie','Nova','Panda','Raven',
+    'Seraphina','Vain','Zane'
+  ]);
+  const CUSTOM_SKINS = Object.freeze(['Remlin','Cat','Ethan','Sushi','Duck','Tester','Banana','Qhyun']);
   const SKIN_API = 'https://session.coolmathblox.ca/accounts/set_cosmetic';
 
   const el = (tag, cls, text) => {
@@ -146,7 +154,7 @@ const SCRIPT_VERSION = '6.15';
   const CATEGORIES = [
     { id: 'display', label: 'Display', icon: '📊' },
     { id: 'utilities', label: 'Utilities', icon: '🛠️' },
-    { id: 'customSkin', label: 'Custom Skins', icon: '🎨' },
+    { id: 'customSkin', label: 'Skins', icon: '👗' },
     { id: 'about', label: 'About Waddle', icon: 'ℹ️' }
   ];
 
@@ -344,7 +352,10 @@ const SCRIPT_VERSION = '6.15';
 #waddle-crosshair-container { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:5000; pointer-events:none; }
 #wb-hud-canvas { position:fixed; inset:0; pointer-events:none; z-index:4999; }
 #waddle-skin-panel { flex:1; padding:16px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; }
-.skin-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; }
+#waddle-skin-panel::-webkit-scrollbar { width:4px; }
+#waddle-skin-panel::-webkit-scrollbar-thumb { background:var(--c-border); border-radius:2px; }
+.skin-section-header { font-size:.65rem; font-weight:700; color:var(--c); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:7px; padding-bottom:5px; border-bottom:1px solid var(--c-border); }
+.skin-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; margin-bottom:14px; }
 .skin-btn { background:var(--bg3); border:1px solid rgba(255,255,255,.07); border-radius:var(--radius); padding:14px 10px; cursor:pointer; text-align:center; font-size:.88rem; font-weight:var(--fw); color:var(--text-dim); transition:all .12s ease; position:relative; }
 .skin-btn:hover { border-color:var(--c-border); color:var(--text); }
 .skin-btn.equipped { border-color:var(--c); color:var(--c); background:var(--c-dim); cursor:default; }
@@ -1232,7 +1243,7 @@ const SCRIPT_VERSION = '6.15';
   }
 
   function hideSkinConfirm() {
-    document.getElementById('skin-grid-view').style.display = 'grid';
+    document.getElementById('skin-grid-view').style.display = 'flex';
     document.getElementById('skin-confirm-view').classList.remove('show');
   }
 
@@ -1251,13 +1262,8 @@ const SCRIPT_VERSION = '6.15';
 
     if (isFirstTime && hasToken) {
       const username = getPlayerUsername();
-      showToast(
-        'Token Found!',
-        'enabled',
-        username
-          ? `Auto-detected as ${username} — token automatically applied!`
-          : 'Token found and automatically applied!'
-      );
+      showToast('Token Found!', 'enabled',
+        username ? `Auto-detected as ${username} — token automatically applied!` : 'Token found and automatically applied!');
     } else if (isFirstTime && !hasToken) {
       showToast('No Token', 'disabled', 'Log into Miniblox first, then re-open skins.');
     }
@@ -1269,17 +1275,10 @@ const SCRIPT_VERSION = '6.15';
       const username = getPlayerUsername();
       const userBanner = div(null);
       Object.assign(userBanner.style, {
-        fontSize: '.75rem',
-        fontWeight: '700',
-        color: 'var(--text-dim)',
-        marginBottom: '6px',
-        padding: '6px 10px',
-        background: 'var(--bg3)',
-        border: '1px solid rgba(255,255,255,.07)',
-        borderRadius: 'var(--radius)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px'
+        fontSize: '.75rem', fontWeight: '700', color: 'var(--text-dim)',
+        marginBottom: '6px', padding: '6px 10px', background: 'var(--bg3)',
+        border: '1px solid rgba(255,255,255,.07)', borderRadius: 'var(--radius)',
+        display: 'flex', alignItems: 'center', gap: '6px', flexShrink: '0'
       });
       userBanner.id = 'skin-user-banner';
       setSkinBannerName(userBanner, username);
@@ -1292,27 +1291,39 @@ const SCRIPT_VERSION = '6.15';
       }
       skinPanel.appendChild(userBanner);
 
-      const equippedSkin = localStorage.getItem(EQUIPPED_SKIN_KEY) || '';
-      const skinGrid = div('skin-grid');
-      skinGrid.id = 'skin-grid-view';
-
-      SKINS.forEach(name => {
-        const btn = div('skin-btn');
-        const isEquipped = name.toLowerCase() === equippedSkin.toLowerCase();
-        btn.appendChild(el('span', null, name));
-        if (isEquipped) {
-          btn.classList.add('equipped');
-          btn.appendChild(el('span', 'skin-equipped-badge', '✓ on'));
-        }
-        btn.addEventListener('click', () => {
-          if (btn.classList.contains('equipped')) {
-            showToast('Already Equipped', 'info', `${name} is your current skin.`);
-            return;
+      function buildSkinSection(label, skinList) {
+        const section = div(null);
+        const header = div('skin-section-header', label);
+        section.appendChild(header);
+        const skinGrid = div('skin-grid');
+        const equippedSkin = localStorage.getItem(EQUIPPED_SKIN_KEY) || '';
+        skinList.forEach(name => {
+          const btn = div('skin-btn');
+          const isEquipped = name.toLowerCase() === equippedSkin.toLowerCase();
+          btn.appendChild(el('span', null, name));
+          if (isEquipped) {
+            btn.classList.add('equipped');
+            btn.appendChild(el('span', 'skin-equipped-badge', '✓ on'));
           }
-          showSkinConfirm(name);
+          btn.addEventListener('click', () => {
+            if (btn.classList.contains('equipped')) {
+              showToast('Already Equipped', 'info', `${name} is your current skin.`);
+              return;
+            }
+            showSkinConfirm(name);
+          });
+          skinGrid.appendChild(btn);
         });
-        skinGrid.appendChild(btn);
-      });
+        section.appendChild(skinGrid);
+        return section;
+      }
+
+      const scrollArea = div(null);
+      scrollArea.id = 'skin-grid-view';
+      Object.assign(scrollArea.style, { display: 'flex', flexDirection: 'column' });
+      scrollArea.appendChild(buildSkinSection('Standard Skins', STANDARD_SKINS));
+      scrollArea.appendChild(buildSkinSection('Custom Skins', CUSTOM_SKINS));
+      skinPanel.appendChild(scrollArea);
 
       const confirmView = div(null);
       confirmView.id = 'skin-confirm-view';
@@ -1323,8 +1334,7 @@ const SCRIPT_VERSION = '6.15';
           <button class="skin-confirm-no" id="skin-confirm-no">No</button>
         </div>
       `;
-
-      skinPanel.append(skinGrid, confirmView);
+      skinPanel.appendChild(confirmView);
       document.getElementById('waddle-panel').appendChild(skinPanel);
 
       document.getElementById('skin-confirm-yes').addEventListener('click', async () => {
@@ -1344,6 +1354,18 @@ const SCRIPT_VERSION = '6.15';
           if (!document.contains(banner)) clearInterval(poll);
         }, 1000);
       }
+      const equippedSkin = localStorage.getItem(EQUIPPED_SKIN_KEY) || '';
+      document.querySelectorAll('#skin-grid-view .skin-btn').forEach(btn => {
+        const name = btn.querySelector('span')?.textContent || '';
+        const isEquipped = name.toLowerCase() === equippedSkin.toLowerCase();
+        btn.classList.toggle('equipped', isEquipped);
+        const badge = btn.querySelector('.skin-equipped-badge');
+        if (isEquipped && !badge) {
+          btn.appendChild(el('span', 'skin-equipped-badge', '✓ on'));
+        } else if (!isEquipped && badge) {
+          badge.remove();
+        }
+      });
     }
 
     skinPanel.style.display = 'flex';
