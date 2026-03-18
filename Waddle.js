@@ -230,6 +230,7 @@ const SCRIPT_VERSION = '6.16';
     _lastSpeedPos: null,
     _lastSpeedTime: 0,
     _lastPing: 0,
+    _mutedChat: null,
   };
 
   const KNOWN_FEATURES = new Set(Object.keys(state.features));
@@ -802,6 +803,9 @@ const SCRIPT_VERSION = '6.16';
 
     if (type === 'performance') {
       buildFpsCpsContent(wrap);
+      wrap.style.borderColor = state.lastPerformanceColor;
+      const fpsEl = wrap.querySelector('#fps-val');
+      if (fpsEl) fpsEl.style.color = state.lastPerformanceColor;
     } else if (type === 'keyDisplay') {
       buildKeyDisplayContent(wrap);
     } else {
@@ -1063,6 +1067,23 @@ const SCRIPT_VERSION = '6.16';
     }
   }
 
+  function applyChatMute(game) {
+    if (!game?.chat) return false;
+    if (game.chat !== state._mutedChat) restoreMutedChat();
+    if (!game.chat._waddleOriginalAddChat) game.chat._waddleOriginalAddChat = game.chat.addChat.bind(game.chat);
+    game.chat.addChat = function () {};
+    state._mutedChat = game.chat;
+    return true;
+  }
+
+  function restoreMutedChat() {
+    if (state._mutedChat?._waddleOriginalAddChat) {
+      state._mutedChat.addChat = state._mutedChat._waddleOriginalAddChat;
+      delete state._mutedChat._waddleOriginalAddChat;
+    }
+    state._mutedChat = null;
+  }
+
   const featureManager = {
     performance: {
       start() {
@@ -1188,18 +1209,20 @@ const SCRIPT_VERSION = '6.16';
     },
     muteChat: {
       start() {
-        const game = gameRef.get();
-        if (!game?.chat) { showToast('Chat Mute', 'disabled', 'Game not loaded yet!'); state.features.muteChat = false; return; }
-        if (!game.chat._waddleOriginalAddChat) game.chat._waddleOriginalAddChat = game.chat.addChat.bind(game.chat);
-        game.chat.addChat = function () {};
+        const tryMute = () => applyChatMute(gameRef.get());
+        const mutedImmediately = tryMute();
+        clearInterval(state.intervals.chatMuteRetry);
+        state.intervals.chatMuteRetry = setInterval(tryMute, 2000);
+        if (!mutedImmediately) {
+          showToast('Chat-Mute', 'info', 'Waiting for game chat to load...');
+          return;
+        }
         showToast('Chat-Mute', 'enabled', 'Chat messages are now hidden');
       },
       cleanup() {
-        const game = gameRef.get();
-        if (game?.chat?._waddleOriginalAddChat) {
-          game.chat.addChat = game.chat._waddleOriginalAddChat;
-          delete game.chat._waddleOriginalAddChat;
-        }
+        clearInterval(state.intervals.chatMuteRetry);
+        state.intervals.chatMuteRetry = null;
+        restoreMutedChat();
         showToast('Chat-Mute', 'disabled', 'Chat messages restored');
       }
     },
@@ -1209,9 +1232,18 @@ const SCRIPT_VERSION = '6.16';
     featureManager[f] = {
       start() {
         if (!state.counters[f]) createWidget(f);
+        if (f === 'speedometer') {
+          state._lastSpeedPos = null;
+          state._lastSpeedTime = 0;
+          updateCounterText('speedometer', '⚡ 0.00 b/s');
+        }
         startPerformanceLoop();
       },
       cleanup() {
+        if (f === 'speedometer') {
+          state._lastSpeedPos = null;
+          state._lastSpeedTime = 0;
+        }
         removeCounter(f);
         if (!needsRaf()) stopPerformanceLoop();
       }
