@@ -2,8 +2,8 @@
 // @name         Waddle
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
 // @version      6.16
-// @description  The ultimate Miniblox enhancement suite! 🤑
-// @author       Scripter, TheM1ddleM1n (Waddle team!)
+// @description  The ULTIMATE Miniblox enhancement suite 🤑
+// @author       Scripter, TheM1ddleM1n
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/Waddle/refs/heads/main/Penguin.png
 // @match        https://miniblox.io/
 // @run-at       document-start
@@ -81,7 +81,7 @@ const SCRIPT_VERSION = '6.16';
   function setSkinBannerName(banner, name) {
     if (!banner) return;
     if (!name) {
-      banner.innerHTML = `<span style="color:var(--text-dim)">Username not detected yet — enter a game first.</span>`;
+      banner.innerHTML = `<span style="color:var(--text-dim)">Username is not detected yet — enter a game first.</span>`;
       return;
     }
     const level = localStorage.getItem(WADDLE_LEVEL_KEY);
@@ -97,7 +97,7 @@ const SCRIPT_VERSION = '6.16';
 
   async function applySkin(skinId) {
     const token = localStorage.getItem(SESSION_KEY);
-    if (!token) { showToast('No Session Token', 'disabled', 'Log into Miniblox first!'); return; }
+    if (!token) { showToast('No Session Token found', 'disabled', 'Log into Miniblox first'); return; }
     try {
       const res = await fetch(SKIN_API, {
         method: 'POST',
@@ -154,7 +154,7 @@ const SCRIPT_VERSION = '6.16';
   const CATEGORIES = [
     { id: 'display', label: 'Display', icon: '📊' },
     { id: 'utilities', label: 'Utilities', icon: '🛠️' },
-    { id: 'customSkin', label: 'Skins', icon: '👗' },
+    { id: 'customSkin', label: 'SkinChanger', icon: '👗' },
     { id: 'about', label: 'About Waddle', icon: 'ℹ️' }
   ];
 
@@ -169,7 +169,7 @@ const SCRIPT_VERSION = '6.16';
     utilities: [
       { label: 'Anti-AFK', feature: 'antiAfk' },
       { label: 'Block Party RQ', feature: 'disablePartyRequests' },
-      { label: 'Chat Mute', feature: 'muteChat' }
+      { label: 'Chat-Mute', feature: 'muteChat' }
     ]
   };
 
@@ -263,7 +263,7 @@ const SCRIPT_VERSION = '6.16';
       if (game?.chat && typeof game.chat.addChat === 'function') {
         clearInterval(state.intervals.waitForGame);
         state.intervals.waitForGame = null;
-        game.chat.addChat({ text: `\\${THEME_COLOR}\\[Server]\\reset\\ Welcome! You're now running Waddle v${SCRIPT_VERSION}. Enjoy!` });
+        game.chat.addChat({ text: `\\${THEME_COLOR}\\[Server]\\reset\\ Welcome! You're running Waddle v${SCRIPT_VERSION}. Enjoy!` });
       }
     }, 500);
   })();
@@ -1192,7 +1192,7 @@ const SCRIPT_VERSION = '6.16';
         if (!game?.chat) { showToast('Chat Mute', 'disabled', 'Game not loaded yet!'); state.features.muteChat = false; return; }
         if (!game.chat._waddleOriginalAddChat) game.chat._waddleOriginalAddChat = game.chat.addChat.bind(game.chat);
         game.chat.addChat = function () {};
-        showToast('Chat Mute', 'enabled', 'Chat messages are now hidden');
+        showToast('Chat-Mute', 'enabled', 'Chat messages are now hidden');
       },
       cleanup() {
         const game = gameRef.get();
@@ -1200,7 +1200,7 @@ const SCRIPT_VERSION = '6.16';
           game.chat.addChat = game.chat._waddleOriginalAddChat;
           delete game.chat._waddleOriginalAddChat;
         }
-        showToast('Chat Mute', 'disabled', 'Chat messages restored');
+        showToast('Chat-Mute', 'disabled', 'Chat messages restored');
       }
     },
   };
@@ -1265,13 +1265,12 @@ const SCRIPT_VERSION = '6.16';
       showToast('Token Found!', 'enabled',
         username ? `Auto-detected as ${username} — token automatically applied!` : 'Token found and automatically applied!');
     } else if (isFirstTime && !hasToken) {
-      showToast('No Token', 'disabled', 'Log into Miniblox first, then re-open skins.');
+      showToast('No Token', 'disabled', 'Log into Miniblox first, then re-open skins');
     }
 
     if (!skinPanel) {
       skinPanel = div(null);
       skinPanel.id = 'waddle-skin-panel';
-
       const username = getPlayerUsername();
       const userBanner = div(null);
       Object.assign(userBanner.style, {
@@ -1552,9 +1551,7 @@ const SCRIPT_VERSION = '6.16';
       const t = setInterval(() => { if (document.body && document.head) { clearInterval(t); resolve(); } }, 50);
     });
   }
-
   const MIN_THREE_REVISION = 128;
-
   function isThreeCompatible() {
     return typeof THREE !== 'undefined' &&
       typeof THREE.CubeTextureLoader === 'function' &&
@@ -1614,6 +1611,5 @@ const SCRIPT_VERSION = '6.16';
       showToast('Init failed', 'info', 'Check console');
     }
   }
-
   safeInit();
 })();
