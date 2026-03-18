@@ -803,6 +803,9 @@ const SCRIPT_VERSION = '6.16';
 
     if (type === 'performance') {
       buildFpsCpsContent(wrap);
+      wrap.style.borderColor = state.lastPerformanceColor;
+      const fpsEl = wrap.querySelector('#fps-val');
+      if (fpsEl) fpsEl.style.color = state.lastPerformanceColor;
     } else if (type === 'keyDisplay') {
       buildKeyDisplayContent(wrap);
     } else {
@@ -1229,9 +1232,18 @@ const SCRIPT_VERSION = '6.16';
     featureManager[f] = {
       start() {
         if (!state.counters[f]) createWidget(f);
+        if (f === 'speedometer') {
+          state._lastSpeedPos = null;
+          state._lastSpeedTime = 0;
+          updateCounterText('speedometer', '⚡ 0.00 b/s');
+        }
         startPerformanceLoop();
       },
       cleanup() {
+        if (f === 'speedometer') {
+          state._lastSpeedPos = null;
+          state._lastSpeedTime = 0;
+        }
         removeCounter(f);
         if (!needsRaf()) stopPerformanceLoop();
       }
