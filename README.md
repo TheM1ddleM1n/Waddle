@@ -38,7 +38,6 @@
 | 🕐 Clock | 24-hour clock, fixed bottom-right |
 | ⌨️ Key Display | WASD + mouse buttons, lights up on press |
 | 🐧 Anti-AFK | Auto-jumps every 5s — only fires when in-game |
-| 🐧 Fun Facts | Penguin fact toast on game join |
 | 🚫 Block Party RQ | Silently drops incoming party invites |
 | 🎨 Custom Skin | Equip any skin from the menu — in one click lol |
 | 🔇 Chat Mute | Hides all incoming chat messages — toggle to restore |
