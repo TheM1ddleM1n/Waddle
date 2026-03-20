@@ -42,7 +42,7 @@
 | 🎨 Custom Skin | Equip any skin from the menu — in one click lol |
 | 🔇 Chat Mute | Hides all incoming chat messages — toggle to restore |
 
-> All draggable widgets **remember their position** across sessions
+> All draggable widgets **remember their position** across sessions. (using localstorage)
 
 ![Space Sky](https://github.com/user-attachments/assets/a11615b2-423f-41bc-9f5c-be91bd1f2adc)
 
@@ -50,9 +50,18 @@
 
 ## 📝 Changelog
 
-### [6.16] Skins Update
+### [6.16] v2 — Bug Fixes & Refactors
+- `applySkin` now uses a lock flag to prevent double-firing on rapid clicks; resets on failure, not on success (page reloads anyway)
+- `WIDGET_CONFIGS` entries now each own a `build(wrap)` method — `createWidget` no longer needs type-specific branches
+- `isTyping()` hoisted to module scope and shared between the keyboard handler and key display
+- Coords widget shows `--` instead of `0ms` ping until the game reports a real value
+- Speedometer clamps sub-`0.05 b/s` jitter to `0.00` to absorb server-tick micro-corrections
+- Key display no longer lights up while typing in chat or any other focused input
+- Skin equip badges now sync on every panel open and immediately after a successful equip, without needing to close and reopen
+- Anti-AFK countdown resets to 5 on cleanup; interval callback is guarded against firing after toggle-off
+
+### [6.16] — Skins Update
 - Updated sidebar panel to Skins 👗
-- etc etc
 
 ### [6.14] — Speedometer
 - Speedometer added to Display — shows ground speed in blocks/second
