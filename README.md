@@ -59,7 +59,7 @@
 - Speedometer added to Display — shows ground speed in blocks/second
 - Derived from position delta rather than velocity property for reliability
 - Shares the coords 100ms tick rate, no extra timer needed
-- Performance v2 update
+- Performance v2 update!!!
 
 ### [6.11] — Chat Mute
 - Chat Mute added to Utilities — suppresses all incoming chat, fully restores on disable
