@@ -96,8 +96,14 @@ const SCRIPT_VERSION = '6.16';
   }
 
   async function applySkin(skinId) {
+    if (state._skinApplying) return;
+    state._skinApplying = true;
     const token = localStorage.getItem(SESSION_KEY);
-    if (!token) { showToast('No Session Token found', 'disabled', 'Log into Miniblox first'); return; }
+    if (!token) {
+      showToast('No Session Token found', 'disabled', 'Log into Miniblox first');
+      state._skinApplying = false;
+      return;
+    }
     try {
       const res = await fetch(SKIN_API, {
         method: 'POST',
@@ -108,6 +114,7 @@ const SCRIPT_VERSION = '6.16';
       const data = await res.json();
       if (data?.success === false) throw new Error(data.message || 'Server rejected request');
       localStorage.setItem(EQUIPPED_SKIN_KEY, skinId.toLowerCase());
+      refreshSkinBadges();
       const username = getPlayerUsername();
       showToast(
         username ? `Welcome back, ${username}!` : 'Skin Applied!',
@@ -117,6 +124,7 @@ const SCRIPT_VERSION = '6.16';
       setTimeout(() => location.reload(), 1200);
     } catch (e) {
       showToast('Skin Failed', 'disabled', 'Could not apply skin: ' + e.message);
+      state._skinApplying = false;
     }
   }
 
@@ -124,30 +132,53 @@ const SCRIPT_VERSION = '6.16';
     performance: {
       id: 'performance-counter', cls: 'counter',
       pos: { left: '50px', top: '80px' },
+      build(wrap) {
+        buildFpsCpsContent(wrap);
+        wrap.style.borderColor = state.lastPerformanceColor;
+        const fpsEl = wrap.querySelector('#fps-val');
+        if (fpsEl) fpsEl.style.color = state.lastPerformanceColor;
+      },
     },
     coords: {
       id: 'coords-counter', cls: 'counter',
-      defaultText: '📍 X: 0 Y: 0 Z: 0 | 0ms',
       pos: { left: '50px', top: '220px' },
+      build(wrap) {
+        const span = el('span', 'counter-time-text', '📍 X: 0 Y: 0 Z: 0 | --');
+        wrap.appendChild(span);
+        wrap._textSpan = span;
+      },
     },
     realTime: {
       id: 'real-time-counter', cls: 'counter',
-      defaultText: '00:00:00 AM',
       fixed: { right: '30px', bottom: '30px', background: 'transparent', boxShadow: 'none', border: 'none', fontSize: '1.1rem', padding: '0' },
+      build(wrap) {
+        const span = el('span', 'counter-time-text', '00:00:00 AM');
+        wrap.appendChild(span);
+        wrap._textSpan = span;
+      },
     },
     antiAfk: {
       id: 'anti-afk-counter', cls: 'counter',
-      defaultText: '🐧 Jumping in 5s',
       pos: { left: '50px', top: '290px' },
+      build(wrap) {
+        const span = el('span', 'counter-time-text', '🐧 Jumping in 5s');
+        wrap.appendChild(span);
+        wrap._textSpan = span;
+      },
     },
     speedometer: {
       id: 'speedometer-counter', cls: 'counter',
-      defaultText: '⚡ 0.00 b/s',
       pos: { left: '50px', top: '360px' },
+      build(wrap) {
+        const span = el('span', 'counter-time-text', '⚡ 0.00 b/s');
+        wrap.appendChild(span);
+        wrap._textSpan = span;
+      },
     },
     keyDisplay: {
       id: 'key-display-container', cls: 'key-display-container',
       pos: { left: '50px', top: '150px' },
+      build(wrap) { buildKeyDisplayContent(wrap); },
     },
   };
 
@@ -231,6 +262,7 @@ const SCRIPT_VERSION = '6.16';
     _lastSpeedTime: 0,
     _lastPing: 0,
     _mutedChat: null,
+    _skinApplying: false,
   };
 
   const KNOWN_FEATURES = new Set(Object.keys(state.features));
@@ -791,7 +823,6 @@ const SCRIPT_VERSION = '6.16';
     if (!cfg) return null;
     const wrap = div(cfg.cls);
     wrap.id = cfg.id;
-
     if (cfg.fixed) {
       Object.assign(wrap.style, cfg.fixed);
     } else {
@@ -800,20 +831,7 @@ const SCRIPT_VERSION = '6.16';
       wrap.style.top = saved?.top || cfg.pos.top;
       setupDragging(wrap, saveDragPositions);
     }
-
-    if (type === 'performance') {
-      buildFpsCpsContent(wrap);
-      wrap.style.borderColor = state.lastPerformanceColor;
-      const fpsEl = wrap.querySelector('#fps-val');
-      if (fpsEl) fpsEl.style.color = state.lastPerformanceColor;
-    } else if (type === 'keyDisplay') {
-      buildKeyDisplayContent(wrap);
-    } else {
-      const span = el('span', 'counter-time-text', cfg.defaultText ?? '');
-      wrap.appendChild(span);
-      wrap._textSpan = span;
-    }
-
+    cfg.build(wrap);
     document.body.appendChild(wrap);
     state.counters[type] = wrap;
     return wrap;
@@ -977,9 +995,10 @@ const SCRIPT_VERSION = '6.16';
         const pos = game?.player?.pos;
         if (pos && state.counters.coords) {
           const ping = Math.round(game?.resourceMonitor?.filteredPing || 0);
+          const pingStr = ping > 0 ? `${ping}ms` : '--';
           updateCounterText(
             'coords',
-            `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)} | ${ping}ms`
+            `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)} | ${pingStr}`
           );
         }
         if (state.counters.speedometer) {
@@ -987,7 +1006,8 @@ const SCRIPT_VERSION = '6.16';
             const dx = pos.x - state._lastSpeedPos.x;
             const dz = pos.z - state._lastSpeedPos.z;
             const dt = (t - state._lastSpeedTime) / 1000;
-            const speed = dt > 0 ? Math.sqrt(dx * dx + dz * dz) / dt : 0;
+            const raw = dt > 0 ? Math.sqrt(dx * dx + dz * dz) / dt : 0;
+            const speed = raw < 0.05 ? 0 : raw;
             updateCounterText('speedometer', `⚡ ${speed.toFixed(2)} b/s`);
           }
           if (pos) {
@@ -1084,6 +1104,12 @@ const SCRIPT_VERSION = '6.16';
     state._mutedChat = null;
   }
 
+  function isTyping() {
+    const active = document.activeElement;
+    if (!active) return false;
+    return active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable;
+  }
+
   const featureManager = {
     performance: {
       start() {
@@ -1153,6 +1179,7 @@ const SCRIPT_VERSION = '6.16';
         state.antiAfkCountdown = 5;
         updateAntiAfkCounter();
         state.intervals.antiAfk = setInterval(() => {
+          if (!state.features.antiAfk) return;
           state.antiAfkCountdown--;
           updateAntiAfkCounter();
           if (state.antiAfkCountdown <= 0) {
@@ -1166,6 +1193,7 @@ const SCRIPT_VERSION = '6.16';
       cleanup() {
         clearInterval(state.intervals.antiAfk);
         state.intervals.antiAfk = null;
+        state.antiAfkCountdown = 5;
         removeCounter('antiAfk');
       }
     },
@@ -1175,6 +1203,7 @@ const SCRIPT_VERSION = '6.16';
         if (state._keyListeners) return;
         const kd = (e) => {
           if (state.menuOverlay?.classList.contains('show')) return;
+          if (isTyping()) return;
           const k = e.key === ' ' ? 'space' : e.key.toLowerCase();
           if (k in state.keys) { state.keys[k] = true; updateKeyDisplay(k, true); }
         };
@@ -1263,6 +1292,21 @@ const SCRIPT_VERSION = '6.16';
     saveSettings();
     refreshHud();
     return state.features[featureName];
+  }
+
+  function refreshSkinBadges() {
+    const equippedSkin = localStorage.getItem(EQUIPPED_SKIN_KEY) || '';
+    document.querySelectorAll('#skin-grid-view .skin-btn').forEach(btn => {
+      const name = btn.querySelector('span')?.textContent || '';
+      const isEquipped = name.toLowerCase() === equippedSkin.toLowerCase();
+      btn.classList.toggle('equipped', isEquipped);
+      const badge = btn.querySelector('.skin-equipped-badge');
+      if (isEquipped && !badge) {
+        btn.appendChild(el('span', 'skin-equipped-badge', '✓ on'));
+      } else if (!isEquipped && badge) {
+        badge.remove();
+      }
+    });
   }
 
   function showSkinConfirm(skinName) {
@@ -1385,20 +1429,9 @@ const SCRIPT_VERSION = '6.16';
           if (!document.contains(banner)) clearInterval(poll);
         }, 1000);
       }
-      const equippedSkin = localStorage.getItem(EQUIPPED_SKIN_KEY) || '';
-      document.querySelectorAll('#skin-grid-view .skin-btn').forEach(btn => {
-        const name = btn.querySelector('span')?.textContent || '';
-        const isEquipped = name.toLowerCase() === equippedSkin.toLowerCase();
-        btn.classList.toggle('equipped', isEquipped);
-        const badge = btn.querySelector('.skin-equipped-badge');
-        if (isEquipped && !badge) {
-          btn.appendChild(el('span', 'skin-equipped-badge', '✓ on'));
-        } else if (!isEquipped && badge) {
-          badge.remove();
-        }
-      });
     }
 
+    refreshSkinBadges();
     skinPanel.style.display = 'flex';
     skinPanel.style.flexDirection = 'column';
     hideSkinConfirm();
@@ -1544,11 +1577,6 @@ const SCRIPT_VERSION = '6.16';
   function toggleMenu() { state.menuOverlay?.classList.toggle('show'); }
 
   function setupKeyboardHandler() {
-    function isTyping() {
-      const el = document.activeElement;
-      if (!el) return false;
-      return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
-    }
     window.addEventListener('keydown', (e) => {
       if (isTyping() || e.repeat) return;
       if (e.key === '\\') { e.preventDefault(); toggleMenu(); return; }
@@ -1583,6 +1611,7 @@ const SCRIPT_VERSION = '6.16';
       const t = setInterval(() => { if (document.body && document.head) { clearInterval(t); resolve(); } }, 50);
     });
   }
+
   const MIN_THREE_REVISION = 128;
   function isThreeCompatible() {
     return typeof THREE !== 'undefined' &&
