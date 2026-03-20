@@ -42,7 +42,7 @@
 | 🎨 Custom Skin | Equip any skin from the menu — in one click lol |
 | 🔇 Chat Mute | Hides all incoming chat messages — toggle to restore |
 
-> All draggable widgets **remember their position** across sessions. (using localstorage)
+> All draggable widgets **remember their position** across sessions
 
 ![Space Sky](https://github.com/user-attachments/assets/a11615b2-423f-41bc-9f5c-be91bd1f2adc)
 
