@@ -1632,7 +1632,7 @@ const SCRIPT_VERSION = '6.16';
       initHudCanvas();
       startTargetHUDLoop();
       initSpaceSky();
-      showToast('Waddle loaded', 'info', 'Press \\ to open menu');
+      showToast('Welcome To Waddle!', 'info', 'Press \\ to open menu');
       setTimeout(() => {
         Object.entries(state.features).forEach(([feature, enabled]) => {
           if (!enabled) return;
