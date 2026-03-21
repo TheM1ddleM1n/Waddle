@@ -501,7 +501,7 @@ const SCRIPT_VERSION = '6.16';
     if (!ctx) { showToast('Target HUD', 'info', 'Canvas 2D context unavailable'); return; }
 
     const MAX_RANGE = 5;
-    const W = 220, R = 10, H_ENTITY = 86, H_BLOCK = 52;
+    const W = 220, R = 10, H_ENTITY = 52, H_BLOCK = 52;
     const ENTITY_SCAN_INTERVAL = 50;
     const PAUSE_CHECK_INTERVAL = 200;
 
@@ -516,12 +516,10 @@ const SCRIPT_VERSION = '6.16';
     let lastPauseCheck = 0;
     let cachedBorderGradient = null;
     let cachedBorderGradientKey = '';
-    let lastDrawnHp = -1;
     let lastDrawnName = '';
     let lastDrawnFaceSrc = '';
     let lastDrawnType = '';
     let needsRedraw = true;
-    let displayedHp = 0;
 
     function findEntityMapKey(world) {
       if (entityMapKey && world[entityMapKey] instanceof Map) return entityMapKey;
@@ -556,23 +554,14 @@ const SCRIPT_VERSION = '6.16';
       }
     }
 
-    function drawEntityHUD(nearest, faceSrc, faceName) {
+    function drawEntityHUD(faceSrc, faceName) {
       const x = (canvas.width - W) / 2, y = 16;
-      const maxHp = nearest.getMaxHealth?.() ?? 20;
-      const realHp = Math.max(0, nearest.getHealth());
-      if (displayedHp === 0) displayedHp = realHp;
-      displayedHp += (realHp - displayedHp) * 0.15;
-      const hp = displayedHp;
-      const hpPct = hp / maxHp;
-      const barColor = hpPct > 0.5 ? '#22c55e' : hpPct > 0.25 ? '#eab308' : '#ef4444';
       if (
-        Math.round(hp) === Math.round(lastDrawnHp) &&
         faceName === lastDrawnName &&
         faceSrc === lastDrawnFaceSrc &&
         lastDrawnType === 'entity' &&
         !needsRedraw
       ) return;
-      lastDrawnHp = Math.round(hp);
       lastDrawnName = faceName;
       lastDrawnFaceSrc = faceSrc;
       lastDrawnType = 'entity';
@@ -604,18 +593,6 @@ const SCRIPT_VERSION = '6.16';
       ctx.fillStyle = '#e2e8f0';
       ctx.textAlign = 'left';
       ctx.fillText(faceName, nameX, y + 26);
-      const barW = W - 20, barH = 8, barX = x + 10, barY = y + 40;
-      ctx.fillStyle = 'rgba(255,255,255,0.07)';
-      ctx.beginPath();
-      ctx.roundRect(barX, barY, barW, barH, 4);
-      ctx.fill();
-      ctx.fillStyle = barColor;
-      ctx.beginPath();
-      ctx.roundRect(barX, barY, Math.max(hpPct * barW, 0), barH, 4);
-      ctx.fill();
-      ctx.font = '10px Poppins,sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,1)';
-      ctx.fillText(`${Math.round(hp)} / ${maxHp}`, barX, barY + barH + 14);
       ctx.restore();
     }
 
@@ -624,7 +601,6 @@ const SCRIPT_VERSION = '6.16';
       if (blockName === lastDrawnName && lastDrawnType === 'block' && !needsRedraw) return;
       lastDrawnName = blockName;
       lastDrawnType = 'block';
-      lastDrawnHp = -1;
       lastDrawnFaceSrc = '';
       needsRedraw = false;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -678,7 +654,7 @@ const SCRIPT_VERSION = '6.16';
                 const dist = player.pos.distanceTo(entity.pos);
                 if (dist < minDist) { minDist = dist; nearest = entity; }
               });
-              if (nearest !== cachedNearest) { needsRedraw = true; displayedHp = 0; }
+              if (nearest !== cachedNearest) needsRedraw = true;
               cachedNearest = nearest;
               cachedMinDist = minDist;
             }
@@ -697,7 +673,7 @@ const SCRIPT_VERSION = '6.16';
             } else {
               faceName = cachedNearest.name || cachedNearest.constructor?.name?.replace('Entity', '') || '???';
             }
-            drawEntityHUD(cachedNearest, faceSrc, faceName);
+            drawEntityHUD(faceSrc, faceName);
           } else {
             getDOM(now);
             const blockName = domNameEl?.textContent?.trim() ?? null;
@@ -715,7 +691,6 @@ const SCRIPT_VERSION = '6.16';
         lastDrawnType = '';
         needsRedraw = true;
         cachedNearest = null;
-        displayedHp = 0;
         try { ctx.clearRect(0, 0, canvas.width, canvas.height); } catch (_) {}
         setTimeout(() => requestAnimationFrame(tick), 2000);
         return;
