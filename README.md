@@ -27,7 +27,7 @@
 | Feature | Description |
 |---------|-------------|
 | 🎯 Crosshair | Cyan crosshair, auto-hides in menus |
-| 👁️ Target HUD | Player faces, mob names, block names — with live health bars |
+| 👁️ Target HUD | Player faces, mob names, block names |
 | 🌌 Space Sky | MilkyWay cubemap replaces the default sky entirely |
 
 ### Toggleable via `\` menu
@@ -50,7 +50,13 @@
 
 ## 📝 Changelog
 
-### [6.16] v2 — Bug Fixes & Refactors
+### [6.16] v4 — Target HUD Health Removed
+- HP bar, HP text, and all health smoothing state removed from entity cards in Target HUD
+- `H_ENTITY` reduced from `86` to `52` — entity and block cards now share the same height
+- `drawEntityHUD` no longer takes `nearest` as a parameter since health reads are gone
+- `displayedHp` and `lastDrawnHp` variables removed entirely
+
+### [6.16] v3 — Bug Fixes & Refactors
 - `applySkin` now uses a lock flag to prevent double-firing on rapid clicks; resets on failure, not on success (page reloads anyway)
 - `WIDGET_CONFIGS` entries now each own a `build(wrap)` method — `createWidget` no longer needs type-specific branches
 - `isTyping()` hoisted to module scope and shared between the keyboard handler and key display
