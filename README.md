@@ -44,7 +44,8 @@
 
 > All draggable widgets **remember their position** across sessions
 
-![Space Sky](https://github.com/user-attachments/assets/a11615b2-423f-41bc-9f5c-be91bd1f2adc)
+<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/7c6555a4-9084-4970-b6aa-9f467a504666" />
+
 
 ---
 
