@@ -325,7 +325,6 @@ const SCRIPT_VERSION = '6.16';
 #waddle-window { display:flex; width:782px; height:483px; background:var(--bg); border:1px solid var(--c-border); border-radius:10px; box-shadow:var(--shadow),0 0 40px rgba(0,255,255,.08); overflow:hidden; user-select:none; }
 #waddle-sidebar { width:160px; min-width:160px; background:var(--bg2); border-right:1px solid var(--c-border); display:flex; flex-direction:column; padding:0; }
 #waddle-logo { padding:21px 16px 16px; font-size:1.25rem; font-weight:900; color:var(--c); text-shadow:var(--glow); border-bottom:1px solid var(--c-border); letter-spacing:1px; }
-#waddle-logo span { font-size:.68rem; color:var(--text-dim); display:block; font-weight:400; margin-top:2px; }
 .waddle-cat { padding:13px 16px; display:flex; align-items:center; gap:9px; font-size:.94rem; font-weight:var(--fw); color:var(--text-dim); cursor:pointer; border-left:3px solid transparent; transition:all .1s ease; }
 .waddle-cat:hover { color:var(--text); background:rgba(255,255,255,.04); }
 .waddle-cat.active { color:var(--c); border-left-color:var(--c); background:var(--c-dim); }
@@ -1462,7 +1461,7 @@ const SCRIPT_VERSION = '6.16';
     sidebar.id = 'waddle-sidebar';
     const logo = div(null);
     logo.id = 'waddle-logo';
-    logo.innerHTML = `🐧 WADDLE <span>v${SCRIPT_VERSION} • Miniblox</span>`;
+    logo.innerHTML = `🐧 Waddle!`;
     sidebar.appendChild(logo);
     CATEGORIES.forEach(({ id, label, icon }) => {
       const cat = div(`waddle-cat${id === state.activeCategory ? ' active' : ''}`);
