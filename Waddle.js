@@ -95,6 +95,14 @@ const SCRIPT_VERSION = '6.16';
     banner.innerHTML = `${rankBadge}${levelBadge}<span style="color:var(--c)">${name}</span>`;
   }
 
+  function pollUsername(element) {
+    const poll = setInterval(() => {
+      const found = getPlayerUsername();
+      if (found) { setSkinBannerName(element, found); clearInterval(poll); }
+      if (!document.contains(element)) clearInterval(poll);
+    }, 1000);
+  }
+
   async function applySkin(skinId) {
     if (state._skinApplying) return;
     state._skinApplying = true;
@@ -542,6 +550,23 @@ const SCRIPT_VERSION = '6.16';
       return g;
     }
 
+    function drawHUDCard(x, y, h, drawContent) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.9)';
+      ctx.shadowBlur = 18;
+      roundRect(ctx, x, y, W, h, R);
+      ctx.fillStyle = '#0b0b14';
+      ctx.fill();
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = getBorderGradient(x, y, h);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      drawContent();
+      ctx.restore();
+    }
+
     let domFaceEl = null, domNameEl = null, domQueryAge = 0;
     const DOM_QUERY_INTERVAL = 500;
 
@@ -565,34 +590,23 @@ const SCRIPT_VERSION = '6.16';
       lastDrawnFaceSrc = faceSrc;
       lastDrawnType = 'entity';
       needsRedraw = false;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,0.9)';
-      ctx.shadowBlur = 18;
-      roundRect(ctx, x, y, W, H_ENTITY, R);
-      ctx.fillStyle = '#0b0b14';
-      ctx.fill();
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
-      ctx.strokeStyle = getBorderGradient(x, y, H_ENTITY);
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      if (faceSrc) {
-        if (!faceImgCache.has(faceSrc)) {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.src = faceSrc;
-          faceImgCache.set(faceSrc, img);
+      drawHUDCard(x, y, H_ENTITY, () => {
+        if (faceSrc) {
+          let img = faceImgCache.get(faceSrc);
+          if (!img) {
+            img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.src = faceSrc;
+            faceImgCache.set(faceSrc, img);
+          }
+          if (img.complete && img.naturalWidth > 0) ctx.drawImage(img, x + 10, y + 10, 34, 34);
         }
-        const img = faceImgCache.get(faceSrc);
-        if (img.complete && img.naturalWidth > 0) ctx.drawImage(img, x + 10, y + 10, 34, 34);
-      }
-      const nameX = faceSrc ? x + 52 : x + 10;
-      ctx.font = 'bold 13px Poppins,sans-serif';
-      ctx.fillStyle = '#e2e8f0';
-      ctx.textAlign = 'left';
-      ctx.fillText(faceName, nameX, y + 26);
-      ctx.restore();
+        const nameX = faceSrc ? x + 52 : x + 10;
+        ctx.font = 'bold 13px Poppins,sans-serif';
+        ctx.fillStyle = '#e2e8f0';
+        ctx.textAlign = 'left';
+        ctx.fillText(faceName, nameX, y + 26);
+      });
     }
 
     function drawBlockHUD(blockName) {
@@ -602,28 +616,17 @@ const SCRIPT_VERSION = '6.16';
       lastDrawnType = 'block';
       lastDrawnFaceSrc = '';
       needsRedraw = false;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,0.9)';
-      ctx.shadowBlur = 18;
-      roundRect(ctx, x, y, W, H_BLOCK, R);
-      ctx.fillStyle = '#0b0b14';
-      ctx.fill();
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
-      ctx.strokeStyle = getBorderGradient(x, y, H_BLOCK);
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      ctx.font = '22px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText('🧱', x + 10, y + 32);
-      ctx.font = 'bold 13px Poppins,sans-serif';
-      ctx.fillStyle = '#e2e8f0';
-      ctx.fillText(blockName, x + 44, y + 21);
-      ctx.font = '10px Poppins,sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,1)';
-      ctx.fillText('Block', x + 44, y + 36);
-      ctx.restore();
+      drawHUDCard(x, y, H_BLOCK, () => {
+        ctx.font = '22px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('🧱', x + 10, y + 32);
+        ctx.font = 'bold 13px Poppins,sans-serif';
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillText(blockName, x + 44, y + 21);
+        ctx.font = '10px Poppins,sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,1)';
+        ctx.fillText('Block', x + 44, y + 36);
+      });
     }
 
     function tick() {
@@ -1297,13 +1300,7 @@ const SCRIPT_VERSION = '6.16';
       });
       userBanner.id = 'skin-user-banner';
       setSkinBannerName(userBanner, username);
-      if (!username) {
-        const poll = setInterval(() => {
-          const found = getPlayerUsername();
-          if (found) { setSkinBannerName(userBanner, found); clearInterval(poll); }
-          if (!document.contains(userBanner)) clearInterval(poll);
-        }, 1000);
-      }
+      if (!username) pollUsername(userBanner);
       skinPanel.appendChild(userBanner);
 
       function buildSkinSection(label, skinList) {
@@ -1362,13 +1359,7 @@ const SCRIPT_VERSION = '6.16';
       const banner = document.getElementById('skin-user-banner');
       const refreshed = getPlayerUsername();
       setSkinBannerName(banner, refreshed);
-      if (!refreshed) {
-        const poll = setInterval(() => {
-          const found = getPlayerUsername();
-          if (found) { setSkinBannerName(banner, found); clearInterval(poll); }
-          if (!document.contains(banner)) clearInterval(poll);
-        }, 1000);
-      }
+      if (!refreshed) pollUsername(banner);
     }
 
     refreshSkinBadges();
