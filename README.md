@@ -51,6 +51,12 @@
 
 ## 📝 Changelog
 
+### [6.16] v5 — Cleanup & Refactors
+- Ping removed entirely — `filteredPing` no longer read, coords widget shows `X Y Z` only, FPS color thresholds are now FPS-only
+- `pollUsername(element)` extracted as a shared helper — duplicate polling intervals in `buildSkinPanel` collapsed into one call
+- `drawHUDCard(x, y, h, drawContent)` extracted — shared canvas setup (clear, shadow, fill, stroke) deduplicated between `drawEntityHUD` and `drawBlockHUD`
+- `faceImgCache` double-lookup (`has` then `get`) collapsed into a single `get` with null check
+
 ### [6.16] v4 — Target HUD Health Removed
 - HP bar, HP text, and all health smoothing state removed from entity cards in Target HUD
 - `H_ENTITY` reduced from `86` to `52` — entity and block cards now share the same height
@@ -61,7 +67,6 @@
 - `applySkin` now uses a lock flag to prevent double-firing on rapid clicks; resets on failure, not on success (page reloads anyway)
 - `WIDGET_CONFIGS` entries now each own a `build(wrap)` method — `createWidget` no longer needs type-specific branches
 - `isTyping()` hoisted to module scope and shared between the keyboard handler and key display
-- Coords widget shows `--` instead of `0ms` ping until the game reports a real value
 - Speedometer clamps sub-`0.05 b/s` jitter to `0.00` to absorb server-tick micro-corrections
 - Key display no longer lights up while typing in chat or any other focused input
 - Skin equip badges now sync on every panel open and immediately after a successful equip, without needing to close and reopen
@@ -92,10 +97,6 @@
 ### [6.8] — Stability
 - Game reference revalidated every 2s, Three.js version guard with CDN fallback
 - Error boundary in Target HUD loop, settings versioning strips unknown keys
-
-### [6.5] — Space Sky + Target HUD
-- MilkyWay cubemap skybox, native health/food/XP bars restored
-- Canvas-based Target HUD for players, mobs, and blocks — entity takes priority over block
 
 ---
 
