@@ -143,7 +143,7 @@ const SCRIPT_VERSION = '6.16';
       id: 'coords-counter', cls: 'counter',
       pos: { left: '50px', top: '220px' },
       build(wrap) {
-        const span = el('span', 'counter-time-text', '📍 X: 0 Y: 0 Z: 0 | --');
+        const span = el('span', 'counter-time-text', '📍 X: 0 Y: 0 Z: 0');
         wrap.appendChild(span);
         wrap._textSpan = span;
       },
@@ -192,7 +192,7 @@ const SCRIPT_VERSION = '6.16';
   const FEATURE_MAP = {
     display: [
       { label: 'FPS & CPS', feature: 'performance' },
-      { label: 'Coords + Ping', feature: 'coords' },
+      { label: 'Coords', feature: 'coords' },
       { label: 'Clock', feature: 'realTime' },
       { label: 'KeyStrokes', feature: 'keyDisplay' },
       { label: 'Speedometer', feature: 'speedometer' },
@@ -259,7 +259,6 @@ const SCRIPT_VERSION = '6.16';
     _crosshairRafPending: false,
     _lastSpeedPos: null,
     _lastSpeedTime: 0,
-    _lastPing: 0,
     _mutedChat: null,
     _skinApplying: false,
   };
@@ -940,11 +939,9 @@ const SCRIPT_VERSION = '6.16';
       if (t - state.lastCoordsUpdate >= 100) {
         const pos = game?.player?.pos;
         if (pos && state.counters.coords) {
-          const ping = Math.round(game?.resourceMonitor?.filteredPing || 0);
-          const pingStr = ping > 0 ? `${ping}ms` : '--';
           updateCounterText(
             'coords',
-            `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)} | ${pingStr}`
+            `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`
           );
         }
         if (state.counters.speedometer) {
@@ -978,11 +975,9 @@ const SCRIPT_VERSION = '6.16';
   function updatePerformanceCounter(game) {
     if (!game || !state.counters.performance) return;
     const fps = Math.round(game.resourceMonitor?.filteredFPS || 0);
-    const ping = Math.round(game.resourceMonitor?.filteredPing || 0);
-    state._lastPing = ping;
     let color = '#00FF00';
-    if (fps < 30 || ping > 200) color = '#FF0000';
-    else if (fps < 60 || ping > 100) color = '#FFFF00';
+    if (fps < 30) color = '#FF0000';
+    else if (fps < 60) color = '#FFFF00';
     const fpsEl = document.getElementById('fps-val');
     if (fpsEl) fpsEl.textContent = `FPS: ${game.inGame ? fps : '--'}`;
     if (state.lastPerformanceColor !== color) {
