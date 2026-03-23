@@ -43,7 +43,6 @@ const SCRIPT_VERSION = '6.16';
     return e;
   };
   const div = (cls, text) => el('div', cls, text);
-
   function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath();
     ctx.moveTo(x + r, y);
@@ -81,7 +80,7 @@ const SCRIPT_VERSION = '6.16';
   function setSkinBannerName(banner, name) {
     if (!banner) return;
     if (!name) {
-      banner.innerHTML = `<span style="color:var(--text-dim)">Username is not detected yet — enter a game first.</span>`;
+      banner.innerHTML = `<span style="color:var(--text-dim)">Username is not detected yet — enter a game first</span>`;
       return;
     }
     const level = localStorage.getItem(WADDLE_LEVEL_KEY);
@@ -302,7 +301,7 @@ const SCRIPT_VERSION = '6.16';
       if (game?.chat && typeof game.chat.addChat === 'function') {
         clearInterval(state.intervals.waitForGame);
         state.intervals.waitForGame = null;
-        game.chat.addChat({ text: `\\${THEME_COLOR}\\[Server]\\reset\\ Welcome! You're running Waddle v${SCRIPT_VERSION}. Enjoy!` });
+        game.chat.addChat({ text: `\\${THEME_COLOR}\\[Server]\\reset\\ Welcome! You are running Waddle v${SCRIPT_VERSION}. Enjoy! \\red\\If you have any questions contact TheM1ddleM1n on Github!` });
       }
     }, 500);
   })();
