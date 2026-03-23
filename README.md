@@ -3,7 +3,7 @@
 # 🐧 Waddle
 ### The Ultimate Miniblox Enhancement Suite
 
-![Version](https://img.shields.io/badge/version-6.16-39ff14?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-6.2-39ff14?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-39ff14?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-39ff14?style=for-the-badge)
 
@@ -50,6 +50,9 @@
 ---
 
 ## 📝 Changelog
+
+### [6.2] - Anti-AFK improvements
+- coming soon...
 
 ### [6.16] v5 — Cleanup & Refactors
 - Ping removed entirely — `filteredPing` no longer read, coords widget shows `X Y Z` only, FPS color thresholds are now FPS-only
