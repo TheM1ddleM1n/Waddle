@@ -2,7 +2,7 @@
 // @name         Waddle
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
 // @version      6.2
-// @description  The ULTIMATE Miniblox enhancement suite 🤑
+// @description  The ULTIMATE Miniblox enhancement suite
 // @author       Scripter, TheM1ddleM1n
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/Waddle/refs/heads/main/Penguin.png
 // @match        https://miniblox.io/
@@ -168,7 +168,7 @@ const SCRIPT_VERSION = '6.2';
       id: 'anti-afk-counter', cls: 'counter',
       pos: { left: '50px', top: '290px' },
       build(wrap) {
-        const span = el('span', 'counter-time-text', '🐧 Jumping in 5s');
+        const span = el('span', 'counter-time-text', '🐧 Jumping in 5s'); // TODO: remove countdown for ANTI-AFK
         wrap.appendChild(span);
         wrap._textSpan = span;
       },
