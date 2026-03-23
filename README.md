@@ -53,6 +53,8 @@
 
 ### [6.2] - Anti-AFK improvements
 - coming soon...
+- updated version for now
+- and some cleanup of code
 
 ### [6.16] v5 — Cleanup & Refactors
 - Ping removed entirely — `filteredPing` no longer read, coords widget shows `X Y Z` only, FPS color thresholds are now FPS-only
