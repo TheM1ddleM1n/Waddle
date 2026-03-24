@@ -51,9 +51,15 @@
 
 ## 📝 Changelog
 
-### [6.2] - Anti-AFK improvements
-- coming soon...
-- updated version for now
+### [6.2] - Just a Update for Versions
+- Website coming soon!!
+- Version updated to 6.2!
+
+### [6.16] v6 - Anti-AFK improvements thanks to Scripter!
+- AntiAFK improvements with a message displaying in chat implying that you are AFK.
+- Idle Delay Settings added to Utilities
+- Countdown removed from AntiAFK 
+- updated version
 - and some cleanup of code
 
 ### [6.16] v5 — Cleanup & Refactors
