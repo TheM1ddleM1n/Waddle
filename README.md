@@ -52,7 +52,7 @@
 ## 📝 Changelog
 
 ### [6.2] - Just a Update for Versions
-- Website coming soon!!
+- Website coming soon!! TheM1ddleM1n is working on it rn!!
 - Version updated to 6.2!
 
 ### [6.16] v6 - Anti-AFK improvements thanks to Scripter!
