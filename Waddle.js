@@ -1,15 +1,15 @@
 // ==UserScript==
 // @name         Waddle
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
-// @version      6.2
-// @description  The ULTIMATE miniblox.io enhancement suite
+// @version      6.16
+// @description  The ULTIMATE Miniblox enhancement suite 🤑
 // @author       Scripter, TheM1ddleM1n
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/Waddle/refs/heads/main/Penguin.png
 // @match        https://miniblox.io/
 // @run-at       document-start
 // ==/UserScript==
 
-const SCRIPT_VERSION = '6.2';
+const SCRIPT_VERSION = '6.16';
 
 (function () {
   'use strict';
@@ -168,7 +168,7 @@ const SCRIPT_VERSION = '6.2';
       id: 'anti-afk-counter', cls: 'counter',
       pos: { left: '50px', top: '290px' },
       build(wrap) {
-        const span = el('span', 'counter-time-text', '🐧 Jumping in 5s'); // TODO: remove countdown for ANTI-AFK
+        const span = el('span', 'counter-time-text', '🐧 Anti-AFK Active');
         wrap.appendChild(span);
         wrap._textSpan = span;
       },
@@ -237,6 +237,101 @@ const SCRIPT_VERSION = '6.2';
     }
   };
 
+  const afkSettings = {
+    get autoEnable() { return localStorage.getItem('waddle_afk_auto') === 'true'; },
+    set autoEnable(v) { localStorage.setItem('waddle_afk_auto', v ? 'true' : 'false'); },
+    get sendChat() { return localStorage.getItem('waddle_afk_chat') !== 'false'; },
+    set sendChat(v) { localStorage.setItem('waddle_afk_chat', v ? 'true' : 'false'); },
+    get idleDelay() {
+      const v = parseInt(localStorage.getItem('waddle_afk_delay') || '10', 10);
+      return isNaN(v) || v < 5 ? 10 : v > 120 ? 120 : v;
+    },
+    set idleDelay(v) {
+      v = parseInt(v, 10);
+      if (isNaN(v) || v < 5) v = 5;
+      if (v > 120) v = 120;
+      localStorage.setItem('waddle_afk_delay', v);
+    },
+  };
+
+  const afkDetector = {
+    _timer: null,
+    _triggered: false,
+    _wasOff: false,
+    _graceUntil: 0,
+    _events: ['mousemove', 'keydown', 'mousedown', 'wheel'],
+
+    _onActivity(e) {
+      if (!afkSettings.autoEnable) return;
+      if (!e.isTrusted) return;
+      if (Date.now() < afkDetector._graceUntil) return;
+      afkDetector._onReturn();
+      afkDetector._resetTimer();
+    },
+
+    _resetTimer() {
+      clearTimeout(afkDetector._timer);
+      afkDetector._timer = setTimeout(afkDetector._onTriggered, afkSettings.idleDelay * 1000);
+    },
+
+    _onTriggered() {
+      if (afkDetector._triggered) return;
+      afkDetector._triggered = true;
+      afkDetector._graceUntil = Date.now() + 2000;
+
+      showToast('Auto Anti-AFK', 'enabled', 'You went idle, Anti-AFK enabled');
+
+      if (afkSettings.sendChat && document.pointerLockElement) {
+        sendAfkChatMessage("I'm currently AFK. This is an auto message.");
+      }
+
+      if (!state.features.antiAfk) {
+        afkDetector._wasOff = true;
+        toggleFeature('antiAfk');
+        updateAfkModuleButton(true);
+      } else {
+        afkDetector._wasOff = false;
+      }
+    },
+
+    _onReturn() {
+      if (!afkDetector._triggered) return;
+      afkDetector._triggered = false;
+      if (afkDetector._wasOff && state.features.antiAfk) {
+        toggleFeature('antiAfk');
+        updateAfkModuleButton(false);
+        showToast('Auto Anti-AFK', 'disabled', 'Welcome back, Anti-AFK disabled');
+      }
+      afkDetector._wasOff = false;
+    },
+
+    start() {
+      this._events.forEach(evt => window.addEventListener(evt, this._onActivity, { passive: true }));
+      this._resetTimer();
+    },
+
+    stop() {
+      this._events.forEach(evt => window.removeEventListener(evt, this._onActivity));
+      clearTimeout(this._timer);
+      this._timer = null;
+      if (this._triggered) {
+        this._triggered = false;
+        if (this._wasOff && state.features.antiAfk) {
+          toggleFeature('antiAfk');
+          updateAfkModuleButton(false);
+        }
+        this._wasOff = false;
+      }
+    },
+  };
+
+  function updateAfkModuleButton(active) {
+    const cached = state._panelCache['utilities'];
+    if (!cached) return;
+    const btn = cached.find(b => b.dataset.feature === 'antiAfk');
+    if (btn) btn.classList.toggle('active', active);
+  }
+
   const state = {
     features: {
       performance: false, coords: false, realTime: false,
@@ -250,7 +345,6 @@ const SCRIPT_VERSION = '6.2';
     lastPerformanceUpdate: 0,
     lastCoordsUpdate: 0,
     intervals: {},
-    antiAfkCountdown: 5,
     lastPerformanceColor: '#00FF00',
     keys: { w: false, a: false, s: false, d: false, space: false },
     cpsLmbTimes: [],
@@ -404,6 +498,17 @@ const SCRIPT_VERSION = '6.2';
 .skin-confirm-yes:hover { opacity:.85; }
 .skin-confirm-no { background:var(--bg3); border:1px solid rgba(255,255,255,.15); border-radius:var(--radius); padding:9px 28px; font-size:.88rem; font-weight:700; color:var(--text-dim); cursor:pointer; transition:all .1s; }
 .skin-confirm-no:hover { border-color:var(--c-border); color:var(--text); }
+#waddle-afk-settings { grid-column:1 / -1; background:var(--bg3); border:1px solid rgba(255,255,255,.07); border-radius:var(--radius); padding:12px 14px; display:flex; flex-direction:column; gap:10px; }
+.afk-settings-title { font-size:.65rem; font-weight:700; color:var(--c); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:2px; }
+.afk-setting-row { display:flex; align-items:center; justify-content:space-between; font-size:.82rem; color:var(--text-dim); }
+.afk-setting-row span { color:var(--text); }
+.waddle-toggle { position:relative; width:36px; height:20px; flex-shrink:0; }
+.waddle-toggle input { display:none; }
+.waddle-toggle-track { position:absolute; inset:0; background:rgba(255,255,255,.12); border-radius:999px; cursor:pointer; transition:background .15s; }
+.waddle-toggle-track::after { content:''; position:absolute; top:3px; left:3px; width:14px; height:14px; background:#fff; border-radius:50%; transition:transform .15s; }
+.waddle-toggle input:checked + .waddle-toggle-track { background:var(--c); }
+.waddle-toggle input:checked + .waddle-toggle-track::after { transform:translateX(16px); }
+.afk-delay-input { background:var(--bg2); color:var(--c); border:1px solid var(--c-border); border-radius:var(--radius); padding:3px 7px; font-size:.82rem; width:52px; text-align:center; outline:none; }
     `;
     document.head.appendChild(style);
     return true;
@@ -998,59 +1103,72 @@ const SCRIPT_VERSION = '6.2';
     updateCounterText('realTime', now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !is24Hour }));
   }
 
-  function pressSpace() {
-    const opts = { key: ' ', code: 'Space', keyCode: 32, which: 32, bubbles: true };
-    window.dispatchEvent(new KeyboardEvent('keydown', opts));
-    setTimeout(() => window.dispatchEvent(new KeyboardEvent('keyup', opts)), 50);
-  }
-
-  function updateAntiAfkCounter() {
-    updateCounterText('antiAfk', `🐧 Jumping in ${state.antiAfkCountdown}s`);
-  }
-
-  function updateKeyDisplay(key, pressed) {
-    state.counters.keyDisplay?._keyBoxes?.[key]?.classList.toggle('active', pressed);
-  }
-
-  function applyPartyPatch(game) {
-    if (!game?.party || game.party._waddleOriginalInvoke) return false;
-    game.party._waddleOriginalInvoke = game.party.invoke;
-    game.party.invoke = function (method, ...args) {
-      if (['inviteToParty', 'requestToJoinParty'].includes(method)) return;
-      return this._waddleOriginalInvoke?.(method, ...args);
-    };
-    return true;
-  }
-
-  function restorePartyRequests() {
-    const game = gameRef.get();
-    if (game?.party?._waddleOriginalInvoke) {
-      game.party.invoke = game.party._waddleOriginalInvoke;
-      delete game.party._waddleOriginalInvoke;
-    }
-  }
-
-  function applyChatMute(game) {
-    if (!game?.chat) return false;
-    if (game.chat !== state._mutedChat) restoreMutedChat();
-    if (!game.chat._waddleOriginalAddChat) game.chat._waddleOriginalAddChat = game.chat.addChat.bind(game.chat);
-    game.chat.addChat = function () {};
-    state._mutedChat = game.chat;
-    return true;
-  }
-
-  function restoreMutedChat() {
-    if (state._mutedChat?._waddleOriginalAddChat) {
-      state._mutedChat.addChat = state._mutedChat._waddleOriginalAddChat;
-      delete state._mutedChat._waddleOriginalAddChat;
-    }
-    state._mutedChat = null;
-  }
-
   function isTyping() {
     const active = document.activeElement;
     if (!active) return false;
     return active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable;
+  }
+
+  function closeChatInput(chatInput) {
+    chatInput.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'Escape', code: 'Escape', keyCode: 27, which: 27,
+      bubbles: true, cancelable: true
+    }));
+    chatInput.blur();
+  }
+
+  function sendAfkChatMessage(text) {
+    const game = gameRef.get();
+
+    if (game?.chat) {
+      for (const method of ['sendMessage', 'sendChat', 'send', 'submitMessage', 'submitChat']) {
+        try {
+          if (typeof game.chat[method] === 'function') {
+            game.chat[method](text);
+            return;
+          }
+        } catch (_) {}
+      }
+    }
+
+    const tryViaInput = () => {
+      const chatInput = [...document.querySelectorAll('input')].find(i =>
+        i.placeholder?.toLowerCase().includes('chat') ||
+        i.placeholder?.toLowerCase().includes('say') ||
+        i.closest?.('[class*="chat"]')
+      );
+      if (!chatInput) return false;
+      const nativeSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+      if (nativeSetter) nativeSetter.call(chatInput, text);
+      else chatInput.value = text;
+      chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+      chatInput.focus();
+      setTimeout(() => {
+        chatInput.dispatchEvent(new KeyboardEvent('keydown', {
+          key: 'Enter', code: 'Enter', keyCode: 13, which: 13,
+          bubbles: true, cancelable: true
+        }));
+        setTimeout(() => closeChatInput(chatInput), 50);
+      }, 80);
+      return true;
+    };
+
+    if (!tryViaInput()) {
+      document.body.dispatchEvent(new KeyboardEvent('keydown', {
+        key: 'Enter', code: 'Enter', keyCode: 13, which: 13,
+        bubbles: true, cancelable: true
+      }));
+      setTimeout(() => {
+        if (!tryViaInput()) {
+          try {
+            if (game?.chat) {
+              const fn = game.chat._waddleOriginalAddChat ?? game.chat.addChat;
+              fn?.call(game.chat, { text });
+            }
+          } catch (_) {}
+        }
+      }, 200);
+    }
   }
 
   const featureManager = {
@@ -1119,24 +1237,35 @@ const SCRIPT_VERSION = '6.2';
       start() {
         if (state.intervals.antiAfk) return;
         if (!state.counters.antiAfk) createWidget('antiAfk');
-        state.antiAfkCountdown = 5;
-        updateAntiAfkCounter();
+
+        const keys = [
+          [' ', 'Space', 32],
+          ['w', 'KeyW', 87],
+          ['a', 'KeyA', 65],
+          ['s', 'KeyS', 83],
+          ['d', 'KeyD', 68],
+          [' ', 'Space', 32],
+        ];
+        let idx = 0;
+
         state.intervals.antiAfk = setInterval(() => {
           if (!state.features.antiAfk) return;
-          state.antiAfkCountdown--;
-          updateAntiAfkCounter();
-          if (state.antiAfkCountdown <= 0) {
-            if (document.pointerLockElement) pressSpace();
-            state.antiAfkCountdown = 5;
-            const e = state.counters.antiAfk;
-            if (e) { e.classList.remove('afk-pulse'); void e.offsetWidth; e.classList.add('afk-pulse'); }
+          const [key, code, keyCode] = keys[idx];
+          idx = (idx + 1) % keys.length;
+          if (document.pointerLockElement) {
+            const target = document.activeElement || document.body;
+            target.dispatchEvent(new KeyboardEvent('keydown', {
+              key, code, keyCode, which: keyCode, bubbles: true, cancelable: true
+            }));
+            setTimeout(() => target.dispatchEvent(new KeyboardEvent('keyup', {
+              key, code, keyCode, which: keyCode, bubbles: true, cancelable: true
+            })), 50);
           }
-        }, 1000);
+        }, 500);
       },
       cleanup() {
         clearInterval(state.intervals.antiAfk);
         state.intervals.antiAfk = null;
-        state.antiAfkCountdown = 5;
         removeCounter('antiAfk');
       }
     },
@@ -1221,6 +1350,45 @@ const SCRIPT_VERSION = '6.2';
       }
     };
   });
+
+  function applyPartyPatch(game) {
+    if (!game?.party || game.party._waddleOriginalInvoke) return false;
+    game.party._waddleOriginalInvoke = game.party.invoke;
+    game.party.invoke = function (method, ...args) {
+      if (['inviteToParty', 'requestToJoinParty'].includes(method)) return;
+      return this._waddleOriginalInvoke?.(method, ...args);
+    };
+    return true;
+  }
+
+  function restorePartyRequests() {
+    const game = gameRef.get();
+    if (game?.party?._waddleOriginalInvoke) {
+      game.party.invoke = game.party._waddleOriginalInvoke;
+      delete game.party._waddleOriginalInvoke;
+    }
+  }
+
+  function applyChatMute(game) {
+    if (!game?.chat) return false;
+    if (game.chat !== state._mutedChat) restoreMutedChat();
+    if (!game.chat._waddleOriginalAddChat) game.chat._waddleOriginalAddChat = game.chat.addChat.bind(game.chat);
+    game.chat.addChat = function () {};
+    state._mutedChat = game.chat;
+    return true;
+  }
+
+  function restoreMutedChat() {
+    if (state._mutedChat?._waddleOriginalAddChat) {
+      state._mutedChat.addChat = state._mutedChat._waddleOriginalAddChat;
+      delete state._mutedChat._waddleOriginalAddChat;
+    }
+    state._mutedChat = null;
+  }
+
+  function updateKeyDisplay(key, pressed) {
+    state.counters.keyDisplay?._keyBoxes?.[key]?.classList.toggle('active', pressed);
+  }
 
   function toggleFeature(featureName) {
     const requestedEnabled = !state.features[featureName];
@@ -1367,6 +1535,58 @@ const SCRIPT_VERSION = '6.2';
     hideSkinConfirm();
   }
 
+  function buildAfkSettingsBlock() {
+    const block = div(null);
+    block.id = 'waddle-afk-settings';
+
+    block.appendChild(div('afk-settings-title', 'Auto AFK Settings'));
+
+    const autoRow = div('afk-setting-row');
+    autoRow.appendChild(el('span', null, 'Auto Enable'));
+    const autoLabel = el('label', 'waddle-toggle');
+    const autoInput = el('input');
+    autoInput.type = 'checkbox';
+    autoInput.checked = afkSettings.autoEnable;
+    autoLabel.append(autoInput, div('waddle-toggle-track'));
+    autoRow.appendChild(autoLabel);
+    autoInput.addEventListener('change', () => {
+      afkSettings.autoEnable = autoInput.checked;
+      if (autoInput.checked) afkDetector.start();
+      else afkDetector.stop();
+    });
+    block.appendChild(autoRow);
+
+    const chatRow = div('afk-setting-row');
+    chatRow.appendChild(el('span', null, 'Send AFK Message'));
+    const chatLabel = el('label', 'waddle-toggle');
+    const chatInput = el('input');
+    chatInput.type = 'checkbox';
+    chatInput.checked = afkSettings.sendChat;
+    chatLabel.append(chatInput, div('waddle-toggle-track'));
+    chatRow.appendChild(chatLabel);
+    chatInput.addEventListener('change', () => { afkSettings.sendChat = chatInput.checked; });
+    block.appendChild(chatRow);
+
+    const delayRow = div('afk-setting-row');
+    delayRow.appendChild(el('span', null, 'Idle Delay (5–120s)'));
+    const delayInput = el('input', 'afk-delay-input');
+    delayInput.type = 'number';
+    delayInput.min = 5;
+    delayInput.max = 120;
+    delayInput.value = afkSettings.idleDelay;
+    delayInput.addEventListener('change', () => {
+      afkSettings.idleDelay = delayInput.value;
+      delayInput.value = afkSettings.idleDelay;
+      if (afkSettings.autoEnable) afkDetector._resetTimer();
+    });
+    delayInput.addEventListener('click', e => e.stopPropagation());
+    delayInput.addEventListener('keydown', e => e.stopPropagation());
+    delayRow.appendChild(delayInput);
+    block.appendChild(delayRow);
+
+    return block;
+  }
+
   function buildModulePanel(categoryId) {
     const grid = document.getElementById('waddle-module-grid');
     const title = document.getElementById('waddle-panel-title');
@@ -1402,6 +1622,9 @@ const SCRIPT_VERSION = '6.2';
       btn.classList.toggle('active', !!state.features[btn.dataset.feature]);
       grid.appendChild(btn);
     });
+    if (categoryId === 'utilities') {
+      grid.appendChild(buildAfkSettingsBlock());
+    }
   }
 
   function switchCategory(categoryId) {
@@ -1530,6 +1753,7 @@ const SCRIPT_VERSION = '6.2';
     if (state.rafId) cancelAnimationFrame(state.rafId);
     if (state._resizeHandler) window.removeEventListener('resize', state._resizeHandler);
     state._crosshairObserver?.disconnect();
+    afkDetector.stop();
   }
 
   window.addEventListener('beforeunload', globalCleanup);
@@ -1592,6 +1816,7 @@ const SCRIPT_VERSION = '6.2';
       initHudCanvas();
       startTargetHUDLoop();
       initSpaceSky();
+      if (afkSettings.autoEnable) afkDetector.start();
       showToast('Welcome To Waddle!', 'info', 'Press \\ to open menu');
       setTimeout(() => {
         Object.entries(state.features).forEach(([feature, enabled]) => {
