@@ -395,7 +395,7 @@ const SCRIPT_VERSION = '6.16';
       if (game?.chat && typeof game.chat.addChat === 'function') {
         clearInterval(state.intervals.waitForGame);
         state.intervals.waitForGame = null;
-        game.chat.addChat({ text: `\\${THEME_COLOR}\\[Server]\\reset\\ Welcome! You are running Waddle v${SCRIPT_VERSION}. Enjoy! \\red\\If you have any questions contact TheM1ddleM1n on Github!` });
+        game.chat.addChat({ text: `\\${THEME_COLOR}\\[Server]\\reset\\ Welcome! You are running Waddle v${SCRIPT_VERSION}. \\yellow\\Enjoy! \\royalblue\\If you have any questions contact TheM1ddleM1n on Github!` });
       }
     }, 500);
   })();
