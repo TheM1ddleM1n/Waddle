@@ -2,7 +2,7 @@
 // @name         Waddle
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
 // @version      6.2
-// @description  The ULTIMATE Miniblox enhancement suite 🤑
+// @description  The ULTIMATE miniblox.io enhancement suite!
 // @author       Scripter, TheM1ddleM1n
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/Waddle/refs/heads/main/Penguin.png
 // @match        https://miniblox.io/
@@ -282,7 +282,7 @@ const SCRIPT_VERSION = '6.2';
       showToast('Auto Anti-AFK', 'enabled', 'You went idle, Anti-AFK enabled');
 
       if (afkSettings.sendChat && document.pointerLockElement) {
-        sendAfkChatMessage("I'm currently AFK. This is an auto message.");
+        sendAfkChatMessage("I am currently AFK. Be Back shortly! - Test Message V2");
       }
 
       if (!state.features.antiAfk) {
@@ -395,7 +395,7 @@ const SCRIPT_VERSION = '6.2';
       if (game?.chat && typeof game.chat.addChat === 'function') {
         clearInterval(state.intervals.waitForGame);
         state.intervals.waitForGame = null;
-        game.chat.addChat({ text: `\\${THEME_COLOR}\\[Server]\\reset\\ Welcome! You are running Waddle v${SCRIPT_VERSION}. \\yellow\\Enjoy! \\royalblue\\If you have any questions contact TheM1ddleM1n on Github!` });
+        game.chat.addChat({ text: `\\${THEME_COLOR}\\[Server]\\reset\\ Welcome! You are running Waddle v${SCRIPT_VERSION}. \\blue\\Enjoy! \\royalblue\\If you have any questions contact TheM1ddleM1n on Github!` });
       }
     }, 500);
   })();
@@ -868,7 +868,6 @@ const SCRIPT_VERSION = '6.2';
       </div>
     `;
   }
-
   function createWidget(type) {
     if (!document.body) return null;
     const cfg = WIDGET_CONFIGS[type];
@@ -993,7 +992,7 @@ const SCRIPT_VERSION = '6.2';
           let status = "";
           if (pct === 100 && bat.charging) status = "✅ Fully Charged!";
           else if (bat.charging) status = "⚡ Charging...";
-          else if (pct <= 20) status = "⚠️ Plug in Charger";
+          else if (pct <= 20) status = "⚠️ Plug in your charger";
           else if (bat.dischargingTime !== Infinity) status = `⏱ ~${Math.round(bat.dischargingTime / 60)}m left`;
           return { text: `${getBatteryIcon(pct)} ${pct}% ${status}`, color: getColor(pct) };
         };
@@ -1318,13 +1317,13 @@ const SCRIPT_VERSION = '6.2';
           showToast('Chat-Mute', 'info', 'Waiting for game chat to load...');
           return;
         }
-        showToast('Chat-Mute', 'enabled', 'Chat messages are now hidden');
+        showToast('Chat-Mute', 'enabled', 'Chat messages will be hidden ingame');
       },
       cleanup() {
         clearInterval(state.intervals.chatMuteRetry);
         state.intervals.chatMuteRetry = null;
         restoreMutedChat();
-        showToast('Chat-Mute', 'disabled', 'Chat messages restored');
+        showToast('Chat-Mute', 'disabled', 'You can now recive other messages');
       }
     },
   };
@@ -1451,7 +1450,7 @@ const SCRIPT_VERSION = '6.2';
       showToast('Token Found!', 'enabled',
         username ? `Auto-detected as ${username} — token automatically applied!` : 'Token found and automatically applied!');
     } else if (isFirstTime && !hasToken) {
-      showToast('No Token', 'disabled', 'Log into Miniblox first, then re-open skins');
+      showToast('No Token', 'disabled', 'Log into Miniblox first, then re-open the skin panel');
     }
 
     if (!skinPanel) {
