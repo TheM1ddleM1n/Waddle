@@ -150,9 +150,15 @@ const SCRIPT_VERSION = '6.2';
       id: 'coords-counter', cls: 'counter',
       pos: { left: '50px', top: '220px' },
       build(wrap) {
-        const span = el('span', 'counter-time-text', '📍 X: 0 Y: 0 Z: 0');
-        wrap.appendChild(span);
-        wrap._textSpan = span;
+        wrap.style.display = 'flex';
+        wrap.style.flexDirection = 'column';
+        wrap.style.gap = '3px';
+        const posSpan = el('span', 'counter-time-text', '📍 X: 0 Y: 0 Z: 0');
+        const spdSpan = el('span', 'counter-time-text', '⚡ 0.00 b/s');
+        wrap.appendChild(posSpan);
+        wrap.appendChild(spdSpan);
+        wrap._posSpan = posSpan;
+        wrap._spdSpan = spdSpan;
       },
     },
     realTime: {
@@ -169,15 +175,6 @@ const SCRIPT_VERSION = '6.2';
       pos: { left: '50px', top: '290px' },
       build(wrap) {
         const span = el('span', 'counter-time-text', '🐧 Anti-AFK Active');
-        wrap.appendChild(span);
-        wrap._textSpan = span;
-      },
-    },
-    speedometer: {
-      id: 'speedometer-counter', cls: 'counter',
-      pos: { left: '50px', top: '360px' },
-      build(wrap) {
-        const span = el('span', 'counter-time-text', '⚡ 0.00 b/s');
         wrap.appendChild(span);
         wrap._textSpan = span;
       },
@@ -199,10 +196,9 @@ const SCRIPT_VERSION = '6.2';
   const FEATURE_MAP = {
     display: [
       { label: 'FPS & CPS', feature: 'performance' },
-      { label: 'Coords', feature: 'coords' },
+      { label: 'Positions', feature: 'coords' },
       { label: 'Clock', feature: 'realTime' },
       { label: 'KeyStrokes', feature: 'keyDisplay' },
-      { label: 'Speedometer', feature: 'speedometer' },
     ],
     utilities: [
       { label: 'Anti-AFK', feature: 'antiAfk' },
@@ -282,7 +278,7 @@ const SCRIPT_VERSION = '6.2';
       showToast('Auto Anti-AFK', 'enabled', 'You went idle, Anti-AFK enabled');
 
       if (afkSettings.sendChat && document.pointerLockElement) {
-        sendAfkChatMessage("I am currently AFK. Be Back shortly! - Test Message V2");
+        sendAfkChatMessage("I am currently AFK. Be Back shortly!");
       }
 
       if (!state.features.antiAfk) {
@@ -336,9 +332,9 @@ const SCRIPT_VERSION = '6.2';
     features: {
       performance: false, coords: false, realTime: false,
       antiAfk: false, keyDisplay: false, disablePartyRequests: false,
-      muteChat: false, speedometer: false,
+      muteChat: false,
     },
-    counters: { performance: null, realTime: null, coords: null, antiAfk: null, keyDisplay: null, speedometer: null },
+    counters: { performance: null, realTime: null, coords: null, antiAfk: null, keyDisplay: null },
     menuOverlay: null,
     activeCategory: 'display',
     rafId: null,
@@ -375,7 +371,7 @@ const SCRIPT_VERSION = '6.2';
 
   function saveDragPositions() {
     const positions = {};
-    ['performance', 'coords', 'antiAfk', 'keyDisplay', 'speedometer'].forEach(type => {
+    ['performance', 'coords', 'antiAfk', 'keyDisplay'].forEach(type => {
       const e = state.counters[type];
       if (e) positions[type] = { left: e.style.left, top: e.style.top };
     });
@@ -868,6 +864,7 @@ const SCRIPT_VERSION = '6.2';
       </div>
     `;
   }
+
   function createWidget(type) {
     if (!document.body) return null;
     const cfg = WIDGET_CONFIGS[type];
@@ -1027,7 +1024,7 @@ const SCRIPT_VERSION = '6.2';
   }
 
   function needsRaf() {
-    return state.features.performance || state.features.coords || state.features.speedometer;
+    return state.features.performance || state.features.coords;
   }
 
   function startPerformanceLoop() {
@@ -1044,24 +1041,21 @@ const SCRIPT_VERSION = '6.2';
       }
       if (t - state.lastCoordsUpdate >= 100) {
         const pos = game?.player?.pos;
-        if (pos && state.counters.coords) {
-          updateCounterText(
-            'coords',
-            `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`
-          );
-        }
-        if (state.counters.speedometer) {
-          if (pos && state._lastSpeedPos) {
+        const w = state.counters.coords;
+        if (pos) {
+          let speed = 0;
+          if (state._lastSpeedPos) {
             const dx = pos.x - state._lastSpeedPos.x;
             const dz = pos.z - state._lastSpeedPos.z;
             const dt = (t - state._lastSpeedTime) / 1000;
             const raw = dt > 0 ? Math.sqrt(dx * dx + dz * dz) / dt : 0;
-            const speed = raw < 0.05 ? 0 : raw;
-            updateCounterText('speedometer', `⚡ ${speed.toFixed(2)} b/s`);
+            speed = raw < 0.05 ? 0 : raw;
           }
-          if (pos) {
-            state._lastSpeedPos = { x: pos.x, z: pos.z };
-            state._lastSpeedTime = t;
+          state._lastSpeedPos = { x: pos.x, z: pos.z };
+          state._lastSpeedTime = t;
+          if (w) {
+            if (w._posSpan) w._posSpan.textContent = `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`;
+            if (w._spdSpan) w._spdSpan.textContent = `⚡ ${speed.toFixed(2)} b/s`;
           }
         }
         state.lastCoordsUpdate = t;
@@ -1219,6 +1213,23 @@ const SCRIPT_VERSION = '6.2';
         state.cpsRmbTimes = [];
       }
     },
+    coords: {
+      start() {
+        if (!state.counters.coords) createWidget('coords');
+        state._lastSpeedPos = null;
+        state._lastSpeedTime = 0;
+        const w = state.counters.coords;
+        if (w?._posSpan) w._posSpan.textContent = '📍 X: 0 Y: 0 Z: 0';
+        if (w?._spdSpan) w._spdSpan.textContent = '⚡ 0.00 b/s';
+        startPerformanceLoop();
+      },
+      cleanup() {
+        state._lastSpeedPos = null;
+        state._lastSpeedTime = 0;
+        removeCounter('coords');
+        if (!needsRaf()) stopPerformanceLoop();
+      }
+    },
     realTime: {
       start() {
         if (state.intervals.realTime) return;
@@ -1327,28 +1338,6 @@ const SCRIPT_VERSION = '6.2';
       }
     },
   };
-
-  ['coords', 'speedometer'].forEach(f => {
-    featureManager[f] = {
-      start() {
-        if (!state.counters[f]) createWidget(f);
-        if (f === 'speedometer') {
-          state._lastSpeedPos = null;
-          state._lastSpeedTime = 0;
-          updateCounterText('speedometer', '⚡ 0.00 b/s');
-        }
-        startPerformanceLoop();
-      },
-      cleanup() {
-        if (f === 'speedometer') {
-          state._lastSpeedPos = null;
-          state._lastSpeedTime = 0;
-        }
-        removeCounter(f);
-        if (!needsRaf()) stopPerformanceLoop();
-      }
-    };
-  });
 
   function applyPartyPatch(game) {
     if (!game?.party || game.party._waddleOriginalInvoke) return false;
