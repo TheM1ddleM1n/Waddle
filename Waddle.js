@@ -135,7 +135,6 @@ const SCRIPT_VERSION = '6.2';
     }
   }
 
-  // ── Change 1: spanWidget factory ─────────────────────────────────────────
   const spanWidget = text => wrap => {
     const span = el('span', 'counter-time-text', text);
     wrap.appendChild(span);
@@ -1015,7 +1014,6 @@ const SCRIPT_VERSION = '6.2';
       screen: `${screen.width}×${screen.height}`,
       network: conn?.effectiveType?.toUpperCase() || '?',
       downlink: conn?.downlink ? conn.downlink + ' Mbps' : '?',
-      rtt: conn?.rtt != null ? conn.rtt + ' ms' : '?',
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '?',
       touch: navigator.maxTouchPoints > 0 ? `Yes (${navigator.maxTouchPoints} points)` : 'No',
       battery: navigator.getBattery ? 'Loading...' : 'N/A',
@@ -1101,7 +1099,6 @@ const SCRIPT_VERSION = '6.2';
     return active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable;
   }
 
-  // ── Change 2: closeChatInput inlined into sendAfkChatMessage ──────────────
   function sendAfkChatMessage(text) {
     const game = gameRef.get();
 
@@ -1419,7 +1416,6 @@ const SCRIPT_VERSION = '6.2';
     document.getElementById('skin-confirm-view').classList.remove('show');
   }
 
-  // ── Change 3: getPanelEls helper ──────────────────────────────────────────
   function getPanelEls() {
     return {
       grid:  document.getElementById('waddle-module-grid'),
@@ -1529,7 +1525,6 @@ const SCRIPT_VERSION = '6.2';
     hideSkinConfirm();
   }
 
-  // ── Change 4: makeToggleRow helper ────────────────────────────────────────
   function makeToggleRow(label, checked, onChange) {
     const row = div('afk-setting-row');
     row.appendChild(el('span', null, label));
@@ -1669,7 +1664,6 @@ const SCRIPT_VERSION = '6.2';
           ['Screen', sys.screen],
           ['Network', sys.network],
           ['Downlink', sys.downlink],
-          ['RTT', sys.rtt],
           ['Timezone', sys.timezone],
           ['Touch', sys.touch],
           ['Battery', `<span id="waddle-sys-battery">${sys.battery}</span>`],
