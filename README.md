@@ -52,7 +52,6 @@
 ## 📝 Changelog
 
 ### [6.2] - Just a Update for Versions
-- Website coming soon
 - Version updated to 6.2!
 
 ### [6.16] v6 - AntiAFK improvements thanks to Scripter!
