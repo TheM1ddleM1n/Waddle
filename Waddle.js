@@ -14,7 +14,7 @@ const SCRIPT_VERSION = '6.2';
 (function () {
   'use strict';
 
-  document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
+document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
 
   const SETTINGS_KEY = 'waddle_settings';
   const DRAG_POSITIONS_KEY = 'waddle_positions';
@@ -122,12 +122,8 @@ const SCRIPT_VERSION = '6.2';
       if (data?.success === false) throw new Error(data.message || 'Server rejected request');
       localStorage.setItem(EQUIPPED_SKIN_KEY, skinId.toLowerCase());
       refreshSkinBadges();
-      const username = getPlayerUsername();
-      showToast(
-        username ? `Welcome back, ${username}!` : 'Skin Applied!',
-        'enabled',
-        `${skinId} equipped — reloading...`
-      );
+      showToast('Skin Applied!', 'enabled', `${skinId} equipped`);
+      state._skinApplying = false;
       setTimeout(() => location.reload(), 1200);
     } catch (e) {
       showToast('Skin Failed', 'disabled', 'Could not apply skin: ' + e.message);
