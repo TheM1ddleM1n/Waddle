@@ -980,9 +980,9 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
         const getStatus = () => {
           const pct = Math.round(bat.level * 100);
           let status = "";
-          if (pct === 100 && bat.charging) status = "✅ Fully Charged!";
-          else if (bat.charging) status = "⚡ Charging...";
-          else if (pct <= 20) status = "⚠️ Plug in your charger";
+          if (pct === 100 && bat.charging) status = "Fully Charged!";
+          else if (bat.charging) status = "Charging...";
+          else if (pct <= 20) status = "Plug in your charger.";
           else if (bat.dischargingTime !== Infinity) status = `⏱ ~${Math.round(bat.dischargingTime / 60)}m left`;
           return { text: `${getBatteryIcon(pct)} ${pct}% ${status}`, color: getColor(pct) };
         };
@@ -1436,7 +1436,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
       showToast('Token Found!', 'enabled',
         username ? `Auto-detected as ${username} — token automatically applied!` : 'Token found and automatically applied!');
     } else if (isFirstTime && !hasToken) {
-      showToast('No Token', 'disabled', 'Log into Miniblox first, then re-open the skin panel');
+      showToast('No Token', 'disabled', 'Log into Miniblox first then re-open the skin panel');
     }
 
     if (!skinPanel) {
@@ -1471,7 +1471,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
           }
           btn.addEventListener('click', () => {
             if (btn.classList.contains('equipped')) {
-              showToast('Already Equipped', 'info', `${name} is your current skin.`);
+              showToast('This Skin has already equipped', 'info', `${name} is your current skin.`);
               return;
             }
             showSkinConfirm(name);
@@ -1622,7 +1622,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     sidebar.id = 'waddle-sidebar';
     const logo = div(null);
     logo.id = 'waddle-logo';
-    logo.innerHTML = `🐧 Waddle!`;
+    logo.innerHTML = `🐧 Waddle`;
     sidebar.appendChild(logo);
     CATEGORIES.forEach(({ id, label, icon }) => {
       const cat = div(`waddle-cat${id === state.activeCategory ? ' active' : ''}`);
