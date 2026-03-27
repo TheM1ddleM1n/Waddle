@@ -26,12 +26,11 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
   const WADDLE_RANK_KEY = 'waddle_rank';
 
   const STANDARD_SKINS = Object.freeze([
-    'Alice','Bob','Techno','BigGelo','Corrupted','Diana','Dr. Strange','Endoskeleton',
-    'Ganyu','George','Holly','Hutao','Jake','James','Klee','Kyoko','Adele','Chris',
-    'Deadpool','Galactus','Heather','Ironman','Joe','Levi','Lexi','Natalie','Remus',
-    'Sara','Transformer','Vindicate','Adventure Guy','Aether','Apex','Ariel','Aurora',
-    'Celeste','Cody','Ember','Finn','Glory','Hunter','Katie','Nova','Panda','Raven',
-    'Seraphina','Vain','Zane'
+    'Alice','Bob','Techno','BigGelo','Corrupted','Diana','Dr. Strange','Endoskeleton', 'Ganyu','George','Holly',
+    'Hutao','Jake','James','Klee','Kyoko','Adele','Chris', 'Deadpool','Galactus','Heather',
+    'Ironman','Joe','Levi','Lexi','Natalie','Remus', 'Sara','Transformer','Vindicate', 'Adventure Guy',
+    'Aether','Apex','Ariel','Aurora', 'Celeste','Cody','Ember', 'Finn','Glory',
+    'Hunter','Katie','Nova','Panda','Raven', 'Seraphina','Vain','Zane'
   ]);
   const CUSTOM_SKINS = Object.freeze(['Remlin','Cat','Ethan','Sushi','Duck','Tester','Banana','Qhyun']);
   const SKIN_API = 'https://session.coolmathblox.ca/accounts/set_cosmetic';
