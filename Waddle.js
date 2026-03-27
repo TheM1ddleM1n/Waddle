@@ -135,6 +135,13 @@ const SCRIPT_VERSION = '6.2';
     }
   }
 
+  // ── Change 1: spanWidget factory ─────────────────────────────────────────
+  const spanWidget = text => wrap => {
+    const span = el('span', 'counter-time-text', text);
+    wrap.appendChild(span);
+    wrap._textSpan = span;
+  };
+
   const WIDGET_CONFIGS = {
     performance: {
       id: 'performance-counter', cls: 'counter',
@@ -164,20 +171,12 @@ const SCRIPT_VERSION = '6.2';
     realTime: {
       id: 'real-time-counter', cls: 'counter',
       fixed: { right: '30px', bottom: '30px', background: 'transparent', boxShadow: 'none', border: 'none', fontSize: '1.1rem', padding: '0' },
-      build(wrap) {
-        const span = el('span', 'counter-time-text', '00:00:00 AM');
-        wrap.appendChild(span);
-        wrap._textSpan = span;
-      },
+      build: spanWidget('00:00:00 AM'),
     },
     antiAfk: {
       id: 'anti-afk-counter', cls: 'counter',
       pos: { left: '50px', top: '290px' },
-      build(wrap) {
-        const span = el('span', 'counter-time-text', '🐧 Anti-AFK Active');
-        wrap.appendChild(span);
-        wrap._textSpan = span;
-      },
+      build: spanWidget('🐧 Anti-AFK Active'),
     },
     keyDisplay: {
       id: 'key-display-container', cls: 'key-display-container',
@@ -1102,14 +1101,7 @@ const SCRIPT_VERSION = '6.2';
     return active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable;
   }
 
-  function closeChatInput(chatInput) {
-    chatInput.dispatchEvent(new KeyboardEvent('keydown', {
-      key: 'Escape', code: 'Escape', keyCode: 27, which: 27,
-      bubbles: true, cancelable: true
-    }));
-    chatInput.blur();
-  }
-
+  // ── Change 2: closeChatInput inlined into sendAfkChatMessage ──────────────
   function sendAfkChatMessage(text) {
     const game = gameRef.get();
 
@@ -1141,7 +1133,13 @@ const SCRIPT_VERSION = '6.2';
           key: 'Enter', code: 'Enter', keyCode: 13, which: 13,
           bubbles: true, cancelable: true
         }));
-        setTimeout(() => closeChatInput(chatInput), 50);
+        setTimeout(() => {
+          chatInput.dispatchEvent(new KeyboardEvent('keydown', {
+            key: 'Escape', code: 'Escape', keyCode: 27, which: 27,
+            bubbles: true, cancelable: true
+          }));
+          chatInput.blur();
+        }, 50);
       }, 80);
       return true;
     };
@@ -1421,11 +1419,19 @@ const SCRIPT_VERSION = '6.2';
     document.getElementById('skin-confirm-view').classList.remove('show');
   }
 
+  // ── Change 3: getPanelEls helper ──────────────────────────────────────────
+  function getPanelEls() {
+    return {
+      grid:  document.getElementById('waddle-module-grid'),
+      title: document.getElementById('waddle-panel-title'),
+      about: document.getElementById('waddle-about'),
+      skin:  document.getElementById('waddle-skin-panel'),
+    };
+  }
+
   function buildSkinPanel() {
-    const grid = document.getElementById('waddle-module-grid');
-    const title = document.getElementById('waddle-panel-title');
-    const about = document.getElementById('waddle-about');
-    let skinPanel = document.getElementById('waddle-skin-panel');
+    const { grid, title, about, skin } = getPanelEls();
+    let skinPanel = skin;
 
     if (grid) grid.style.display = 'none';
     if (about) about.style.display = 'none';
@@ -1523,37 +1529,34 @@ const SCRIPT_VERSION = '6.2';
     hideSkinConfirm();
   }
 
+  // ── Change 4: makeToggleRow helper ────────────────────────────────────────
+  function makeToggleRow(label, checked, onChange) {
+    const row = div('afk-setting-row');
+    row.appendChild(el('span', null, label));
+    const lbl = el('label', 'waddle-toggle');
+    const inp = el('input');
+    inp.type = 'checkbox';
+    inp.checked = checked;
+    lbl.append(inp, div('waddle-toggle-track'));
+    row.appendChild(lbl);
+    inp.addEventListener('change', () => onChange(inp.checked));
+    return row;
+  }
+
   function buildAfkSettingsBlock() {
     const block = div(null);
     block.id = 'waddle-afk-settings';
 
     block.appendChild(div('afk-settings-title', 'Auto AFK Settings'));
 
-    const autoRow = div('afk-setting-row');
-    autoRow.appendChild(el('span', null, 'Auto Enable'));
-    const autoLabel = el('label', 'waddle-toggle');
-    const autoInput = el('input');
-    autoInput.type = 'checkbox';
-    autoInput.checked = afkSettings.autoEnable;
-    autoLabel.append(autoInput, div('waddle-toggle-track'));
-    autoRow.appendChild(autoLabel);
-    autoInput.addEventListener('change', () => {
-      afkSettings.autoEnable = autoInput.checked;
-      if (autoInput.checked) afkDetector.start();
-      else afkDetector.stop();
-    });
-    block.appendChild(autoRow);
+    block.appendChild(makeToggleRow('Auto Enable', afkSettings.autoEnable, v => {
+      afkSettings.autoEnable = v;
+      if (v) afkDetector.start(); else afkDetector.stop();
+    }));
 
-    const chatRow = div('afk-setting-row');
-    chatRow.appendChild(el('span', null, 'Send AFK Message'));
-    const chatLabel = el('label', 'waddle-toggle');
-    const chatInput = el('input');
-    chatInput.type = 'checkbox';
-    chatInput.checked = afkSettings.sendChat;
-    chatLabel.append(chatInput, div('waddle-toggle-track'));
-    chatRow.appendChild(chatLabel);
-    chatInput.addEventListener('change', () => { afkSettings.sendChat = chatInput.checked; });
-    block.appendChild(chatRow);
+    block.appendChild(makeToggleRow('Send AFK Message', afkSettings.sendChat, v => {
+      afkSettings.sendChat = v;
+    }));
 
     const delayRow = div('afk-setting-row');
     delayRow.appendChild(el('span', null, 'Idle Delay (5–120s)'));
@@ -1576,10 +1579,7 @@ const SCRIPT_VERSION = '6.2';
   }
 
   function buildModulePanel(categoryId) {
-    const grid = document.getElementById('waddle-module-grid');
-    const title = document.getElementById('waddle-panel-title');
-    const about = document.getElementById('waddle-about');
-    const skinPanel = document.getElementById('waddle-skin-panel');
+    const { grid, title, about, skin: skinPanel } = getPanelEls();
     if (skinPanel) skinPanel.style.display = 'none';
     if (categoryId === 'about') {
       if (grid) grid.style.display = 'none';
