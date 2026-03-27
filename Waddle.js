@@ -24,6 +24,7 @@ const SCRIPT_VERSION = '6.2';
   const WADDLE_USERNAME_KEY = 'waddle_username';
   const WADDLE_LEVEL_KEY = 'waddle_level';
   const WADDLE_RANK_KEY = 'waddle_rank';
+  const VPN_RECHECK_MS = 30000;
 
   const STANDARD_SKINS = Object.freeze([
     'Alice','Bob','Techno','BigGelo','Corrupted','Diana','Dr. Strange','Endoskeleton',
@@ -356,6 +357,14 @@ const SCRIPT_VERSION = '6.2';
     _lastSpeedTime: 0,
     _mutedChat: null,
     _skinApplying: false,
+    _vpnInputBlockersInstalled: false,
+    _vpnInputBlocker: null,
+    vpn: {
+      blocked: false,
+      lastToastAt: 0,
+      lockOverlay: null,
+      checkerInterval: null,
+    },
   };
 
   const KNOWN_FEATURES = new Set(Object.keys(state.features));
@@ -450,6 +459,19 @@ const SCRIPT_VERSION = '6.2';
 .waddle-toast { display:flex; align-items:center; gap:10px; background:var(--bg2); border:1px solid rgba(255,255,255,.1); border-radius:var(--radius); padding:9px 14px; min-width:200px; box-shadow:var(--shadow); animation:toast-in .2s ease; transition:opacity .25s ease,transform .25s ease; }
 .waddle-toast.hide { opacity:0; transform:translateX(10px); }
 @keyframes toast-in { from { opacity:0; transform:translateX(12px); } to { opacity:1; transform:none; } }
+#waddle-vpn-lock {
+  position:fixed; inset:0; z-index:10001;
+  display:none; align-items:center; justify-content:center; text-align:center;
+  background:rgba(4,4,8,.92); color:var(--text);
+}
+#waddle-vpn-lock.show { display:flex; }
+#waddle-vpn-lock .vpn-lock-card {
+  max-width:560px; margin:0 16px; padding:22px 24px;
+  background:var(--bg2); border:1px solid rgba(239,68,68,.45);
+  box-shadow:var(--shadow); border-radius:10px;
+}
+#waddle-vpn-lock h2 { margin:0 0 8px; color:#ef4444; font-size:1.2rem; }
+#waddle-vpn-lock p { margin:0; color:var(--text-dim); font-size:.9rem; line-height:1.45; }
 .toast-icon { width:22px; height:22px; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:900; flex-shrink:0; }
 .toast-icon.enabled { background:#22c55e; color:#000; }
 .toast-icon.disabled { background:#ef4444; color:#fff; }
@@ -527,6 +549,124 @@ const SCRIPT_VERSION = '6.2';
     toast.append(icon, body);
     state.toastContainer.appendChild(toast);
     setTimeout(() => { toast.classList.add('hide'); setTimeout(() => toast.remove(), 280); }, 2800);
+  }
+
+  function buildVpnLockOverlay() {
+    if (!document.body) return null;
+    let lock = document.getElementById('waddle-vpn-lock');
+    if (!lock) {
+      lock = div(null);
+      lock.id = 'waddle-vpn-lock';
+      lock.innerHTML = `
+        <div class="vpn-lock-card">
+          <h2>VPN Detected</h2>
+          <p id="waddle-vpn-lock-msg">Turn off your VPN to continue using Waddle.</p>
+        </div>
+      `;
+      document.body.appendChild(lock);
+    }
+    state.vpn.lockOverlay = lock;
+    return lock;
+  }
+
+  function installVpnInputBlockers() {
+    if (state._vpnInputBlockersInstalled) return;
+    state._vpnInputBlocker = (event) => {
+      if (!state.vpn.blocked) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      event.stopPropagation();
+    };
+    ['keydown', 'keyup', 'keypress', 'mousedown', 'mouseup', 'click', 'wheel', 'touchstart', 'touchmove']
+      .forEach(evt => window.addEventListener(evt, state._vpnInputBlocker, true));
+    state._vpnInputBlockersInstalled = true;
+  }
+
+  async function fetchJson(url) {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+
+  async function getClientIp() {
+    const data = await fetchJson('https://api64.ipify.org?format=json');
+    return data?.ip || null;
+  }
+
+  function yesish(v) {
+    if (typeof v === 'boolean') return v;
+    if (typeof v === 'number') return v === 1;
+    if (typeof v === 'string') return ['yes', 'true', '1', 'vpn', 'proxy'].includes(v.toLowerCase());
+    return false;
+  }
+
+  async function checkProxyCheck(ip) {
+    const data = await fetchJson(`https://proxycheck.io/v2/${encodeURIComponent(ip)}?vpn=1&asn=1&risk=1`);
+    const ipData = data?.[ip];
+    if (!ipData) return null;
+    const detected = yesish(ipData.proxy) || yesish(ipData.vpn) || yesish(ipData.tor);
+    if (!detected) return { detected: false, source: 'proxycheck.io' };
+    const detail = [ipData.type, ipData.provider].filter(Boolean).join(' · ') || 'Proxy/VPN detected';
+    return { detected: true, source: 'proxycheck.io', detail };
+  }
+
+  async function checkIpApiIs(ip) {
+    const data = await fetchJson(`https://api.ipapi.is/?q=${encodeURIComponent(ip)}`);
+    const security = data?.security || {};
+    const detected = yesish(data?.is_vpn) || yesish(security.is_vpn) || yesish(security.is_proxy) || yesish(security.is_tor);
+    if (!detected) return { detected: false, source: 'ipapi.is' };
+    const detail = security.vpn_service || security.proxy_type || 'VPN/Proxy detected';
+    return { detected: true, source: 'ipapi.is', detail };
+  }
+
+  function setVpnBlocked(blocked, reason = '') {
+    const lock = buildVpnLockOverlay();
+    const wasBlocked = state.vpn.blocked;
+    state.vpn.blocked = blocked;
+    if (lock) {
+      lock.classList.toggle('show', blocked);
+      const msg = lock.querySelector('#waddle-vpn-lock-msg');
+      if (msg) msg.textContent = blocked
+        ? `Turn off your VPN to continue using Waddle.${reason ? ` (${reason})` : ''}`
+        : 'Turn off your VPN to continue using Waddle.';
+    }
+    if (blocked && document.pointerLockElement) document.exitPointerLock?.();
+    if (blocked && Date.now() - state.vpn.lastToastAt > 5000) {
+      state.vpn.lastToastAt = Date.now();
+      showToast('VPN Detected', 'disabled', 'Turn off your VPN to keep using Waddle.');
+    }
+    if (!blocked && wasBlocked) {
+      showToast('VPN Check', 'enabled', 'No VPN found. Waddle is usable.');
+    }
+  }
+
+  async function detectVpnUsage() {
+    let ip = null;
+    try { ip = await getClientIp(); } catch (_) { return { detected: false, inconclusive: true }; }
+    if (!ip) return { detected: false, inconclusive: true };
+    const checks = await Promise.allSettled([checkProxyCheck(ip), checkIpApiIs(ip)]);
+    for (const result of checks) {
+      if (result.status === 'fulfilled' && result.value?.detected) return result.value;
+    }
+    const hasNegative = checks.some(result => result.status === 'fulfilled' && result.value?.detected === false);
+    return { detected: false, inconclusive: !hasNegative };
+  }
+
+  async function runVpnCheck() {
+    const result = await detectVpnUsage();
+    if (result.detected) {
+      setVpnBlocked(true, `${result.source}${result.detail ? `: ${result.detail}` : ''}`);
+      return;
+    }
+    if (!result.inconclusive) setVpnBlocked(false);
+  }
+
+  function startVpnEnforcement() {
+    installVpnInputBlockers();
+    buildVpnLockOverlay();
+    runVpnCheck();
+    clearInterval(state.vpn.checkerInterval);
+    state.vpn.checkerInterval = setInterval(runVpnCheck, VPN_RECHECK_MS);
   }
 
   function makeLine(styles) {
@@ -1734,6 +1874,16 @@ const SCRIPT_VERSION = '6.2';
     Object.values(state.intervals).forEach(id => { if (id != null) clearInterval(id); });
     if (state.rafId) cancelAnimationFrame(state.rafId);
     if (state._resizeHandler) window.removeEventListener('resize', state._resizeHandler);
+    if (state._vpnInputBlockersInstalled && state._vpnInputBlocker) {
+      ['keydown', 'keyup', 'keypress', 'mousedown', 'mouseup', 'click', 'wheel', 'touchstart', 'touchmove']
+        .forEach(evt => window.removeEventListener(evt, state._vpnInputBlocker, true));
+      state._vpnInputBlockersInstalled = false;
+      state._vpnInputBlocker = null;
+    }
+    if (state.vpn.checkerInterval) {
+      clearInterval(state.vpn.checkerInterval);
+      state.vpn.checkerInterval = null;
+    }
     state._crosshairObserver?.disconnect();
     afkDetector.stop();
   }
@@ -1787,6 +1937,7 @@ const SCRIPT_VERSION = '6.2';
     try {
       await ensureDOMReady();
       injectStyles();
+      startVpnEnforcement();
       const badge = div(null);
       badge.id = 'waddle-badge';
       badge.textContent = `🐧 Waddle v${SCRIPT_VERSION}`;
