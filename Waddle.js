@@ -995,10 +995,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
       cores: navigator.hardwareConcurrency || '?',
       ram: navigator.deviceMemory ? navigator.deviceMemory + ' GB' : '?',
       screen: `${screen.width}×${screen.height}`,
-      network: conn?.effectiveType?.toUpperCase() || '?',
-      downlink: conn?.downlink ? conn.downlink + ' Mbps' : '?',
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '?',
-      touch: navigator.maxTouchPoints > 0 ? `Yes (${navigator.maxTouchPoints} points)` : 'No',
       battery: navigator.getBattery ? 'Loading...' : 'N/A',
     };
   }
@@ -1612,10 +1609,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
       ['Cores', sys.cores],
       ['RAM', sys.ram],
       ['Screen', sys.screen],
-      ['Network', sys.network],
-      ['Downlink', sys.downlink],
       ['Timezone', sys.timezone],
-      ['Touch', sys.touch],
       ['Battery', `<span id="waddle-sys-battery">${sys.battery}</span>`],
     ].map(([l, v]) => sysRow(l, v)).join('')}</table>`;
     const creditsBlock = div('about-block');
