@@ -195,7 +195,6 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     ],
     utilities: [
       { label: 'Anti-AFK', feature: 'antiAfk' },
-      { label: 'Block Party RQ', feature: 'disablePartyRequests' },
       { label: 'Chat-Mute', feature: 'muteChat' }
     ]
   };
@@ -268,8 +267,8 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
       afkDetector._triggered = true;
       afkDetector._graceUntil = Date.now() + 2000;
       showToast('Auto Anti-AFK', 'enabled', 'You went idle, Anti-AFK enabled');
-      if (afkSettings.sendChat && document.pointerLockElement)
-        sendAfkChatMessage('I am currently AFK. Be Back shortly!');
+      if (afkSettings.sendChat && document.pointerLockElement);
+      sendAfkChatMessage('I am currently AFK. Be Back shortly!');
       afkDetector._wasOff = !state.features.antiAfk;
       if (afkDetector._wasOff) setAfkActive(true);
     },
@@ -316,8 +315,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
   const state = {
     features: {
       performance: false, coords: false, realTime: false,
-      antiAfk: false, keyDisplay: false, disablePartyRequests: false,
-      muteChat: false,
+      antiAfk: false, keyDisplay: false, muteChat: false,
     },
     counters: { performance: null, realTime: null, coords: null, antiAfk: null, keyDisplay: null },
     menuOverlay: null,
@@ -596,10 +594,8 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     const W = 220, R = 10, H_ENTITY = 52, H_BLOCK = 52;
     const ENTITY_SCAN_INTERVAL = 50;
     const PAUSE_CHECK_INTERVAL = 200;
-
     const faceImgCache = new LRUCache(64);
     const playerFaceCache = new LRUCache(64);
-
     let entityMapKey = null;
     let cachedNearest = null;
     let cachedMinDist = Infinity;
@@ -1092,7 +1088,6 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
 
   function sendAfkChatMessage(text) {
     const game = gameRef.get();
-
     if (game?.chat) {
       for (const method of ['sendMessage', 'sendChat', 'send', 'submitMessage', 'submitChat']) {
         try {
@@ -1304,24 +1299,6 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
         }
         removeCounter('keyDisplay');
         Object.keys(state.keys).forEach(k => { state.keys[k] = false; });
-      }
-    },
-    disablePartyRequests: {
-      start() {
-        const tryPatch = () => {
-          const p = gameRef.get()?.party;
-          patchMethod(p, 'invoke', function (method, ...args) {
-            if (['inviteToParty', 'requestToJoinParty'].includes(method)) return;
-            return this._orig_invoke?.(method, ...args);
-          });
-        };
-        tryPatch();
-        state.intervals.partyRetry = setInterval(tryPatch, 2000);
-      },
-      cleanup() {
-        clearInterval(state.intervals.partyRetry);
-        state.intervals.partyRetry = null;
-        unpatchMethod(gameRef.get()?.party, 'invoke');
       }
     },
     muteChat: {
