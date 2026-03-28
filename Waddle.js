@@ -267,28 +267,18 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
       if (afkDetector._triggered) return;
       afkDetector._triggered = true;
       afkDetector._graceUntil = Date.now() + 2000;
-
       showToast('Auto Anti-AFK', 'enabled', 'You went idle, Anti-AFK enabled');
-
-      if (afkSettings.sendChat && document.pointerLockElement) {
-        sendAfkChatMessage("I am currently AFK. Be Back shortly!");
-      }
-
-      if (!state.features.antiAfk) {
-        afkDetector._wasOff = true;
-        toggleFeature('antiAfk');
-        updateAfkModuleButton(true);
-      } else {
-        afkDetector._wasOff = false;
-      }
+      if (afkSettings.sendChat && document.pointerLockElement)
+        sendAfkChatMessage('I am currently AFK. Be Back shortly!');
+      afkDetector._wasOff = !state.features.antiAfk;
+      if (afkDetector._wasOff) setAfkActive(true);
     },
 
     _onReturn() {
       if (!afkDetector._triggered) return;
       afkDetector._triggered = false;
-      if (afkDetector._wasOff && state.features.antiAfk) {
-        toggleFeature('antiAfk');
-        updateAfkModuleButton(false);
+      if (afkDetector._wasOff) {
+        setAfkActive(false);
         showToast('Auto Anti-AFK', 'disabled', 'Welcome back, Anti-AFK disabled');
       }
       afkDetector._wasOff = false;
@@ -305,10 +295,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
       this._timer = null;
       if (this._triggered) {
         this._triggered = false;
-        if (this._wasOff && state.features.antiAfk) {
-          toggleFeature('antiAfk');
-          updateAfkModuleButton(false);
-        }
+        if (this._wasOff) setAfkActive(false);
         this._wasOff = false;
       }
     },
@@ -319,6 +306,11 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     if (!cached) return;
     const btn = cached.find(b => b.dataset.feature === 'antiAfk');
     if (btn) btn.classList.toggle('active', active);
+  }
+
+  function setAfkActive(on) {
+    if (state.features.antiAfk !== on) toggleFeature('antiAfk');
+    updateAfkModuleButton(on);
   }
 
   const state = {
@@ -498,7 +490,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
 .waddle-toggle input:checked + .waddle-toggle-track { background:var(--c); }
 .waddle-toggle input:checked + .waddle-toggle-track::after { transform:translateX(16px); }
 .afk-delay-input { background:var(--bg2); color:var(--c); border:1px solid var(--c-border); border-radius:var(--radius); padding:3px 7px; font-size:.82rem; width:52px; text-align:center; outline:none; }
-    `;
+`;
     document.head.appendChild(style);
     return true;
   }
@@ -1064,6 +1056,10 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     }
   }
 
+  function maybeStopRaf() {
+    if (!needsRaf()) stopPerformanceLoop();
+  }
+
   function updatePerformanceCounter(game) {
     if (!game || !state.counters.performance) return;
     const fps = Math.round(game.resourceMonitor?.filteredFPS || 0);
@@ -1145,13 +1141,26 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
         if (!tryViaInput()) {
           try {
             if (game?.chat) {
-              const fn = game.chat._waddleOriginalAddChat ?? game.chat.addChat;
+              const fn = game.chat._orig_addChat ?? game.chat.addChat;
               fn?.call(game.chat, { text });
             }
           } catch (_) {}
         }
       }, 200);
     }
+  }
+
+  function patchMethod(obj, key, replacement) {
+    if (!obj || obj[`_orig_${key}`]) return false;
+    obj[`_orig_${key}`] = obj[key].bind(obj);
+    obj[key] = replacement;
+    return true;
+  }
+
+  function unpatchMethod(obj, key) {
+    if (!obj?.[`_orig_${key}`]) return;
+    obj[key] = obj[`_orig_${key}`];
+    delete obj[`_orig_${key}`];
   }
 
   const featureManager = {
@@ -1191,7 +1200,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
       },
       cleanup() {
         removeCounter('performance');
-        if (!needsRaf()) stopPerformanceLoop();
+        maybeStopRaf();
         clearInterval(state.intervals.cps);
         state.intervals.cps = null;
         if (state._cpsListeners) {
@@ -1217,7 +1226,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
         state._lastSpeedPos = null;
         state._lastSpeedTime = 0;
         removeCounter('coords');
-        if (!needsRaf()) stopPerformanceLoop();
+        maybeStopRaf();
       }
     },
     realTime: {
@@ -1299,70 +1308,43 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     },
     disablePartyRequests: {
       start() {
-        applyPartyPatch(gameRef.get());
-        state.intervals.partyRetry = setInterval(() => applyPartyPatch(gameRef.get()), 2000);
+        const tryPatch = () => {
+          const p = gameRef.get()?.party;
+          patchMethod(p, 'invoke', function (method, ...args) {
+            if (['inviteToParty', 'requestToJoinParty'].includes(method)) return;
+            return this._orig_invoke?.(method, ...args);
+          });
+        };
+        tryPatch();
+        state.intervals.partyRetry = setInterval(tryPatch, 2000);
       },
       cleanup() {
         clearInterval(state.intervals.partyRetry);
         state.intervals.partyRetry = null;
-        restorePartyRequests();
+        unpatchMethod(gameRef.get()?.party, 'invoke');
       }
     },
     muteChat: {
       start() {
-        const tryMute = () => applyChatMute(gameRef.get());
-        const mutedImmediately = tryMute();
-        clearInterval(state.intervals.chatMuteRetry);
+        const tryMute = () => {
+          const chat = gameRef.get()?.chat;
+          if (chat !== state._mutedChat) unpatchMethod(state._mutedChat, 'addChat');
+          if (patchMethod(chat, 'addChat', () => {})) state._mutedChat = chat;
+          return !!state._mutedChat;
+        };
+        if (!tryMute()) showToast('Chat-Mute', 'info', 'Waiting for game chat to load...');
+        else showToast('Chat-Mute', 'enabled', 'Chat messages will be hidden ingame');
         state.intervals.chatMuteRetry = setInterval(tryMute, 2000);
-        if (!mutedImmediately) {
-          showToast('Chat-Mute', 'info', 'Waiting for game chat to load...');
-          return;
-        }
-        showToast('Chat-Mute', 'enabled', 'Chat messages will be hidden ingame');
       },
       cleanup() {
         clearInterval(state.intervals.chatMuteRetry);
         state.intervals.chatMuteRetry = null;
-        restoreMutedChat();
-        showToast('Chat-Mute', 'disabled', 'You can now recive other messages');
+        unpatchMethod(state._mutedChat, 'addChat');
+        state._mutedChat = null;
+        showToast('Chat-Mute', 'disabled', 'You can now receive other messages');
       }
     },
   };
-
-  function applyPartyPatch(game) {
-    if (!game?.party || game.party._waddleOriginalInvoke) return false;
-    game.party._waddleOriginalInvoke = game.party.invoke;
-    game.party.invoke = function (method, ...args) {
-      if (['inviteToParty', 'requestToJoinParty'].includes(method)) return;
-      return this._waddleOriginalInvoke?.(method, ...args);
-    };
-    return true;
-  }
-
-  function restorePartyRequests() {
-    const game = gameRef.get();
-    if (game?.party?._waddleOriginalInvoke) {
-      game.party.invoke = game.party._waddleOriginalInvoke;
-      delete game.party._waddleOriginalInvoke;
-    }
-  }
-
-  function applyChatMute(game) {
-    if (!game?.chat) return false;
-    if (game.chat !== state._mutedChat) restoreMutedChat();
-    if (!game.chat._waddleOriginalAddChat) game.chat._waddleOriginalAddChat = game.chat.addChat.bind(game.chat);
-    game.chat.addChat = function () {};
-    state._mutedChat = game.chat;
-    return true;
-  }
-
-  function restoreMutedChat() {
-    if (state._mutedChat?._waddleOriginalAddChat) {
-      state._mutedChat.addChat = state._mutedChat._waddleOriginalAddChat;
-      delete state._mutedChat._waddleOriginalAddChat;
-    }
-    state._mutedChat = null;
-  }
 
   function updateKeyDisplay(key, pressed) {
     state.counters.keyDisplay?._keyBoxes?.[key]?.classList.toggle('active', pressed);
@@ -1397,18 +1379,15 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     });
   }
 
-  function showSkinConfirm(skinName) {
-    const current = localStorage.getItem(EQUIPPED_SKIN_KEY) || 'None';
-    const fromEl = document.getElementById('skin-confirm-from');
-    if (fromEl) fromEl.textContent = current.charAt(0).toUpperCase() + current.slice(1);
-    document.getElementById('skin-grid-view').style.display = 'none';
-    document.getElementById('skin-confirm-view').classList.add('show');
-    document.getElementById('skin-confirm-name').textContent = skinName;
-  }
-
-  function hideSkinConfirm() {
-    document.getElementById('skin-grid-view').style.display = 'flex';
-    document.getElementById('skin-confirm-view').classList.remove('show');
+  function setSkinConfirmVisible(visible, skinName) {
+    document.getElementById('skin-grid-view').style.display = visible ? 'none' : 'flex';
+    document.getElementById('skin-confirm-view').classList.toggle('show', visible);
+    if (visible) {
+      const current = localStorage.getItem(EQUIPPED_SKIN_KEY) || 'None';
+      const fromEl = document.getElementById('skin-confirm-from');
+      if (fromEl) fromEl.textContent = current.charAt(0).toUpperCase() + current.slice(1);
+      document.getElementById('skin-confirm-name').textContent = skinName;
+    }
   }
 
   function getPanelEls() {
@@ -1474,7 +1453,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
               showToast('This Skin has already equipped', 'info', `${name} is your current skin.`);
               return;
             }
-            showSkinConfirm(name);
+            setSkinConfirmVisible(true, name);
           });
           skinGrid.appendChild(btn);
         });
@@ -1503,10 +1482,10 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
 
       document.getElementById('skin-confirm-yes').addEventListener('click', async () => {
         const skinName = document.getElementById('skin-confirm-name').textContent;
-        hideSkinConfirm();
+        setSkinConfirmVisible(false);
         await applySkin(skinName);
       });
-      document.getElementById('skin-confirm-no').addEventListener('click', hideSkinConfirm);
+      document.getElementById('skin-confirm-no').addEventListener('click', () => setSkinConfirmVisible(false));
     } else {
       const banner = document.getElementById('skin-user-banner');
       const refreshed = getPlayerUsername();
@@ -1517,7 +1496,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     refreshSkinBadges();
     skinPanel.style.display = 'flex';
     skinPanel.style.flexDirection = 'column';
-    hideSkinConfirm();
+    setSkinConfirmVisible(false);
   }
 
   function makeToggleRow(label, checked, onChange) {
@@ -1644,31 +1623,24 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     aboutPanel.id = 'waddle-about';
     aboutPanel.style.display = 'none';
     const sys = getSystemInfo();
+    const sysRow = (label, val) =>
+      `<tr><td style="color:var(--c);font-weight:700;padding:3px 10px 3px 0;width:72px">${label}</td><td style="color:var(--text)">${val}</td></tr>`;
     const sysBlock = div('about-block');
-    sysBlock.innerHTML = `
-      <h3>🖥️ System</h3>
-      <table style="width:100%;border-collapse:collapse;font-size:.78rem;">
-        ${[
-          ['OS', `<span id="waddle-sys-os">${sys.os}</span>`],
-          ['Browser', sys.browser],
-          ['GPU', sys.gpu],
-          ['Vendor', sys.gpuVendor],
-          ['WebGL2', sys.webgl2 ? '✓ Supported' : '✗ Not supported'],
-          ['Cores', sys.cores],
-          ['RAM', sys.ram],
-          ['Screen', sys.screen],
-          ['Network', sys.network],
-          ['Downlink', sys.downlink],
-          ['Timezone', sys.timezone],
-          ['Touch', sys.touch],
-          ['Battery', `<span id="waddle-sys-battery">${sys.battery}</span>`],
-        ].map(([label, val]) => `
-          <tr>
-            <td style="color:var(--c);font-weight:700;padding:3px 10px 3px 0;width:72px;">${label}</td>
-            <td style="color:var(--text)">${val}</td>
-          </tr>`).join('')}
-      </table>
-    `;
+    sysBlock.innerHTML = `<h3>🖥️ System</h3><table style="width:100%;border-collapse:collapse;font-size:.78rem;">${[
+      ['OS', `<span id="waddle-sys-os">${sys.os}</span>`],
+      ['Browser', sys.browser],
+      ['GPU', sys.gpu],
+      ['Vendor', sys.gpuVendor],
+      ['WebGL2', sys.webgl2 ? '✓ Supported' : '✗ Not supported'],
+      ['Cores', sys.cores],
+      ['RAM', sys.ram],
+      ['Screen', sys.screen],
+      ['Network', sys.network],
+      ['Downlink', sys.downlink],
+      ['Timezone', sys.timezone],
+      ['Touch', sys.touch],
+      ['Battery', `<span id="waddle-sys-battery">${sys.battery}</span>`],
+    ].map(([l, v]) => sysRow(l, v)).join('')}</table>`;
     const creditsBlock = div('about-block');
     creditsBlock.innerHTML = `
       <h3>Credits</h3>
