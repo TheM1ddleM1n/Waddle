@@ -1628,8 +1628,8 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     linksBlock.innerHTML = '<h3>🔗 GitHub</h3>';
     const linksRow = div('about-links');
     [
-      ['Suggest Feature', 'https://github.com/TheM1ddleM1n/Waddle/issues/new?labels=enhancement'],
-      ['Report Bug', 'https://github.com/TheM1ddleM1n/Waddle/issues/new?labels=bug']
+      ['Suggest Feature', 'https://github.com/TheM1ddleM1n/Waddle/issues/new?template=feature_request.yml'],
+      ['Report Bug', 'https://github.com/TheM1ddleM1n/Waddle/issues/new?template=bug_report.yml']
     ].forEach(([text, url]) => {
       const btn = el('button', 'about-link-btn', text);
       btn.onclick = () => window.open(url, '_blank');
