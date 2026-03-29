@@ -1,0 +1,89 @@
+name: Feature Request
+description: Please suggest an idea for WaddleClient
+title: "[Feature] "
+labels: enhancement
+assignees: TheM1ddleM1n
+
+body:
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Check list
+      description: "Before you create the 999th duplicate issue about the client not petting your cat automatically... Make sure someone hasn't already made an issue, you must consider the scope of the client and the performance impact of the feature."
+      options:
+        - label: This feature has NOT been requested before by other people
+          required: true
+        - label: This aligns with Waddle’s scope (JavaScript / Tampermonkey / Miniblox API)
+          required: true
+        - label: I have considered performance impact (no BOTTLENECKS are present in code)
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: "Reading some other person's mind doesn't exist yet, tell us what you want."
+      placeholder: "A new feature that automatically pets my cat when using Waddle client"
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: usefulness
+    attributes:
+      label: Why would this be useful?
+      description: "Reinventing the wheel isn't useful, is your feature useful? I hope it is, though."
+      placeholder: "My cat will purr because of the feature"
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: How would we implement this? (Proposed solution)
+      description: | # I fixed the gramer by converting it to American English trust. anyway lol
+        So, we know you want this feature. Now, do you know how we should implement it?
+        Include details such as:
+        - How it would be activated
+        - Any settings or customization options
+        - Expected behavior in-game
+      placeholder: "For each entity in world.entities, if the entity is a cat entity, call CatEntity#pet()."
+      render: markdown
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Any other way?
+      description: |
+        Have you considered other ways to achieve this? List possible alternatives and their pros/cons.
+        If you can do the same exact thing but without modifying the client with no cons, why should we implement it?
+      placeholder: |
+        - Doing it manually.
+          - Pros: None
+          - Cons: manually, takes time, I want to be able to do something else while also keeping my cat happy.
+        - Doing it automatically.
+          - Pros: Automatic, just leave it AFK or do something else.
+          - Cons: none really, basic implementation but that requires modifying the client, which should be easy.
+      render: markdown
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: |
+        Give use more details.
+        Pictures also help ([A picture is 1,000 words](https://en.wikipedia.org/wiki/A_picture_is_worth_a_thousand_words))
+        - Related features or examples from other tools/clients
+        - Screenshots or mockup ideas (if applicable)
+        - Priority level: `Nice-to-have` / `Important` / `Critical`
+      placeholder: idk what to put here as a placeholder, lol.
+      render: markdown
+  - type: textarea
+    id: example
+    attributes:
+      label: Example use case
+      description: Describe an in-game scenario where this feature would be helpful.
+      placeholder: |
+        I have 1 million cats, I need to pet them all manually.
+        It would be nice if I could just enable a module and it'd do the work for me!
+      render: markdown
+    validations:
+      required: true

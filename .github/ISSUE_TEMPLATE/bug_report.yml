@@ -1,0 +1,35 @@
+name: Bug report
+description: Report a bug
+labels: "bug"
+assignees: "TheM1ddleM1n"
+
+body:
+  - type: textarea
+    attributes:
+      label: Expected Behavior
+      description: A clear and concise description of what you expected to happen.
+      placeholder: |
+        I add to tapermonkey and it works!
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Actual Behavior
+      description: A clear description of what actually happens.
+      placeholder: |
+        I add to tampermonkey and it no work because I forgor how to read the banner that says "Please enable developer mode to allow userscript injection. Click here for more info on how to do this.".
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Console logs
+      description: |
+        Console logs sometimes help us in finding out what's happening, what the problem is, or how to fix the problem.
+        If there are no logs from Waddle.user.js or any errors, it might not be that useful.
+        You can open up the developer tools by either CTRL + SHIFT + I or F12, and then selecting the Console menu.
+  - type: textarea
+    attributes:
+      label: Additional information (optional)
+      description: "Add any extra information that you think might help. Pro tip: 'please fix this bug' doesn't help."
+      placeholder:
+        It only happens maybe every 6 or 7 seconds.
