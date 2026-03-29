@@ -9,7 +9,7 @@ body:
     id: checklist
     attributes:
       label: Check list
-      description: "Before you create the 999th duplicate issue about the client not petting your cat automatically... Make sure someone hasn't already made an issue, you must consider the scope of the client and the performance impact of the feature."
+      description: "Before you create the 999th duplicate issue about the client not petting your cat automatically... Please make sure someone hasn't already made an issue, you must consider the scope of the client and the performance impact of the feature."
       options:
         - label: This feature has NOT been requested before by other people
           required: true
