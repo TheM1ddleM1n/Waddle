@@ -389,8 +389,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
   --text:#e0e0e0; --text-dim:#666; --radius:6px; --fw:600;
   --glow:0 0 12px rgba(0,255,255,.5); --shadow:0 8px 32px rgba(0,0,0,.8);
 }
-.css-xhoozx,[class*="crosshair"],img[src*="crosshair"] { display:none !important; }
-.css-1pj0jj0 { display:none !important; }
+.css-xhoozx,[class*="crosshair"],img[src*="crosshair"],.css-1pj0jj0 { display:none !important; }
 #waddle-overlay { position:fixed; inset:0; background:rgba(0,0,0,.65); backdrop-filter:blur(8px); z-index:9999; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .15s ease; }
 #waddle-overlay.show { opacity:1; pointer-events:auto; }
 #waddle-window { display:flex; width:782px; height:483px; background:var(--bg); border:1px solid var(--c-border); border-radius:10px; box-shadow:var(--shadow),0 0 40px rgba(0,255,255,.08); overflow:hidden; user-select:none; }
@@ -404,16 +403,25 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
 #waddle-panel { flex:1; display:flex; flex-direction:column; overflow:hidden; }
 #waddle-panel-title { padding:16px 20px 12px; font-size:.8rem; font-weight:var(--fw); color:var(--text-dim); letter-spacing:1.5px; text-transform:uppercase; border-bottom:1px solid rgba(255,255,255,.05); }
 #waddle-module-grid { flex:1; display:grid; grid-template-columns:1fr 1fr; gap:9px; padding:16px; align-content:start; overflow-y:auto; }
-#waddle-module-grid::-webkit-scrollbar { width:4px; }
-#waddle-module-grid::-webkit-scrollbar-thumb { background:var(--c-border); border-radius:2px; }
-.waddle-module { background:var(--bg3); border:1px solid rgba(255,255,255,.07); border-radius:var(--radius); padding:12px 14px; cursor:pointer; transition:all .12s ease; display:flex; align-items:center; justify-content:space-between; color:var(--text-dim); font-size:.92rem; font-weight:var(--fw); }
-.waddle-module:hover { border-color:var(--c-border); color:var(--text); }
-.waddle-module.active { border-color:var(--c); background:var(--c-dim); color:var(--c); box-shadow:inset 0 0 8px rgba(0,255,255,.08); }
+#waddle-module-grid::-webkit-scrollbar,#waddle-skin-panel::-webkit-scrollbar { width:4px; }
+#waddle-module-grid::-webkit-scrollbar-thumb,#waddle-skin-panel::-webkit-scrollbar-thumb { background:var(--c-border); border-radius:2px; }
+.waddle-module,.skin-btn { background:var(--bg3); border:1px solid rgba(255,255,255,.07); border-radius:var(--radius); cursor:pointer; font-weight:var(--fw); color:var(--text-dim); transition:all .12s ease; }
+.waddle-module { padding:12px 14px; display:flex; align-items:center; justify-content:space-between; font-size:.92rem; }
+.waddle-module:hover,.skin-btn:hover { border-color:var(--c-border); color:var(--text); }
+.waddle-module.active,.skin-btn.equipped { border-color:var(--c); background:var(--c-dim); color:var(--c); }
+.waddle-module.active { box-shadow:inset 0 0 8px rgba(0,255,255,.08); }
+.skin-btn { padding:14px 10px; text-align:center; font-size:.88rem; position:relative; }
+.skin-btn.equipped { cursor:default; }
 .waddle-module-dot { width:8px; height:8px; border-radius:50%; background:var(--text-dim); flex-shrink:0; transition:background .12s ease; }
 .waddle-module.active .waddle-module-dot { background:var(--c); box-shadow:0 0 6px var(--c); }
 #waddle-about { flex:1; padding:18px; display:flex; flex-direction:column; gap:14px; overflow-y:auto; color:var(--text); }
-.about-block { background:var(--bg3); border:1px solid rgba(255,255,255,.07); border-radius:var(--radius); padding:14px; }
-.about-block h3 { color:var(--c); font-size:.75rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin:0 0 10px; }
+.about-block,#waddle-afk-settings { background:var(--bg3); border:1px solid rgba(255,255,255,.07); border-radius:var(--radius); }
+.about-block { padding:14px; }
+.about-block h3,.skin-section-header,.afk-settings-title { font-weight:700; color:var(--c); text-transform:uppercase; }
+.about-block h3 { font-size:.75rem; letter-spacing:1px; margin:0 0 10px; }
+.skin-section-header,.afk-settings-title { font-size:.65rem; letter-spacing:1.5px; }
+.skin-section-header { margin-bottom:7px; padding-bottom:5px; border-bottom:1px solid var(--c-border); }
+.afk-settings-title { margin-bottom:2px; }
 .about-credit { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
 .about-credit img { width:28px; height:28px; border-radius:50%; }
 .about-credit a { color:#aaa; font-size:.8rem; text-decoration:none; }
@@ -452,25 +460,19 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
 #waddle-crosshair-container { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:5000; pointer-events:none; }
 #wb-hud-canvas { position:fixed; inset:0; pointer-events:none; z-index:4999; }
 #waddle-skin-panel { flex:1; padding:16px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; }
-#waddle-skin-panel::-webkit-scrollbar { width:4px; }
-#waddle-skin-panel::-webkit-scrollbar-thumb { background:var(--c-border); border-radius:2px; }
-.skin-section-header { font-size:.65rem; font-weight:700; color:var(--c); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:7px; padding-bottom:5px; border-bottom:1px solid var(--c-border); }
 .skin-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; margin-bottom:14px; }
-.skin-btn { background:var(--bg3); border:1px solid rgba(255,255,255,.07); border-radius:var(--radius); padding:14px 10px; cursor:pointer; text-align:center; font-size:.88rem; font-weight:var(--fw); color:var(--text-dim); transition:all .12s ease; position:relative; }
-.skin-btn:hover { border-color:var(--c-border); color:var(--text); }
-.skin-btn.equipped { border-color:var(--c); color:var(--c); background:var(--c-dim); cursor:default; }
 .skin-equipped-badge { position:absolute; top:6px; right:7px; font-size:.6rem; font-weight:900; color:var(--c); letter-spacing:.5px; text-transform:uppercase; }
 #skin-confirm-view { display:none; flex-direction:column; align-items:center; justify-content:center; gap:16px; flex:1; text-align:center; }
 #skin-confirm-view.show { display:flex; }
 .skin-confirm-text { font-size:1rem; color:var(--text); font-weight:600; }
 .skin-confirm-text span { color:var(--c); }
 .skin-confirm-btns { display:flex; gap:12px; }
-.skin-confirm-yes { background:#22c55e; border:none; border-radius:var(--radius); padding:9px 28px; font-size:.88rem; font-weight:700; color:#000; cursor:pointer; transition:opacity .1s; }
+.skin-confirm-yes,.skin-confirm-no { border-radius:var(--radius); padding:9px 28px; font-size:.88rem; font-weight:700; cursor:pointer; }
+.skin-confirm-yes { background:#22c55e; border:none; color:#000; transition:opacity .1s; }
 .skin-confirm-yes:hover { opacity:.85; }
-.skin-confirm-no { background:var(--bg3); border:1px solid rgba(255,255,255,.15); border-radius:var(--radius); padding:9px 28px; font-size:.88rem; font-weight:700; color:var(--text-dim); cursor:pointer; transition:all .1s; }
+.skin-confirm-no { background:var(--bg3); border:1px solid rgba(255,255,255,.15); color:var(--text-dim); transition:all .1s; }
 .skin-confirm-no:hover { border-color:var(--c-border); color:var(--text); }
-#waddle-afk-settings { grid-column:1 / -1; background:var(--bg3); border:1px solid rgba(255,255,255,.07); border-radius:var(--radius); padding:12px 14px; display:flex; flex-direction:column; gap:10px; }
-.afk-settings-title { font-size:.65rem; font-weight:700; color:var(--c); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:2px; }
+#waddle-afk-settings { grid-column:1 / -1; padding:12px 14px; display:flex; flex-direction:column; gap:10px; }
 .afk-setting-row { display:flex; align-items:center; justify-content:space-between; font-size:.82rem; color:var(--text-dim); }
 .afk-setting-row span { color:var(--text); }
 .waddle-toggle { position:relative; width:36px; height:20px; flex-shrink:0; }
