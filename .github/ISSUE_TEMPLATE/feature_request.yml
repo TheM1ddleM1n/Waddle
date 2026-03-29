@@ -24,7 +24,7 @@ body:
       label: Description
       description: "Reading some other person's mind doesn't exist yet, tell us what you want."
       placeholder: "A new feature that automatically pets my cat when using Waddle client"
-    render: markdown
+      render: markdown
     validations:
       required: true
   - type: textarea
