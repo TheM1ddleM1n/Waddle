@@ -1651,7 +1651,6 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
   }
 
   function toggleMenu() { state.menuOverlay?.classList.toggle('show'); }
-
   function setupKeyboardHandler() {
     window.addEventListener('keydown', (e) => {
       if (isTyping() || e.repeat) return;
@@ -1680,7 +1679,6 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
   }
 
   window.addEventListener('beforeunload', globalCleanup);
-
   function ensureDOMReady() {
     return new Promise(resolve => {
       if (document.body && document.head) { resolve(); return; }
@@ -1688,7 +1686,6 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
       const t = setInterval(() => { if (document.body && document.head) { clearInterval(t); resolve(); } }, 50);
     });
   }
-
   const MIN_THREE_REVISION = 128;
   function isThreeCompatible() {
     return typeof THREE !== 'undefined' &&
@@ -1723,7 +1720,6 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     script.onerror = () => showToast('Space Sky', 'info', 'Failed to load Three.js');
     document.head.appendChild(script);
   }
-
   async function safeInit() {
     try {
       await ensureDOMReady();
