@@ -10,6 +10,14 @@ body:
     attributes:
       label: Check list
       description: "Before you create the 999th duplicate issue about the client not petting your cat automatically... Make sure someone hasn't already made an issue, you must consider the scope of the client and the performance impact of the feature.
+      options:
+        - label: This feature has NOT been requested before by other people
+          required: true
+        - label: This aligns with Waddle’s scope (JavaScript / Tampermonkey / Miniblox API)
+          required: true
+        - label: I have considered performance impact (no BOTTLENECKS are present in code)
+          required: true
+
   - type: textarea
     id: description
     attributes:
