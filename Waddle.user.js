@@ -1252,7 +1252,6 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
           [' ', 'Space', 32],
         ];
         let idx = 0;
-
         state.intervals.antiAfk = setInterval(() => {
           if (!state.features.antiAfk) return;
           const [key, code, keyCode] = keys[idx];
@@ -1449,7 +1448,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
       const confirmView = div(null);
       confirmView.id = 'skin-confirm-view';
       confirmView.innerHTML = `
-        <div class="skin-confirm-text">Switch from <span id="skin-confirm-from" style="color:var(--c)"></span> → <span id="skin-confirm-name" style="color:var(--c)"></span>?</div>
+        <div class="skin-confirm-text">Do you want to switch from <span id="skin-confirm-from" style="color:var(--c)"></span> → <span id="skin-confirm-name" style="color:var(--c)"></span>?</div>
         <div class="skin-confirm-btns">
           <button class="skin-confirm-yes" id="skin-confirm-yes">Yes</button>
           <button class="skin-confirm-no" id="skin-confirm-no">No</button>
