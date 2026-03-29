@@ -260,7 +260,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
       afkDetector._graceUntil = Date.now() + 2000;
       showToast('Auto Anti-AFK', 'enabled', 'You went idle, Anti-AFK enabled');
       if (afkSettings.sendChat && document.pointerLockElement);
-      sendAfkChatMessage('I am currently AFK. Be Back shortly!');
+      sendAfkChatMessage('I am currently AFK. I will be back shortly!');
       afkDetector._wasOff = !state.features.antiAfk;
       if (afkDetector._wasOff) setAfkActive(true);
     },
@@ -293,7 +293,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
   };
 
   function updateAfkModuleButton(active) {
-    const cached = state._panelCache['utilities'];
+    const cached = state._panelCache['..utilities..'];
     if (!cached) return;
     const btn = cached.find(b => b.dataset.feature === 'antiAfk');
     if (btn) btn.classList.toggle('active', active);
@@ -1074,8 +1074,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     if (!active) return false;
     return active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable;
   }
-
-  function sendChatMessage(text) {
+    function sendChatMessage(text) {
     try {
       const game = gameRef.get();
       if (!game?.chat) return false;
@@ -1088,8 +1087,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
   }
 
   function sendAfkChatMessage(text) {
-    if (sendChatMessage(text)) return;
-
+      if (sendChatMessage(text)) return;
     const game = gameRef.get();
     if (game?.chat) {
       for (const method of ['sendMessage', 'sendChat', 'send', 'submitMessage', 'submitChat']) {
