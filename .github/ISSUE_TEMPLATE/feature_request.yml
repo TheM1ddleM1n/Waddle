@@ -33,6 +33,7 @@ body:
       label: Why would this be useful?
       description: "Reinventing the wheel isn't useful, is your feature useful? I hope it is, though."
       placeholder: "My cat will purr because of the feature"
+      render: markdown
     validations:
       required: true
 
@@ -47,6 +48,7 @@ body:
         - Any settings or customization options
         - Expected behavior in-game
       placeholder: "For each entity in world.entities, if the entity is a cat entity, call CatEntity#pet()."
+      render: markdown
   - type: textarea
     id: alternatives
     attributes:
@@ -61,6 +63,7 @@ body:
         - Doing it automatically.
           - Pros: Automatic, just leave it AFK or do something else.
           - Cons: none really, basic implementation but that requires modifying the client, which should be easy.
+      render: markdown
   - type: textarea
     id: context
     attributes:
@@ -72,6 +75,7 @@ body:
         - Screenshots or mockup ideas (if applicable)
         - Priority level: `Nice-to-have` / `Important` / `Critical`
       placeholder: idk what to put here as a placeholder, lol.
+      render: markdown
   - type: textarea
     id: example
     attributes:
@@ -80,5 +84,6 @@ body:
       placeholder: |
         I have 1 million cats, I need to pet them all manually.
         It would be nice if I could just enable a module and it'd do the work for me!
+      render: markdown
     validations:
       required: true
