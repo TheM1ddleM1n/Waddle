@@ -127,6 +127,6 @@
 
 <div align="center">
 
-🐧 **Made by the Waddle Team with 🖥️** — MIT License
+🐧 **Made by the Waddle Team** — MIT License
 
 </div>
