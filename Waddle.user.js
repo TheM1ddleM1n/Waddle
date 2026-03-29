@@ -1506,10 +1506,10 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     }));
 
     const delayRow = div('afk-setting-row');
-    delayRow.appendChild(el('span', null, 'Idle Delay (5–120s)'));
+    delayRow.appendChild(el('span', null, 'Idle Delay (15–120s)'));
     const delayInput = el('input', 'afk-delay-input');
     delayInput.type = 'number';
-    delayInput.min = 5;
+    delayInput.min = 15;
     delayInput.max = 120;
     delayInput.value = afkSettings.idleDelay;
     delayInput.addEventListener('change', () => {
