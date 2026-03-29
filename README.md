@@ -26,7 +26,7 @@
 ### Always On
 | Feature | Description |
 |---------|-------------|
-| 🎯 Crosshair | Cyan crosshair, auto-hides in menus |
+| 🎯 Crosshair | Cyan crosshair, auto-hides in menu |
 | 👁️ Target HUD | Player faces, mob names, block names |
 | 🌌 Space Sky | MilkyWay cubemap replaces the default sky entirely |
 
@@ -37,9 +37,9 @@
 | 📍 Coordinates | Live X Y Z, 10 updates/sec |
 | 🕐 Clock | 24-hour clock, fixed bottom-right |
 | ⌨️ Key Display | WASD + mouse buttons, lights up on press |
-| 🐧 Anti-AFK | Auto-jumps every 5s — only fires when in-game |
+| 🐧 Anti-AFK | AutoMessage to imply that you are AFK and jumps every 3 seconds or so |
 | 🎨 Custom Skin | Equip any skin from the UI |
-| 🔇 Chat Mute | Hides all incoming chat messages — toggle to restore |
+| 🔇 Chat Mute | Hides all incoming chat messages |
 
 > All draggable widgets **remember their position** across sessions
 
