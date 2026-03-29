@@ -3,7 +3,7 @@
 # 🐧 Waddle
 ### The Ultimate Miniblox Enhancement Suite
 
-![Version](https://img.shields.io/badge/version-6.2-39ff14?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-6.3-39ff14?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-39ff14?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-39ff14?style=for-the-badge)
 
@@ -49,6 +49,10 @@
 ---
 
 ## 📝 Changelog
+
+### [6.3] - Just a Update to convert issue templates -> issue forms
+- 6x68 main contributor for this PR (thank you!)
+- Renamed `Waddle.js` to `Waddle.user.js`
 
 ### [6.2] - Just a Update for Versions
 - Version updated to 6.2!
