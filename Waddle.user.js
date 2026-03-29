@@ -1075,7 +1075,21 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     return active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable;
   }
 
+  function sendChatMessage(text) {
+    try {
+      const game = gameRef.get();
+      if (!game?.chat) return false;
+      if (typeof game.chat.setInputValue !== 'function') return false;
+      if (typeof game.chat.submit !== 'function') return false;
+      game.chat.setInputValue(text);
+      game.chat.submit();
+      return true;
+    } catch (_) { return false; }
+  }
+
   function sendAfkChatMessage(text) {
+    if (sendChatMessage(text)) return;
+
     const game = gameRef.get();
     if (game?.chat) {
       for (const method of ['sendMessage', 'sendChat', 'send', 'submitMessage', 'submitChat']) {
