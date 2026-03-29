@@ -162,7 +162,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     antiAfk: {
       id: 'anti-afk-counter', cls: 'counter',
       pos: { left: '50px', top: '290px' },
-      build: spanWidget('🐧 Anti-AFK Active'),
+      build: spanWidget('Anti-AFK Active'),
     },
     keyDisplay: {
       id: 'key-display-container', cls: 'key-display-container',
