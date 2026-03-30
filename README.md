@@ -48,40 +48,10 @@
 
 ---
 
-## 📝 Changelog
-
+## 📝 Current Version
 ### [6.3] - Just a Update to convert issue templates -> issue forms
 - 6x68 main contributor for this PR (thank you!)
 - Renamed `Waddle.js` to `Waddle.user.js`
-
-### [6.2] - Just a Update for Versions
-- Version updated to 6.2!
-
-### [6.16] — Skins Update
-- Updated sidebar panel to Skins 👗
-
-### [6.14] — Speedometer
-- Speedometer added to Display — shows ground speed in blocks/second
-- Derived from position delta rather than velocity property for reliability
-- Shares the coords 100ms tick rate, no extra timer needed
-- Performance v2 update!!!
-
-### [6.11] — Chat Mute
-- Chat Mute added to Utilities — suppresses all incoming chat, fully restores on disable
-
-### [6.10] — Skins & Polish
-- Custom skin picker with equipped-state guard
-- Draggable widget positions persist across reloads
-- Anti-AFK only fires when pointer is locked, LRU cache for face/player images
-
-### [6.9] — Bug Fixes
-- HP bar no longer bleeds health from previous target on switch
-- Proper cleanup for CPS interval, MutationObserver, and resize listener on unload
-- Space sky caps retry attempts at 20, image caches capped at 64 entries
-
-### [6.8] — Stability
-- Game reference revalidated every 2s, Three.js version guard with CDN fallback
-- Error boundary in Target HUD loop, settings versioning strips unknown keys
 
 ---
 
