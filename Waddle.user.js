@@ -255,22 +255,23 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     },
 
     _onTriggered() {
-      if (afkDetector._triggered) return;
-      afkDetector._triggered = true;
-      afkDetector._graceUntil = Date.now() + 2000;
-      showToast('Auto Anti-AFK', 'enabled', 'You went idle, Anti-AFK enabled');
-      if (afkSettings.sendChat && document.pointerLockElement);
-      sendAfkChatMessage('I am currently AFK. I will be back shortly!');
-      afkDetector._wasOff = !state.features.antiAfk;
-      if (afkDetector._wasOff) setAfkActive(true);
-    },
+  if (afkDetector._triggered) return;
+  afkDetector._triggered = true;
+  afkDetector._graceUntil = Date.now() + 2000;
+  showToast('Auto Anti-AFK', 'enabled', 'You went idle, Anti-AFK enabled');
+  if (afkSettings.sendChat && document.pointerLockElement) {
+    sendAfkChatMessage('I am currently AFK. I will be back shortly!'); 
+  }
+  afkDetector._wasOff = !state.features.antiAfk;
+  if (afkDetector._wasOff) setAfkActive(true);
+},
 
     _onReturn() {
       if (!afkDetector._triggered) return;
       afkDetector._triggered = false;
       if (afkDetector._wasOff) {
         setAfkActive(false);
-        showToast('Auto Anti-AFK', 'disabled', 'Welcome back, Anti-AFK disabled');
+        showToast('Auto Anti-AFK', 'disabled', 'Welcome back, Anti-AFK disabled'); // TODO: Do not make the toast show In Menu (ONLY SHOW IN GAME)
       }
       afkDetector._wasOff = false;
     },
@@ -293,7 +294,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
   };
 
   function updateAfkModuleButton(active) {
-    const cached = state._panelCache['..utilities..'];
+    const cached = state._panelCache['utilities'];
     if (!cached) return;
     const btn = cached.find(b => b.dataset.feature === 'antiAfk');
     if (btn) btn.classList.toggle('active', active);
