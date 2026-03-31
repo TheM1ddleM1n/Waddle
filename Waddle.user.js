@@ -99,7 +99,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     state._skinApplying = true;
     const token = localStorage.getItem(SESSION_KEY);
     if (!token) {
-      showToast('No Session Token found', 'disabled', 'Log into Miniblox first');
+      showToast('No Session Token found', 'disabled', 'Log in first');
       state._skinApplying = false;
       return;
     }
@@ -163,7 +163,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     antiAfk: {
       id: 'anti-afk-counter', cls: 'counter',
       pos: { left: '50px', top: '290px' },
-      build: spanWidget('Anti-AFK Active'),
+      build: spanWidget('Anti-AFK is Active'),
     },
     keyDisplay: {
       id: 'key-display-container', cls: 'key-display-container',
@@ -175,13 +175,13 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
   const CATEGORIES = [
     { id: 'display', label: 'Display', icon: '📊' },
     { id: 'utilities', label: 'Utilities', icon: '🛠️' },
-    { id: 'customSkin', label: 'SkinChanger', icon: '👗' },
+    { id: 'customSkin', label: 'Closet', icon: '👗' },
     { id: 'about', label: 'About Waddle', icon: 'ℹ️' }
   ];
 
   const FEATURE_MAP = {
     display: [
-      { label: 'FPS & CPS', feature: 'performance' },
+      { label: 'FPS/CPS', feature: 'performance' },
       { label: 'Positions', feature: 'coords' },
       { label: 'Clock', feature: 'realTime' },
       { label: 'KeyStrokes', feature: 'keyDisplay' },
@@ -265,7 +265,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
       afkDetector._graceUntil = Date.now() + 2000;
       showToast('Auto Anti-AFK', 'enabled', 'You went idle, Anti-AFK enabled');
       if (afkSettings.sendChat) {
-        sendAfkChatMessage('I am currently AFK. I will be back shortly!');
+        sendAfkChatMessage('I am currently AFK. Be Back Soon :D');
       }
       afkDetector._wasOff = !state.features.antiAfk;
       if (afkDetector._wasOff) setAfkActive(true);
@@ -381,7 +381,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
       if (game?.chat && typeof game.chat.addChat === 'function') {
         clearInterval(state.intervals.waitForGame);
         state.intervals.waitForGame = null;
-        game.chat.addChat({ text: `\\${THEME_COLOR}\\[Server]\\reset\\ Welcome! You are running Waddle v${SCRIPT_VERSION}. \\blue\\Enjoy! \\royalblue\\If you have any questions contact TheM1ddleM1n on Github!` });
+        game.chat.addChat({ text: `\\${THEME_COLOR}\\[Server]\\reset\\ You are running Waddle v${SCRIPT_VERSION}. \\royalblue\\If you have any questions contact TheM1ddleM1n on Github` });
       }
     }, 500);
   })();
