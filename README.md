@@ -52,6 +52,7 @@
 ### [6.3] - Just a Update to convert issue templates -> issue forms
 - 6x68 main contributor for this PR (thank you!)
 - Renamed `Waddle.js` to `Waddle.user.js`
+- Removed Unused line of code
 
 ---
 
