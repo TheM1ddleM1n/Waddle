@@ -24,6 +24,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
   const WADDLE_USERNAME_KEY = 'waddle_username';
   const WADDLE_LEVEL_KEY = 'waddle_level';
   const WADDLE_RANK_KEY = 'waddle_rank';
+  const DRAGGABLE_WIDGETS = Object.freeze(['performance', 'coords', 'antiAfk', 'keyDisplay']);
 
   const STANDARD_SKINS = Object.freeze([
     'Alice','Bob','Techno','BigGelo','Corrupted','Diana','Dr. Strange','Endoskeleton', 'Ganyu','George','Holly',
@@ -340,6 +341,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     _lastSpeedTime: 0,
     _mutedChat: null,
     _skinApplying: false,
+    _dragPositionsCache: null,
   };
 
   const KNOWN_FEATURES = new Set(Object.keys(state.features));
@@ -353,16 +355,22 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
 
   function saveDragPositions() {
     const positions = {};
-    ['performance', 'coords', 'antiAfk', 'keyDisplay'].forEach(type => {
+    DRAGGABLE_WIDGETS.forEach(type => {
       const e = state.counters[type];
       if (e) positions[type] = { left: e.style.left, top: e.style.top };
     });
+    state._dragPositionsCache = positions;
     localStorage.setItem(DRAG_POSITIONS_KEY, JSON.stringify(positions));
   }
 
-  function loadDragPositions() {
-    try { return JSON.parse(localStorage.getItem(DRAG_POSITIONS_KEY) || 'null') || {}; }
-    catch (_) { return {}; }
+  function getDragPositions() {
+    if (state._dragPositionsCache) return state._dragPositionsCache;
+    try {
+      state._dragPositionsCache = JSON.parse(localStorage.getItem(DRAG_POSITIONS_KEY) || 'null') || {};
+    } catch (_) {
+      state._dragPositionsCache = {};
+    }
+    return state._dragPositionsCache;
   }
 
   (function () {
@@ -610,6 +618,15 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     let lastDrawnType = '';
     let needsRedraw = true;
 
+    function clearHUD(resetNearest = false) {
+      if (lastDrawnType !== '' || resetNearest) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      lastDrawnType = '';
+      needsRedraw = true;
+      if (resetNearest) cachedNearest = null;
+    }
+
     function findEntityMapKey(world) {
       if (entityMapKey && world[entityMapKey] instanceof Map) return entityMapKey;
       for (const [k, v] of Object.entries(world)) {
@@ -720,7 +737,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
         }
         const inGame = !!(document.pointerLockElement && !cachedPauseMenu);
         if (!inGame) {
-          if (lastDrawnType !== '') { ctx.clearRect(0, 0, canvas.width, canvas.height); lastDrawnType = ''; needsRedraw = true; }
+          clearHUD();
           requestAnimationFrame(tick);
           return;
         }
@@ -733,11 +750,13 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
             const dump = mapKey ? game.world[mapKey] : null;
             if (dump) {
               let nearest = null, minDist = Infinity;
-              dump.forEach(entity => {
-                if (!entity || entity.id === player.id || typeof entity.getHealth !== 'function' || !entity.pos) return;
-                const dist = player.pos.distanceTo(entity.pos);
+              const playerId = player.id;
+              const playerPos = player.pos;
+              for (const entity of dump.values()) {
+                if (!entity || entity.id === playerId || typeof entity.getHealth !== 'function' || !entity.pos) continue;
+                const dist = playerPos.distanceTo(entity.pos);
                 if (dist < minDist) { minDist = dist; nearest = entity; }
-              });
+              }
               if (nearest !== cachedNearest) needsRedraw = true;
               cachedNearest = nearest;
               cachedMinDist = minDist;
@@ -763,19 +782,12 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
             const blockName = domNameEl?.textContent?.trim() ?? null;
             if (blockName) {
               drawBlockHUD(blockName);
-            } else if (lastDrawnType !== '') {
-              ctx.clearRect(0, 0, canvas.width, canvas.height);
-              lastDrawnType = '';
-              needsRedraw = true;
-            }
+            } else clearHUD();
           }
         }
       } catch (err) {
         console.warn('[Waddle] Target HUD tick error:', err);
-        lastDrawnType = '';
-        needsRedraw = true;
-        cachedNearest = null;
-        try { ctx.clearRect(0, 0, canvas.width, canvas.height); } catch (_) {}
+        try { clearHUD(true); } catch (_) {}
         setTimeout(() => requestAnimationFrame(tick), 2000);
         return;
       }
@@ -856,7 +868,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     if (cfg.fixed) {
       Object.assign(wrap.style, cfg.fixed);
     } else {
-      const saved = loadDragPositions()[type];
+      const saved = getDragPositions()[type];
       wrap.style.left = saved?.left || cfg.pos.left;
       wrap.style.top = saved?.top || cfg.pos.top;
       setupDragging(wrap, saveDragPositions);
