@@ -973,7 +973,6 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
       }
       webgl2 = !!window.WebGL2RenderingContext;
     } catch (_) {}
-    const conn = navigator.connection;
     if (navigator.getBattery) {
       navigator.getBattery().then(bat => {
         const getBatteryIcon = (pct) => pct > 20 ? "🔋" : "🪫";
