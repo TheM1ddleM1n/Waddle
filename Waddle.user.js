@@ -154,11 +154,6 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
         wrap._spdSpan = spdSpan;
       },
     },
-    realTime: {
-      id: 'real-time-counter', cls: 'counter',
-      fixed: { right: '30px', bottom: '30px', background: 'transparent', boxShadow: 'none', border: 'none', fontSize: '1.1rem', padding: '0' },
-      build: spanWidget('00:00:00 AM'),
-    },
     antiAfk: {
       id: 'anti-afk-counter', cls: 'counter',
       pos: { left: '50px', top: '290px' },
@@ -182,7 +177,6 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     display: [
       { label: 'FPS/CPS', feature: 'performance' },
       { label: 'Positions', feature: 'coords' },
-      { label: 'Clock', feature: 'realTime' },
       { label: 'KeyStrokes', feature: 'keyDisplay' },
     ],
     utilities: [
@@ -313,10 +307,9 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
 
   const state = {
     features: {
-      performance: false, coords: false, realTime: false,
-      antiAfk: false, keyDisplay: false, muteChat: false,
+      performance: false, coords: false, antiAfk: false, keyDisplay: false, muteChat: false,
     },
-    counters: { performance: null, realTime: null, coords: null, antiAfk: null, keyDisplay: null },
+    counters: { performance: null, coords: null, antiAfk: null, keyDisplay: null },
     menuOverlay: null,
     activeCategory: 'display',
     rafId: null,
@@ -1073,15 +1066,6 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     }
   }
 
-  function updateRealTime() {
-    if (!state.counters.realTime) return;
-    const now = new Date();
-    const is24Hour = Intl.DateTimeFormat(undefined, { hour: 'numeric' })
-      .formatToParts(new Date(2020, 0, 1, 13))
-      .some(part => part.type === 'hour' && parseInt(part.value) === 13);
-    updateCounterText('realTime', now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !is24Hour }));
-  }
-
   function isTyping() {
     const active = document.activeElement;
     if (!active) return false;
@@ -1236,19 +1220,6 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
         state._lastSpeedTime = 0;
         removeCounter('coords');
         maybeStopRaf();
-      }
-    },
-    realTime: {
-      start() {
-        if (state.intervals.realTime) return;
-        if (!state.counters.realTime) createWidget('realTime');
-        updateRealTime();
-        state.intervals.realTime = setInterval(updateRealTime, 1000);
-      },
-      cleanup() {
-        clearInterval(state.intervals.realTime);
-        state.intervals.realTime = null;
-        removeCounter('realTime');
       }
     },
     antiAfk: {
