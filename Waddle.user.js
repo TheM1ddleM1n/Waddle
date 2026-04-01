@@ -263,7 +263,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
       }
       afkDetector._triggered = true;
       afkDetector._graceUntil = Date.now() + 2000;
-      showToast('Auto Anti-AFK', 'enabled', 'You went idle, Anti-AFK enabled');
+      showToast('Auto Anti-AFK', 'enabled', 'You went idle');
       if (afkSettings.sendChat) {
         sendAfkChatMessage('I am currently AFK. Be Back Soon :D');
       }
@@ -277,7 +277,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
       if (afkDetector._wasOff) {
         setAfkActive(false);
         if (document.pointerLockElement) {
-          showToast('Auto Anti-AFK', 'disabled', 'Welcome back, Anti-AFK disabled');
+          showToast('Anti-AFK', 'disabled', 'Disabled');
         }
       }
       afkDetector._wasOff = false;
@@ -1329,8 +1329,8 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
           if (patchMethod(chat, 'addChat', () => {})) state._mutedChat = chat;
           return !!state._mutedChat;
         };
-        if (!tryMute()) showToast('Chat-Mute', 'info', 'Waiting for game chat to load...');
-        else showToast('Chat-Mute', 'enabled', 'Chat messages will be hidden ingame');
+        if (!tryMute()) showToast('Chat-Mute', 'info', 'Waiting for game.chat to load...');
+        else showToast('Chat-Mute', 'enabled', 'Chat messages will be hidden');
         state.intervals.chatMuteRetry = setInterval(tryMute, 2000);
       },
       cleanup() {
@@ -1338,7 +1338,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
         state.intervals.chatMuteRetry = null;
         unpatchMethod(state._mutedChat, 'addChat');
         state._mutedChat = null;
-        showToast('Chat-Mute', 'disabled', 'You can now receive other messages');
+        showToast('Chat-Mute', 'disabled', 'You can now receive messages');
       }
     },
   };
@@ -1410,7 +1410,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     if (isFirstTime && hasToken) {
       const username = getPlayerUsername();
       showToast('Token Found!', 'enabled',
-        username ? `Auto-detected as ${username} — token automatically applied!` : 'Token found and automatically applied!');
+        username ? `Detected as ${username} — token automatically applied!` : 'Token found and automatically applied!');
     } else if (isFirstTime && !hasToken) {
       showToast('No Token', 'disabled', 'Log into Miniblox first then re-open the skin panel');
     }
@@ -1513,7 +1513,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     const block = div(null);
     block.id = 'waddle-afk-settings';
 
-    block.appendChild(div('afk-settings-title', 'Auto AFK Settings'));
+    block.appendChild(div('afk-settings-title', 'Anti-AFK Settings'));
 
     block.appendChild(makeToggleRow('Auto Enable', afkSettings.autoEnable, v => {
       afkSettings.autoEnable = v;
@@ -1525,10 +1525,10 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     }));
 
     const delayRow = div('afk-setting-row');
-    delayRow.appendChild(el('span', null, 'Idle Delay (15–120s)'));
+    delayRow.appendChild(el('span', null, 'Idle Delay (5–120s)'));
     const delayInput = el('input', 'afk-delay-input');
     delayInput.type = 'number';
-    delayInput.min = 15;
+    delayInput.min = 5;
     delayInput.max = 120;
     delayInput.value = afkSettings.idleDelay;
     delayInput.addEventListener('change', () => {
