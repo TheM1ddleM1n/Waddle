@@ -445,7 +445,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
 .about-links { display:flex; gap:8px; flex-wrap:wrap; }
 .about-link-btn { background:var(--bg); border:1px solid var(--c-border); color:var(--c); border-radius:var(--radius); padding:6px 14px; font-size:.75rem; font-weight:var(--fw); cursor:pointer; transition:all .1s ease; }
 .about-link-btn:hover { background:var(--c-dim); }
-#waddle-badge { position:fixed; top:50px; left:12px; z-index:9998; background:rgba(12,12,18,.85); border:1px solid var(--c-border); border-radius:20px; padding:4px 10px; font-size:.7rem; font-weight:700; color:var(--c); letter-spacing:.5px; pointer-events:none; user-select:none; backdrop-filter:blur(4px); }
+#waddle-badge { position:fixed; top:50px; right:18px; z-index:9998; background:rgba(12,12,18,.85); border:1px solid var(--c-border); border-radius:20px; padding:4px 10px; font-size:.7rem; font-weight:700; color:var(--c); letter-spacing:.5px; pointer-events:none; user-select:none; backdrop-filter:blur(4px); }
 #waddle-toasts { position:fixed; bottom:70px; right:18px; z-index:10000; display:flex; flex-direction:column-reverse; gap:6px; pointer-events:none; }
 .waddle-toast { display:flex; align-items:center; gap:10px; background:var(--bg2); border:1px solid rgba(255,255,255,.1); border-radius:var(--radius); padding:9px 14px; min-width:200px; box-shadow:var(--shadow); animation:toast-in .2s ease; transition:opacity .25s ease,transform .25s ease; }
 .waddle-toast.hide { opacity:0; transform:translateX(10px); }
