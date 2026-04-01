@@ -566,13 +566,12 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
   }
 
   function initHudCanvas() {
-    if (document.getElementById('wb-hud-canvas')) return;
-    const canvas = el('canvas');
-    canvas.id = 'wb-hud-canvas';
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const canvas = document.getElementById('wb-hud-canvas') || Object.assign(el('canvas'), { id: 'wb-hud-canvas' });
+    if (canvas.parentNode) return;
+    const resize = () => Object.assign(canvas, { width: window.innerWidth, height: window.innerHeight });
+    resize();
     document.body.appendChild(canvas);
-    state._resizeHandler = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    state._resizeHandler = resize;
     window.addEventListener('resize', state._resizeHandler, { passive: true });
   }
 
@@ -582,8 +581,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
       if (!this._map.has(key)) return undefined;
       const val = this._map.get(key);
       this._map.delete(key);
-      this._map.set(key, val);
-      return val;
+      return this._map.set(key, val).get(key);
     }
     set(key, val) {
       if (this._map.has(key)) this._map.delete(key);
@@ -619,9 +617,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     let needsRedraw = true;
 
     function clearHUD(resetNearest = false) {
-      if (lastDrawnType !== '' || resetNearest) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
+      if (lastDrawnType || resetNearest) ctx.clearRect(0, 0, canvas.width, canvas.height);
       lastDrawnType = '';
       needsRedraw = true;
       if (resetNearest) cachedNearest = null;
@@ -630,10 +626,9 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     function findEntityMapKey(world) {
       if (entityMapKey && world[entityMapKey] instanceof Map) return entityMapKey;
       for (const [k, v] of Object.entries(world)) {
-        if (v instanceof Map && v.size > 0) {
-          const first = v.values().next().value;
-          if (first && typeof first.getHealth === 'function' && first.pos) { entityMapKey = k; return k; }
-        }
+        if (!(v instanceof Map) || v.size === 0) continue;
+        const first = v.values().next().value;
+        if (first && typeof first.getHealth === 'function' && first.pos) return (entityMapKey = k);
       }
       return null;
     }
@@ -670,11 +665,10 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     const DOM_QUERY_INTERVAL = 500;
 
     function getDOM(now) {
-      if (now - domQueryAge > DOM_QUERY_INTERVAL) {
-        domFaceEl = document.querySelector('.css-1pj0jj0 img');
-        domNameEl = document.querySelector('.css-1pj0jj0 p');
-        domQueryAge = now;
-      }
+      if (now - domQueryAge <= DOM_QUERY_INTERVAL) return;
+      domFaceEl = document.querySelector('.css-1pj0jj0 img');
+      domNameEl = document.querySelector('.css-1pj0jj0 p');
+      domQueryAge = now;
     }
 
     function drawEntityHUD(faceSrc, faceName) {
