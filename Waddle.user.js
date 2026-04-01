@@ -1005,6 +1005,84 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     };
   }
 
+  function formatIssueBody(sys, issueType) {
+    const heading = issueType === 'bug'
+      ? '## Bug details'
+      : '## Feature idea';
+    const prompt = issueType === 'bug'
+      ? 'Describe what happened and how to reproduce it.'
+      : 'Describe your idea and why it would help.';
+    return [
+      heading,
+      '',
+      prompt,
+      '',
+      '## System info (auto-filled by Waddle)',
+      `- OS: ${sys.os}`,
+      `- Browser: ${sys.browser}`,
+      `- GPU: ${sys.gpu}`,
+      `- GPU Vendor: ${sys.gpuVendor}`,
+      `- WebGL2: ${sys.webgl2 ? 'Supported' : 'Not supported'}`,
+      `- CPU Cores: ${sys.cores}`,
+      `- RAM: ${sys.ram}`,
+      `- Screen: ${sys.screen}`,
+      `- Timezone: ${sys.timezone}`,
+      `- Waddle Version: ${SCRIPT_VERSION}`,
+    ].join('\n');
+  }
+
+  function buildIssueUrl(template, sys, issueType) {
+    const url = new URL('https://github.com/TheM1ddleM1n/Waddle/issues/new');
+    url.searchParams.set('template', template);
+    url.searchParams.set('body', formatIssueBody(sys, issueType));
+    return url.toString();
+  }
+
+  function renderContributors(container, contributors) {
+    container.innerHTML = '';
+    contributors.forEach((contributor, index) => {
+      const row = div('about-credit');
+      const img = el('img');
+      img.src = `${contributor.avatar_url}${contributor.avatar_url.includes('?') ? '&' : '?'}s=56`;
+      img.alt = `${contributor.login} avatar`;
+      const info = div(null);
+      const role = div('role', index === 0 ? 'Top Contributor' : 'Contributor');
+      if (contributor.login === 'Scripter132132') role.textContent = 'Original Creator';
+      if (contributor.login === 'TheM1ddleM1n') {
+        role.textContent = 'Enhanced By';
+        role.style.color = '#f39c12';
+      }
+      const link = el('a', null, `@${contributor.login}`);
+      link.href = contributor.html_url;
+      link.target = '_blank';
+      info.append(role, link);
+      row.append(img, info);
+      container.appendChild(row);
+    });
+  }
+
+  async function loadContributors(container) {
+    if (!container) return;
+    try {
+      const res = await fetch('https://api.github.com/repos/TheM1ddleM1n/Waddle/contributors');
+      if (!res.ok) throw new Error(`GitHub API ${res.status}`);
+      const data = await res.json();
+      if (!Array.isArray(data) || !data.length) throw new Error('No contributors found');
+      renderContributors(container, data.slice(0, 12));
+    } catch (_) {
+      container.innerHTML = `
+        <div class="about-credit">
+          <img src="https://avatars.githubusercontent.com/Scripter132132?s=56" alt="Scripter132132 avatar">
+          <div><div class="role">Original Creator</div><a href="https://github.com/Scripter132132" target="_blank">@Scripter132132</a></div>
+        </div>
+        <div class="about-credit">
+          <img src="https://avatars.githubusercontent.com/TheM1ddleM1n?s=56" alt="TheM1ddleM1n avatar">
+          <div><div class="role" style="color:#f39c12">Enhanced By</div><a href="https://github.com/TheM1ddleM1n" target="_blank">@TheM1ddleM1n</a></div>
+        </div>
+      `;
+    }
+  }
+
   function needsRaf() {
     return state.features.performance || state.features.coords;
   }
@@ -1631,21 +1709,18 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     const creditsBlock = div('about-block');
     creditsBlock.innerHTML = `
       <h3>Credits</h3>
-      <div class="about-credit">
-        <img src="https://avatars.githubusercontent.com/Scripter132132?s=56">
-        <div><div class="role">Original Creator</div><a href="https://github.com/Scripter132132" target="_blank">@Scripter132132</a></div>
-      </div>
-      <div class="about-credit">
-        <img src="https://avatars.githubusercontent.com/TheM1ddleM1n?s=56">
-        <div><div class="role" style="color:#f39c12">Enhanced By</div><a href="https://github.com/TheM1ddleM1n" target="_blank">@TheM1ddleM1n</a></div>
+      <div id="waddle-contributors-list">
+        <div class="about-credit"><div style="color:var(--text-dim);font-size:.78rem;">Loading contributors…</div></div>
       </div>
     `;
+    const contributorsContainer = creditsBlock.querySelector('#waddle-contributors-list');
+    loadContributors(contributorsContainer);
     const linksBlock = div('about-block');
     linksBlock.innerHTML = '<h3>🔗 GitHub</h3>';
     const linksRow = div('about-links');
     [
-      ['Suggest Feature', 'https://github.com/TheM1ddleM1n/Waddle/issues/new?template=feature_request.yml'],
-      ['Report Bug', 'https://github.com/TheM1ddleM1n/Waddle/issues/new?template=bug_report.yml']
+      ['Suggest Feature', buildIssueUrl('feature_request.yml', sys, 'feature')],
+      ['Report Bug', buildIssueUrl('bug_report.yml', sys, 'bug')]
     ].forEach(([text, url]) => {
       const btn = el('button', 'about-link-btn', text);
       btn.onclick = () => window.open(url, '_blank');
