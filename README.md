@@ -35,7 +35,6 @@
 |---------|-------------|
 | 📊 FPS & Ping | Color-coded performance counter |
 | 📍 Coordinates | Live X Y Z, 10 updates/sec |
-| 🕐 Clock | 24-hour clock, fixed bottom-right |
 | ⌨️ Key Display | WASD + mouse buttons, lights up on press |
 | 🐧 Anti-AFK | AutoMessage to imply that you are AFK and jumps every 3 seconds or so |
 | 🎨 Custom Skin | Equip any skin from the UI |
@@ -49,10 +48,12 @@
 ---
 
 ## 📝 Current Version
-### [6.3] - Just a Update to convert issue templates -> issue forms
-- 6x68 main contributor for this PR (thank you!)
-- Renamed `Waddle.js` to `Waddle.user.js`
-- Removed Unused line of code
+### [6.4] - Streamline Patches
+- Clock removed; time is accessible by exiting full screen.
+- Removed a unused line of code (connection)
+- refractor HUD helper to reduce boilerplate
+- Fix Auto Anti-AFK to avoid showing toasts in menus
+- we don't even have a troubleshooting page lol so removed from `config.yml`
 
 ---
 
