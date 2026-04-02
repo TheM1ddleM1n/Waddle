@@ -72,12 +72,12 @@ jobs:
                 {
                   role: 'system',
                   content: [
-                    'You summarize code diffs into concise changelog bullet points.',
-                    'Output ONLY a JSON array of short plain-English strings.',
-                    'Each string describes one change, addition, or fix.',
-                    'No markdown, no code blocks, no extra text — just the raw JSON array.',
-                    'Example: [\"Fixed Anti-AFK toast showing in menus\", \"Added FPS color threshold for 30fps\"]',
-                  ].join(' '),
+                'You summarize code diffs into a single short changelog entry.',
+                'Output ONLY a JSON array with ONE concise plain-English string.',
+                'Max 8 words. Focus on the overall theme of the changes, not every detail.',
+                'No markdown, no code blocks, no extra text — just the raw JSON array.',
+                'Example: [\"Renamed modules and tweaked AFK message\"]',
+              ].join(' '),
                 },
                 { role: 'user', content: diff },
               ],
