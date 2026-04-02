@@ -29,7 +29,7 @@ body:
         You can open up the developer tools by either CTRL + SHIFT + I or F12, and then selecting the Console menu.
   - type: textarea
     attributes:
-      label: Additional information (optional)
+      label: Additional information (this is optional)
       description: "Add any extra information that you think might help. Pro tip: 'please fix this bug' doesn't help."
       placeholder:
-        It only happens maybe every 6 or 7 seconds.
+        It only happens maybe every <placeholder> seconds.
