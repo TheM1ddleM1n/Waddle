@@ -1,0 +1,71 @@
+name: Sync Version
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Waddle.user.js'
+      - 'README.md'
+
+permissions:
+  contents: write
+
+jobs:
+  sync-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Sync version across files
+        run: |
+          node -e "
+          const { readFileSync, writeFileSync } = require('fs');
+          const { execSync } = require('child_process');
+
+          const changed = execSync('git diff --name-only HEAD~1 HEAD').toString().trim().split('\n');
+          const jsChanged = changed.includes('Waddle.user.js');
+          const readmeChanged = changed.includes('README.md');
+
+          let js = readFileSync('Waddle.user.js', 'utf8');
+          let readme = readFileSync('README.md', 'utf8');
+
+          const jsVersion = (js.match(/@version\s+([\d.]+)/) || [])[1];
+          const readmeVersion = (readme.match(/version-([\d.]+)-/) || [])[1];
+
+          console.log('JS version:', jsVersion, '| README version:', readmeVersion);
+
+          if (jsVersion === readmeVersion) { console.log('Already in sync.'); process.exit(0); }
+
+          if (jsChanged && !readmeChanged) {
+            // Userscript changed — push its version to README
+            const updated = readme.replace(
+              /version-[\d.]+-/,
+              'version-' + jsVersion + '-'
+            );
+            writeFileSync('README.md', updated, 'utf8');
+            console.log('Updated README to v' + jsVersion);
+          } else if (readmeChanged && !jsChanged) {
+            // README changed — push its version to both @version and SCRIPT_VERSION
+            let updated = js.replace(
+              /(@version\s+)[\d.]+/,
+              '\$1' + readmeVersion
+            );
+            updated = updated.replace(
+              /(SCRIPT_VERSION\s*=\s*['\"])[\d.]+(['\"])/,
+              '\$1' + readmeVersion + '\$2'
+            );
+            writeFileSync('Waddle.user.js', updated, 'utf8');
+            console.log('Updated Waddle.user.js to v' + readmeVersion);
+          }
+          "
+
+      - name: Commit sync
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Waddle.user.js README.md
+          git diff --cached --quiet || git commit -m "chore: sync version [skip ci]"
+          git push
