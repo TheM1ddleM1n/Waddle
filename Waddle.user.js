@@ -157,7 +157,7 @@ function patchLocalStorageForToken() {
     antiAfk: {
       id: 'anti-afk-counter', cls: 'counter',
       pos: { left: '50px', top: '290px' },
-      build: spanWidget('Anti-AFK is Active'),
+      build: spanWidget('Anti-AFK Active'),
     },
     keyDisplay: {
       id: 'key-display-container', cls: 'key-display-container',
@@ -512,57 +512,57 @@ function patchLocalStorageForToken() {
   setTimeout(() => { toast.classList.add('hide'); setTimeout(() => toast.remove(), 280); }, 2800);
 }
 
-  function makeLine(styles) {
-    const d = div(null);
-    Object.assign(d.style, { position: 'absolute', backgroundColor: THEME_COLOR, pointerEvents: 'none' }, styles);
-    return d;
-  }
+ function makeLine(styles) {
+  const d = div(null);
+  Object.assign(d.style, { position: 'absolute', backgroundColor: THEME_COLOR, pointerEvents: 'none' }, styles);
+  return d;
+}
 
-  function createCrosshair() {
-    const c = div(null);
-    c.append(
-      makeLine({ top: '0', left: '50%', width: '2px', height: '8px', transform: 'translateX(-50%)' }),
-      makeLine({ bottom: '0', left: '50%', width: '2px', height: '8px', transform: 'translateX(-50%)' }),
-      makeLine({ left: '0', top: '50%', width: '8px', height: '2px', transform: 'translateY(-50%)' }),
-      makeLine({ right: '0', top: '50%', width: '8px', height: '2px', transform: 'translateY(-50%)' })
-    );
-    return c;
-  }
+function createCrosshair() {
+  const c = div(null);
+  const h = { width: '8px', height: '2px' }, v = { width: '2px', height: '8px' };
+  c.append(
+    makeLine({ ...v, top: '0', left: '50%', transform: 'translateX(-50%)' }),
+    makeLine({ ...v, bottom: '0', left: '50%', transform: 'translateX(-50%)' }),
+    makeLine({ ...h, left: '0', top: '50%', transform: 'translateY(-50%)' }),
+    makeLine({ ...h, right: '0', top: '50%', transform: 'translateY(-50%)' })
+  );
+  return c;
+}
 
-  function checkCrosshair() {
-    if (!state.crosshairContainer) return;
-    const defaultCrosshair = document.querySelector('.css-xhoozx');
-    const pauseMenu = document.querySelector('.chakra-modal__content-container,[role="dialog"]');
-    const inGame = !!(defaultCrosshair && !pauseMenu && document.pointerLockElement);
-    state.crosshairContainer.style.display = inGame ? 'block' : 'none';
-  }
+function checkCrosshair() {
+  if (!state.crosshairContainer) return;
+  const inGame = !!(
+    document.querySelector('.css-xhoozx') &&
+    !document.querySelector('.chakra-modal__content-container,[role="dialog"]') &&
+    document.pointerLockElement
+  );
+  state.crosshairContainer.style.display = inGame ? 'block' : 'none';
+}
 
-  function initializeCrosshairModule() {
-    if (!document.body) return false;
-    state.crosshairContainer = div(null);
-    state.crosshairContainer.id = 'waddle-crosshair-container';
-    state.crosshairContainer.appendChild(createCrosshair());
-    document.body.appendChild(state.crosshairContainer);
-    const target = document.getElementById('react') || document.body;
-    state._crosshairObserver = new MutationObserver(() => {
-      if (!state._crosshairRafPending) {
-        state._crosshairRafPending = true;
-        requestAnimationFrame(() => { state._crosshairRafPending = false; checkCrosshair(); });
-      }
-    });
-    state._crosshairObserver.observe(target, { childList: true, subtree: true });
-    return true;
-  }
+function initializeCrosshairModule() {
+  if (!document.body) return;
+  state.crosshairContainer = Object.assign(div(null), { id: 'waddle-crosshair-container' });
+  state.crosshairContainer.appendChild(createCrosshair());
+  document.body.appendChild(state.crosshairContainer);
+  state._crosshairObserver = new MutationObserver(() => {
+    if (!state._crosshairRafPending) {
+      state._crosshairRafPending = true;
+      requestAnimationFrame(() => { state._crosshairRafPending = false; checkCrosshair(); });
+    }
+  });
+  state._crosshairObserver.observe(document.getElementById('react') || document.body, { childList: true, subtree: true });
+}
 
-  function initHudCanvas() {
-    const canvas = document.getElementById('wb-hud-canvas') || Object.assign(el('canvas'), { id: 'wb-hud-canvas' });
-    if (canvas.parentNode) return;
-    const resize = () => Object.assign(canvas, { width: window.innerWidth, height: window.innerHeight });
-    resize();
-    document.body.appendChild(canvas);
-    state._resizeHandler = resize;
-    window.addEventListener('resize', state._resizeHandler, { passive: true });
-  }
+function initHudCanvas() {
+  const canvas = document.getElementById('wb-hud-canvas') || Object.assign(el('canvas'), { id: 'wb-hud-canvas' });
+  if (canvas.parentNode) return;
+  const resize = () => Object.assign(canvas, { width: window.innerWidth, height: window.innerHeight });
+  resize();
+  document.body.appendChild(canvas);
+  state._resizeHandler = resize;
+  window.addEventListener('resize', state._resizeHandler, { passive: true });
+}
 
   class LRUCache {
   constructor(max) { this.max = max; this._map = new Map(); }
@@ -704,73 +704,59 @@ function startTargetHUDLoop() {
   }
 
     function tick() {
-      try {
-        const now = performance.now();
-        if (now - lastPauseCheck > PAUSE_CHECK_INTERVAL) {
-          cachedPauseMenu = !!document.querySelector('.chakra-modal__content-container,[role="dialog"]');
-          lastPauseCheck = now;
-        }
-        const inGame = !!(document.pointerLockElement && !cachedPauseMenu);
-        if (!inGame) {
-          clearHUD();
-          requestAnimationFrame(tick);
-          return;
-        }
-        const game = gameRef.get(now);
-        const player = game?.player;
-        if (game?.world && player?.pos) {
-          if (now - lastEntityScan > ENTITY_SCAN_INTERVAL) {
-            lastEntityScan = now;
-            const mapKey = findEntityMapKey(game.world);
-            const dump = mapKey ? game.world[mapKey] : null;
-            if (dump) {
-              let nearest = null, minDist = Infinity;
-              const playerId = player.id;
-              const playerPos = player.pos;
-              for (const entity of dump.values()) {
-                if (!entity || entity.id === playerId || typeof entity.getHealth !== 'function' || !entity.pos) continue;
-                const dist = playerPos.distanceTo(entity.pos);
-                if (dist < minDist) { minDist = dist; nearest = entity; }
-              }
-              if (nearest !== cachedNearest) needsRedraw = true;
-              cachedNearest = nearest;
-              cachedMinDist = minDist;
-            }
-          }
-          if (cachedNearest && cachedMinDist <= MAX_RANGE) {
-            const isPlayer = cachedNearest.constructor?.name === 'ClientEntityPlayerOther';
-            getDOM(now);
-            const domSrc = domFaceEl?.src ?? null;
-            const domName = domNameEl?.textContent ?? null;
-            let faceSrc = null, faceName;
-            if (isPlayer) {
-              const nameKey = (domSrc ? domName : null) || cachedNearest.name || '';
-              if (domSrc && nameKey) playerFaceCache.set(nameKey, domSrc);
-              faceSrc = playerFaceCache.get(nameKey) ?? null;
-              faceName = (domSrc ? domName : null) || cachedNearest.name || '???';
-            } else {
-              faceName = cachedNearest.name || cachedNearest.constructor?.name?.replace('Entity', '') || '???';
-            }
-            drawEntityHUD(faceSrc, faceName);
-          } else {
-            getDOM(now);
-            const blockName = domNameEl?.textContent?.trim() ?? null;
-            if (blockName) {
-              drawBlockHUD(blockName);
-            } else clearHUD();
-          }
-        }
-      } catch (err) {
-        console.warn('[Waddle] Target HUD tick error:', err);
-        try { clearHUD(true); } catch (_) {}
-        setTimeout(() => requestAnimationFrame(tick), 2000);
-        return;
+    try {
+      const now = performance.now();
+      if (now - lastPauseCheck > PAUSE_CHECK_INTERVAL) {
+        cachedPauseMenu = !!document.querySelector('.chakra-modal__content-container,[role="dialog"]');
+        lastPauseCheck = now;
       }
-      requestAnimationFrame(tick);
+      if (!document.pointerLockElement || cachedPauseMenu) { clearHUD(); requestAnimationFrame(tick); return; }
+      const game = gameRef.get(now);
+      const player = game?.player;
+      if (game?.world && player?.pos) {
+        if (now - lastEntityScan > ENTITY_SCAN_INTERVAL) {
+          lastEntityScan = now;
+          const dump = findEntityMapKey(game.world) ? game.world[entityMapKey] : null;
+          if (dump) {
+            let nearest = null, minDist = Infinity;
+            const { id: playerId, pos: playerPos } = player;
+            for (const entity of dump.values()) {
+              if (!entity || entity.id === playerId || typeof entity.getHealth !== 'function' || !entity.pos) continue;
+              const dist = playerPos.distanceTo(entity.pos);
+              if (dist < minDist) { minDist = dist; nearest = entity; }
+            }
+            if (nearest !== cachedNearest) needsRedraw = true;
+            cachedNearest = nearest;
+            cachedMinDist = minDist;
+          }
+        }
+        if (cachedNearest && cachedMinDist <= MAX_RANGE) {
+          getDOM(now);
+          const domSrc = domFaceEl?.src ?? null;
+          const domName = domNameEl?.textContent ?? null;
+          if (cachedNearest.constructor?.name === 'ClientEntityPlayerOther') {
+            const nameKey = (domSrc ? domName : null) || cachedNearest.name || '';
+            if (domSrc && nameKey) playerFaceCache.set(nameKey, domSrc);
+            drawEntityHUD(playerFaceCache.get(nameKey) ?? null, (domSrc ? domName : null) || cachedNearest.name || '???');
+          } else {
+            drawEntityHUD(null, cachedNearest.name || cachedNearest.constructor?.name?.replace('Entity', '') || '???');
+          }
+        } else {
+          getDOM(now);
+          const blockName = domNameEl?.textContent?.trim() ?? null;
+          if (blockName) drawBlockHUD(blockName); else clearHUD();
+        }
+      }
+    } catch (err) {
+      console.warn('[Waddle] Target HUD tick error:', err);
+      try { clearHUD(true); } catch (_) {}
+      setTimeout(() => requestAnimationFrame(tick), 2000);
+      return;
     }
-
     requestAnimationFrame(tick);
   }
+  requestAnimationFrame(tick);
+}
 
   function removeCounter(name) {
     const e = state.counters[name];
@@ -896,96 +882,89 @@ function startTargetHUDLoop() {
   }
 
   function getSystemInfo() {
-    const ua = navigator.userAgent;
-    let os = 'Unknown OS';
-    if (/CrOS/.test(ua)) {
-      const match = ua.match(/CrOS\s+\S+\s+([\d.]+)/);
-      os = 'ChromeOS' + (match ? ' ' + match[1] : '');
-    } else if (/Windows/.test(ua)) {
-      os = 'Windows 10';
-      const uaData = navigator.userAgentData;
-      if (uaData?.getHighEntropyValues) {
-        uaData.getHighEntropyValues(['platformVersion']).then(data => {
-          const major = parseInt((data.platformVersion || '0').split('.')[0], 10);
-          const el = document.getElementById('waddle-sys-os');
-          if (el) el.textContent = major >= 13 ? 'Windows 11' : 'Windows 10';
-        }).catch(() => {});
-      }
-    } else if (/Mac OS X/.test(ua)) {
-      const match = ua.match(/Mac OS X ([\d_]+)/);
-      const version = match ? match[1].replace(/_/g, '.') : '';
-      const macNames = { '15':'Sequoia','14':'Sonoma','13':'Ventura','12':'Monterey','11':'Big Sur','10.15':'Catalina','10.14':'Mojave','10.13':'High Sierra' };
-      const major = version.split('.').slice(0, version.startsWith('10') ? 2 : 1).join('.');
-      const name = macNames[major] || '';
-      os = `macOS ${version}${name ? ' (' + name + ')' : ''}`;
-    } else if (/Linux/.test(ua)) {
-      if (/Ubuntu/.test(ua)) os = 'Ubuntu Linux';
-      else if (/Fedora/.test(ua)) os = 'Fedora Linux';
-      else if (/Debian/.test(ua)) os = 'Debian Linux';
-      else if (/Arch/.test(ua)) os = 'Arch Linux';
-      else if (/Manjaro/.test(ua)) os = 'Manjaro Linux';
-      else if (/Android ([\d.]+)/.test(ua)) os = 'Android ' + RegExp.$1;
-      else os = 'Linux';
-    } else if (/iPhone OS ([\d_]+)/.test(ua)) {
-      os = 'iOS ' + RegExp.$1.replace(/_/g, '.');
-    }
-    let browser = 'Unknown';
-    if (/Edg\/([\d.]+)/.test(ua)) browser = 'Edge ' + RegExp.$1.split('.')[0];
-    else if (/OPR\/([\d.]+)/.test(ua)) browser = 'Opera ' + RegExp.$1.split('.')[0];
-    else if (/Firefox\/([\d.]+)/.test(ua)) browser = 'Firefox ' + RegExp.$1.split('.')[0];
-    else if (/Chrome\/([\d.]+)/.test(ua)) browser = 'Chrome ' + RegExp.$1.split('.')[0];
-    else if (/Version\/([\d.]+).*Safari/.test(ua)) browser = 'Safari ' + RegExp.$1.split('.')[0];
-    let gpu = 'Unknown', gpuVendor = 'Unknown', webgl2 = false;
-    try {
-      const canvas = document.createElement('canvas');
-      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-      if (gl) {
-        const dbg = gl.getExtension('WEBGL_debug_renderer_info');
-        if (dbg) {
-          gpu = gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL).replace(/\s*\(0x[0-9a-fA-F]+\)/g, '').replace(/\/\S+/g, '').trim();
-          gpuVendor = gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL).replace(/\s*\(0x[0-9a-fA-F]+\)/g, '').trim();
-        }
-      }
-      webgl2 = !!window.WebGL2RenderingContext;
-    } catch (_) {}
-    if (navigator.getBattery) {
-      navigator.getBattery().then(bat => {
-        const getBatteryIcon = (pct) => pct > 20 ? "🔋" : "🪫";
-        const getColor = (pct) => pct > 50 ? "#22c55e" : pct > 20 ? "#eab308" : "#ef4444";
-        const getStatus = () => {
-          const pct = Math.round(bat.level * 100);
-          let status = "";
-          if (pct === 100 && bat.charging) status = "Fully Charged!";
-          else if (bat.charging) status = "Charging...";
-          else if (pct <= 20) status = "Plug in your charger.";
-          else if (bat.dischargingTime !== Infinity) status = `⏱ ~${Math.round(bat.dischargingTime / 60)}m left`;
-          return { text: `${getBatteryIcon(pct)} ${pct}% ${status}`, color: getColor(pct) };
-        };
-        const update = () => {
-          const el = document.getElementById("waddle-sys-battery");
-          if (!el) return;
-          const info = getStatus();
-          el.textContent = info.text;
-          el.style.color = info.color;
-        };
-        update();
-        bat.addEventListener("levelchange", update);
-        bat.addEventListener("chargingchange", update);
-        bat.addEventListener("dischargingtimechange", update);
-      }).catch(() => {
-        const el = document.getElementById("waddle-sys-battery");
-        if (el) el.textContent = "Battery N/A";
-      });
-    }
-    return {
-      os, browser, gpu, gpuVendor, webgl2,
-      cores: navigator.hardwareConcurrency || '?',
-      ram: navigator.deviceMemory ? navigator.deviceMemory + ' GB' : '?',
-      screen: `${screen.width}×${screen.height}`,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '?',
-      battery: navigator.getBattery ? 'Loading...' : 'N/A',
-    };
+  const ua = navigator.userAgent;
+  let os = 'Unknown OS';
+  if (/CrOS/.test(ua)) {
+    const m = ua.match(/CrOS\s+\S+\s+([\d.]+)/);
+    os = 'ChromeOS' + (m ? ' ' + m[1] : '');
+  } else if (/Windows/.test(ua)) {
+    os = 'Windows 10';
+    navigator.userAgentData?.getHighEntropyValues?.(['platformVersion']).then(d => {
+      const el = document.getElementById('waddle-sys-os');
+      if (el) el.textContent = parseInt(d.platformVersion || '0') >= 13 ? 'Windows 11' : 'Windows 10';
+    }).catch(() => {});
+  } else if (/Mac OS X/.test(ua)) {
+    const m = ua.match(/Mac OS X ([\d_]+)/);
+    const version = m ? m[1].replace(/_/g, '.') : '';
+    const macNames = { '15':'Sequoia','14':'Sonoma','13':'Ventura','12':'Monterey','11':'Big Sur','10.15':'Catalina','10.14':'Mojave','10.13':'High Sierra' };
+    const major = version.split('.').slice(0, version.startsWith('10') ? 2 : 1).join('.');
+    const name = macNames[major] || '';
+    os = `macOS ${version}${name ? ' (' + name + ')' : ''}`;
+  } else if (/Linux/.test(ua)) {
+    const distro = ['Ubuntu','Fedora','Debian','Arch','Manjaro'].find(d => new RegExp(d).test(ua));
+    if (distro) os = distro + ' Linux';
+    else if (/Android ([\d.]+)/.test(ua)) os = 'Android ' + RegExp.$1;
+    else os = 'Linux';
+  } else if (/iPhone OS ([\d_]+)/.test(ua)) {
+    os = 'iOS ' + RegExp.$1.replace(/_/g, '.');
   }
+
+  const browserRules = [
+  [/Edg\/([\d.]+)/, 'Edge'],
+  [/OPR\/([\d.]+)/, 'Opera'],
+  [/Firefox\/([\d.]+)/, 'Firefox'],
+  [/Chrome\/([\d.]+)/, 'Chrome'],
+  [/Version\/([\d.]+).*Safari/, 'Safari'],
+];
+const browserMatch = browserRules.find(([re]) => re.test(ua));
+const browser = browserMatch ? `${browserMatch[1]} ${RegExp.$1.split('.')[0]}` : 'Unknown';
+
+  let gpu = 'Unknown', gpuVendor = 'Unknown', webgl2 = false;
+  try {
+    const gl = document.createElement('canvas').getContext('webgl') || document.createElement('canvas').getContext('experimental-webgl');
+    if (gl) {
+      const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+      if (dbg) {
+        gpu = gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL).replace(/\s*\(0x[0-9a-fA-F]+\)/g, '').replace(/\/\S+/g, '').trim();
+        gpuVendor = gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL).replace(/\s*\(0x[0-9a-fA-F]+\)/g, '').trim();
+      }
+    }
+    webgl2 = !!window.WebGL2RenderingContext;
+  } catch (_) {}
+
+  if (navigator.getBattery) {
+    navigator.getBattery().then(bat => {
+      const pct = () => Math.round(bat.level * 100);
+      const color = (p) => p > 50 ? '#22c55e' : p > 20 ? '#eab308' : '#ef4444';
+      const text = (p) => {
+        const status = (p === 100 && bat.charging) ? 'Fully Charged!' : bat.charging ? 'Charging...' :
+          p <= 20 ? 'Plug in your charger.' : bat.dischargingTime !== Infinity ? `⏱ ~${Math.round(bat.dischargingTime / 60)}m left` : '';
+        return `${p > 20 ? '🔋' : '🪫'} ${p}% ${status}`;
+      };
+      const update = () => {
+        const el = document.getElementById('waddle-sys-battery');
+        if (!el) return;
+        const p = pct();
+        el.textContent = text(p);
+        el.style.color = color(p);
+      };
+      update();
+      ['levelchange', 'chargingchange', 'dischargingtimechange'].forEach(e => bat.addEventListener(e, update));
+    }).catch(() => {
+      const el = document.getElementById('waddle-sys-battery');
+      if (el) el.textContent = 'Battery N/A';
+    });
+  }
+
+  return {
+    os, browser, gpu, gpuVendor, webgl2,
+    cores: navigator.hardwareConcurrency || '?',
+    ram: navigator.deviceMemory ? navigator.deviceMemory + ' GB' : '?',
+    screen: `${screen.width}×${screen.height}`,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '?',
+    battery: navigator.getBattery ? 'Loading...' : 'N/A',
+  };
+}
 
   function needsRaf() {
     return state.features.performance || state.features.coords;
@@ -1315,139 +1294,119 @@ function startTargetHUDLoop() {
   }
 
   function refreshSkinBadges() {
-    const equippedSkin = localStorage.getItem(EQUIPPED_SKIN_KEY) || '';
-    document.querySelectorAll('#skin-grid-view .skin-btn').forEach(btn => {
-      const name = btn.querySelector('span')?.textContent || '';
-      const isEquipped = name.toLowerCase() === equippedSkin.toLowerCase();
-      btn.classList.toggle('equipped', isEquipped);
-      const badge = btn.querySelector('.skin-equipped-badge');
-      if (isEquipped && !badge) {
-        btn.appendChild(el('span', 'skin-equipped-badge', '✓ on'));
-      } else if (!isEquipped && badge) {
-        badge.remove();
-      }
+  const equippedSkin = (localStorage.getItem(EQUIPPED_SKIN_KEY) || '').toLowerCase();
+  document.querySelectorAll('#skin-grid-view .skin-btn').forEach(btn => {
+    const isEquipped = (btn.querySelector('span')?.textContent || '').toLowerCase() === equippedSkin;
+    btn.classList.toggle('equipped', isEquipped);
+    const badge = btn.querySelector('.skin-equipped-badge');
+    if (isEquipped && !badge) btn.appendChild(el('span', 'skin-equipped-badge', '✓ on'));
+    else if (!isEquipped && badge) badge.remove();
+  });
+}
+
+function setSkinConfirmVisible(visible, skinName) {
+  document.getElementById('skin-grid-view').style.display = visible ? 'none' : 'flex';
+  document.getElementById('skin-confirm-view').classList.toggle('show', visible);
+  if (!visible) return;
+  const current = localStorage.getItem(EQUIPPED_SKIN_KEY) || 'None';
+  const fromEl = document.getElementById('skin-confirm-from');
+  if (fromEl) fromEl.textContent = current.charAt(0).toUpperCase() + current.slice(1);
+  document.getElementById('skin-confirm-name').textContent = skinName;
+}
+
+function getPanelEls() {
+  return {
+    grid:  document.getElementById('waddle-module-grid'),
+    title: document.getElementById('waddle-panel-title'),
+    about: document.getElementById('waddle-about'),
+    skin:  document.getElementById('waddle-skin-panel'),
+  };
+}
+
+function buildSkinSection(label, skinList) {
+  const section = div(null);
+  section.appendChild(div('skin-section-header', label));
+  const skinGrid = div('skin-grid');
+  const equippedSkin = (localStorage.getItem(EQUIPPED_SKIN_KEY) || '').toLowerCase();
+  skinList.forEach(name => {
+    const btn = div('skin-btn');
+    const isEquipped = name.toLowerCase() === equippedSkin;
+    btn.appendChild(el('span', null, name));
+    if (isEquipped) { btn.classList.add('equipped'); btn.appendChild(el('span', 'skin-equipped-badge', '✓ on')); }
+    btn.addEventListener('click', () => {
+      if (btn.classList.contains('equipped')) { showToast('This Skin has already equipped', 'info', `${name} is your current skin.`); return; }
+      setSkinConfirmVisible(true, name);
     });
+    skinGrid.appendChild(btn);
+  });
+  section.appendChild(skinGrid);
+  return section;
+}
+
+function buildSkinPanel() {
+  const { grid, title, about, skin } = getPanelEls();
+  let skinPanel = skin;
+  if (grid) grid.style.display = 'none';
+  if (about) about.style.display = 'none';
+  if (title) title.style.display = 'none';
+
+  const isFirstTime = !localStorage.getItem(EQUIPPED_SKIN_KEY);
+  const hasToken = !!localStorage.getItem(SESSION_KEY);
+  if (isFirstTime && hasToken) {
+    const username = getPlayerUsername();
+    showToast('Token Found!', 'enabled', username ? `Detected as ${username} — token automatically applied!` : 'Token found and automatically applied!');
+  } else if (isFirstTime && !hasToken) {
+    showToast('No Token', 'disabled', 'Log into Miniblox first then re-open the skin panel');
   }
 
-  function setSkinConfirmVisible(visible, skinName) {
-    document.getElementById('skin-grid-view').style.display = visible ? 'none' : 'flex';
-    document.getElementById('skin-confirm-view').classList.toggle('show', visible);
-    if (visible) {
-      const current = localStorage.getItem(EQUIPPED_SKIN_KEY) || 'None';
-      const fromEl = document.getElementById('skin-confirm-from');
-      if (fromEl) fromEl.textContent = current.charAt(0).toUpperCase() + current.slice(1);
-      document.getElementById('skin-confirm-name').textContent = skinName;
-    }
+  if (!skinPanel) {
+    skinPanel = Object.assign(div(null), { id: 'waddle-skin-panel' });
+    const username = getPlayerUsername();
+    const userBanner = Object.assign(div(null), { id: 'skin-user-banner' });
+    Object.assign(userBanner.style, {
+      fontSize: '.75rem', fontWeight: '700', color: 'var(--text-dim)',
+      marginBottom: '6px', padding: '6px 10px', background: 'var(--bg3)',
+      border: '1px solid rgba(255,255,255,.07)', borderRadius: 'var(--radius)',
+      display: 'flex', alignItems: 'center', gap: '6px', flexShrink: '0'
+    });
+    setSkinBannerName(userBanner, username);
+    if (!username) pollUsername(userBanner);
+    skinPanel.appendChild(userBanner);
+
+    const scrollArea = Object.assign(div(null), { id: 'skin-grid-view' });
+    Object.assign(scrollArea.style, { display: 'flex', flexDirection: 'column' });
+    scrollArea.appendChild(buildSkinSection('Standard Skins', STANDARD_SKINS));
+    scrollArea.appendChild(buildSkinSection('Custom Skins', CUSTOM_SKINS));
+    skinPanel.appendChild(scrollArea);
+
+    const confirmView = Object.assign(div(null), { id: 'skin-confirm-view' });
+    confirmView.innerHTML = `
+      <div class="skin-confirm-text">Do you want to switch from <span id="skin-confirm-from" style="color:var(--c)"></span> → <span id="skin-confirm-name" style="color:var(--c)"></span>?</div>
+      <div class="skin-confirm-btns">
+        <button class="skin-confirm-yes" id="skin-confirm-yes">Yes</button>
+        <button class="skin-confirm-no" id="skin-confirm-no">No</button>
+      </div>
+    `;
+    skinPanel.appendChild(confirmView);
+    document.getElementById('waddle-panel').appendChild(skinPanel);
+    document.getElementById('skin-confirm-yes').addEventListener('click', async () => {
+      const skinName = document.getElementById('skin-confirm-name').textContent;
+      setSkinConfirmVisible(false);
+      await applySkin(skinName);
+    });
+    document.getElementById('skin-confirm-no').addEventListener('click', () => setSkinConfirmVisible(false));
+  } else {
+    const banner = document.getElementById('skin-user-banner');
+    const refreshed = getPlayerUsername();
+    setSkinBannerName(banner, refreshed);
+    if (!refreshed) pollUsername(banner);
   }
 
-  function getPanelEls() {
-    return {
-      grid:  document.getElementById('waddle-module-grid'),
-      title: document.getElementById('waddle-panel-title'),
-      about: document.getElementById('waddle-about'),
-      skin:  document.getElementById('waddle-skin-panel'),
-    };
-  }
-
-  function buildSkinPanel() {
-    const { grid, title, about, skin } = getPanelEls();
-    let skinPanel = skin;
-
-    if (grid) grid.style.display = 'none';
-    if (about) about.style.display = 'none';
-    if (title) title.style.display = 'none';
-
-    const isFirstTime = !localStorage.getItem(EQUIPPED_SKIN_KEY);
-    const hasToken = !!localStorage.getItem(SESSION_KEY);
-
-    if (isFirstTime && hasToken) {
-      const username = getPlayerUsername();
-      showToast('Token Found!', 'enabled',
-        username ? `Detected as ${username} — token automatically applied!` : 'Token found and automatically applied!');
-    } else if (isFirstTime && !hasToken) {
-      showToast('No Token', 'disabled', 'Log into Miniblox first then re-open the skin panel');
-    }
-
-    if (!skinPanel) {
-      skinPanel = div(null);
-      skinPanel.id = 'waddle-skin-panel';
-      const username = getPlayerUsername();
-      const userBanner = div(null);
-      Object.assign(userBanner.style, {
-        fontSize: '.75rem', fontWeight: '700', color: 'var(--text-dim)',
-        marginBottom: '6px', padding: '6px 10px', background: 'var(--bg3)',
-        border: '1px solid rgba(255,255,255,.07)', borderRadius: 'var(--radius)',
-        display: 'flex', alignItems: 'center', gap: '6px', flexShrink: '0'
-      });
-      userBanner.id = 'skin-user-banner';
-      setSkinBannerName(userBanner, username);
-      if (!username) pollUsername(userBanner);
-      skinPanel.appendChild(userBanner);
-
-      function buildSkinSection(label, skinList) {
-        const section = div(null);
-        const header = div('skin-section-header', label);
-        section.appendChild(header);
-        const skinGrid = div('skin-grid');
-        const equippedSkin = localStorage.getItem(EQUIPPED_SKIN_KEY) || '';
-        skinList.forEach(name => {
-          const btn = div('skin-btn');
-          const isEquipped = name.toLowerCase() === equippedSkin.toLowerCase();
-          btn.appendChild(el('span', null, name));
-          if (isEquipped) {
-            btn.classList.add('equipped');
-            btn.appendChild(el('span', 'skin-equipped-badge', '✓ on'));
-          }
-          btn.addEventListener('click', () => {
-            if (btn.classList.contains('equipped')) {
-              showToast('This Skin has already equipped', 'info', `${name} is your current skin.`);
-              return;
-            }
-            setSkinConfirmVisible(true, name);
-          });
-          skinGrid.appendChild(btn);
-        });
-        section.appendChild(skinGrid);
-        return section;
-      }
-
-      const scrollArea = div(null);
-      scrollArea.id = 'skin-grid-view';
-      Object.assign(scrollArea.style, { display: 'flex', flexDirection: 'column' });
-      scrollArea.appendChild(buildSkinSection('Standard Skins', STANDARD_SKINS));
-      scrollArea.appendChild(buildSkinSection('Custom Skins', CUSTOM_SKINS));
-      skinPanel.appendChild(scrollArea);
-
-      const confirmView = div(null);
-      confirmView.id = 'skin-confirm-view';
-      confirmView.innerHTML = `
-        <div class="skin-confirm-text">Do you want to switch from <span id="skin-confirm-from" style="color:var(--c)"></span> → <span id="skin-confirm-name" style="color:var(--c)"></span>?</div>
-        <div class="skin-confirm-btns">
-          <button class="skin-confirm-yes" id="skin-confirm-yes">Yes</button>
-          <button class="skin-confirm-no" id="skin-confirm-no">No</button>
-        </div>
-      `;
-      skinPanel.appendChild(confirmView);
-      document.getElementById('waddle-panel').appendChild(skinPanel);
-
-      document.getElementById('skin-confirm-yes').addEventListener('click', async () => {
-        const skinName = document.getElementById('skin-confirm-name').textContent;
-        setSkinConfirmVisible(false);
-        await applySkin(skinName);
-      });
-      document.getElementById('skin-confirm-no').addEventListener('click', () => setSkinConfirmVisible(false));
-    } else {
-      const banner = document.getElementById('skin-user-banner');
-      const refreshed = getPlayerUsername();
-      setSkinBannerName(banner, refreshed);
-      if (!refreshed) pollUsername(banner);
-    }
-
-    refreshSkinBadges();
-    skinPanel.style.display = 'flex';
-    skinPanel.style.flexDirection = 'column';
-    setSkinConfirmVisible(false);
-  }
+  refreshSkinBadges();
+  skinPanel.style.display = 'flex';
+  skinPanel.style.flexDirection = 'column';
+  setSkinConfirmVisible(false);
+}
 
   function makeToggleRow(label, checked, onChange) {
     const row = div('afk-setting-row');
@@ -1541,186 +1500,180 @@ function startTargetHUDLoop() {
   }
 
   function createMenu() {
-    if (!document.body) return null;
-    const overlay = div(null);
-    overlay.id = 'waddle-overlay';
-    overlay.dataset.version = SCRIPT_VERSION;
-    const win = div(null);
-    win.id = 'waddle-window';
-    const sidebar = div(null);
-    sidebar.id = 'waddle-sidebar';
-    const logo = div(null);
-    logo.id = 'waddle-logo';
-    logo.innerHTML = `🐧 Waddle`;
-    sidebar.appendChild(logo);
-    CATEGORIES.forEach(({ id, label, icon }) => {
-      const cat = div(`waddle-cat${id === state.activeCategory ? ' active' : ''}`);
-      cat.dataset.cat = id;
-      cat.innerHTML = `<span class="waddle-cat-icon">${icon}</span>${label}`;
-      cat.onclick = () => switchCategory(id);
-      sidebar.appendChild(cat);
+  if (!document.body) return null;
+
+  const overlay = Object.assign(div(null), { id: 'waddle-overlay' });
+  overlay.dataset.version = SCRIPT_VERSION;
+
+  const sidebar = Object.assign(div(null), { id: 'waddle-sidebar' });
+  const logo = Object.assign(div(null), { id: 'waddle-logo', innerHTML: '🐧 Waddle' });
+  sidebar.appendChild(logo);
+  CATEGORIES.forEach(({ id, label, icon }) => {
+    const cat = Object.assign(div(`waddle-cat${id === state.activeCategory ? ' active' : ''}`), {
+      innerHTML: `<span class="waddle-cat-icon">${icon}</span>${label}`,
+      onclick: () => switchCategory(id)
     });
-    const footer = div(null, 'Press \\ to toggle');
-    footer.id = 'waddle-sidebar-footer';
-    sidebar.appendChild(footer);
-    const panel = div(null);
-    panel.id = 'waddle-panel';
-    const panelTitle = div(null, state.activeCategory);
-    panelTitle.id = 'waddle-panel-title';
-    const moduleGrid = div(null);
-    moduleGrid.id = 'waddle-module-grid';
-    const aboutPanel = div(null);
-    aboutPanel.id = 'waddle-about';
-    aboutPanel.style.display = 'none';
-    const sys = getSystemInfo();
-    const sysRow = (label, val) =>
-      `<tr><td style="color:var(--c);font-weight:700;padding:3px 10px 3px 0;width:72px">${label}</td><td style="color:var(--text)">${val}</td></tr>`;
-    const sysBlock = div('about-block');
-    sysBlock.innerHTML = `<h3>🖥️ System</h3><table style="width:100%;border-collapse:collapse;font-size:.78rem;">${[
-      ['OS', `<span id="waddle-sys-os">${sys.os}</span>`],
-      ['Browser', sys.browser],
-      ['GPU', sys.gpu],
-      ['Vendor', sys.gpuVendor],
-      ['WebGL2', sys.webgl2 ? '✓ Supported' : '✗ Not supported'],
-      ['Cores', sys.cores],
-      ['RAM', sys.ram],
-      ['Screen', sys.screen],
-      ['Timezone', sys.timezone],
-      ['Battery', `<span id="waddle-sys-battery">${sys.battery}</span>`],
-    ].map(([l, v]) => sysRow(l, v)).join('')}</table>`;
-    const creditsBlock = div('about-block');
-    creditsBlock.innerHTML = `
-      <h3>Credits</h3>
-      <div class="about-credit">
-        <img src="https://avatars.githubusercontent.com/Scripter132132?s=56">
-        <div><div class="role">Original Creator</div><a href="https://github.com/Scripter132132" target="_blank">@Scripter132132</a></div>
-      </div>
-      <div class="about-credit">
-        <img src="https://avatars.githubusercontent.com/TheM1ddleM1n?s=56">
-        <div><div class="role" style="color:#f39c12">Enhanced By</div><a href="https://github.com/TheM1ddleM1n" target="_blank">@TheM1ddleM1n</a></div>
-      </div>
-    `;
-    const linksBlock = div('about-block');
-    linksBlock.innerHTML = '<h3>🔗 GitHub</h3>';
-    const linksRow = div('about-links');
-    [
-      ['Suggest Feature', 'https://github.com/TheM1ddleM1n/Waddle/issues/new?template=feature_request.yml'],
-      ['Report Bug', 'https://github.com/TheM1ddleM1n/Waddle/issues/new?template=bug_report.yml']
-    ].forEach(([text, url]) => {
-      const btn = el('button', 'about-link-btn', text);
-      btn.onclick = () => window.open(url, '_blank');
-      linksRow.appendChild(btn);
-    });
-    linksBlock.appendChild(linksRow);
-    aboutPanel.append(sysBlock, creditsBlock, linksBlock);
-    panel.append(panelTitle, moduleGrid, aboutPanel);
-    win.append(sidebar, panel);
-    overlay.appendChild(win);
-    document.body.appendChild(overlay);
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('show'); });
-    state.menuOverlay = overlay;
-    buildModulePanel(state.activeCategory);
-    return overlay;
-  }
+    cat.dataset.cat = id;
+    sidebar.appendChild(cat);
+  });
+  sidebar.appendChild(Object.assign(div(null, 'Press \\ to toggle'), { id: 'waddle-sidebar-footer' }));
+
+  const sys = getSystemInfo();
+  const sysRow = (label, val) =>
+    `<tr><td style="color:var(--c);font-weight:700;padding:3px 10px 3px 0;width:72px">${label}</td><td style="color:var(--text)">${val}</td></tr>`;
+  const sysBlock = Object.assign(div('about-block'), { innerHTML: `<h3>🖥️ System</h3><table style="width:100%;border-collapse:collapse;font-size:.78rem;">${[
+    ['OS', `<span id="waddle-sys-os">${sys.os}</span>`],
+    ['Browser', sys.browser], ['GPU', sys.gpu], ['Vendor', sys.gpuVendor],
+    ['WebGL2', sys.webgl2 ? '✓ Supported' : '✗ Not supported'],
+    ['Cores', sys.cores], ['RAM', sys.ram], ['Screen', sys.screen],
+    ['Timezone', sys.timezone], ['Battery', `<span id="waddle-sys-battery">${sys.battery}</span>`],
+  ].map(([l, v]) => sysRow(l, v)).join('')}</table>` });
+  const creditsBlock = Object.assign(div('about-block'), { innerHTML: `
+    <h3>Credits</h3>
+    <div class="about-credit">
+      <img src="https://avatars.githubusercontent.com/Scripter132132?s=56">
+      <div><div class="role">Original Creator</div><a href="https://github.com/Scripter132132" target="_blank">@Scripter132132</a></div>
+    </div>
+    <div class="about-credit">
+      <img src="https://avatars.githubusercontent.com/TheM1ddleM1n?s=56">
+      <div><div class="role" style="color:#f39c12">Enhanced By</div><a href="https://github.com/TheM1ddleM1n" target="_blank">@TheM1ddleM1n</a></div>
+    </div>
+  ` });
+  const linksBlock = Object.assign(div('about-block'), { innerHTML: '<h3>🔗 GitHub</h3>' });
+  const linksRow = div('about-links');
+  [
+    ['Suggest Feature', 'https://github.com/TheM1ddleM1n/Waddle/issues/new?template=feature_request.yml'],
+    ['Report Bug', 'https://github.com/TheM1ddleM1n/Waddle/issues/new?template=bug_report.yml']
+  ].forEach(([text, url]) => {
+    linksRow.appendChild(Object.assign(el('button', 'about-link-btn', text), { onclick: () => window.open(url, '_blank') }));
+  });
+  linksBlock.appendChild(linksRow);
+
+  const aboutPanel = Object.assign(div(null), { id: 'waddle-about' });
+  aboutPanel.style.display = 'none';
+  aboutPanel.append(sysBlock, creditsBlock, linksBlock);
+
+  const panel = Object.assign(div(null), { id: 'waddle-panel' });
+  panel.append(
+    Object.assign(div(null, state.activeCategory), { id: 'waddle-panel-title' }),
+    Object.assign(div(null), { id: 'waddle-module-grid' }),
+    aboutPanel
+  );
+
+  const win = Object.assign(div(null), { id: 'waddle-window' });
+  win.append(sidebar, panel);
+  overlay.appendChild(win);
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('show'); });
+  state.menuOverlay = overlay;
+  buildModulePanel(state.activeCategory);
+  return overlay;
+}
 
   function toggleMenu() { state.menuOverlay?.classList.toggle('show'); }
-  function setupKeyboardHandler() {
-    window.addEventListener('keydown', (e) => {
-      if (isTyping() || e.repeat) return;
-      if (e.key === '\\') { e.preventDefault(); toggleMenu(); return; }
-      if (e.key === 'Escape' && state.menuOverlay?.classList.contains('show')) {
-        e.preventDefault();
-        state.menuOverlay.classList.remove('show');
-      }
-    });
-  }
 
-  function restoreSavedState() {
-    try {
-      const raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
-      if (raw) Object.assign(state.features, migrateSettings(raw));
-    } catch (_) {}
-  }
-
-  function globalCleanup() {
-    Object.keys(state.features).forEach(f => { if (state.features[f]) featureManager[f]?.cleanup(); });
-    Object.values(state.intervals).forEach(id => { if (id != null) clearInterval(id); });
-    if (state.rafId) cancelAnimationFrame(state.rafId);
-    if (state._resizeHandler) window.removeEventListener('resize', state._resizeHandler);
-    state._crosshairObserver?.disconnect();
-    afkDetector.stop();
-  }
-
-  window.addEventListener('beforeunload', globalCleanup);
-  function ensureDOMReady() {
-    return new Promise(resolve => {
-      if (document.body && document.head) { resolve(); return; }
-      if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', resolve, { once: true }); return; }
-      const t = setInterval(() => { if (document.body && document.head) { clearInterval(t); resolve(); } }, 50);
-    });
-  }
-  const MIN_THREE_REVISION = 128;
-  function isThreeCompatible() {
-    return typeof THREE !== 'undefined' &&
-      typeof THREE.CubeTextureLoader === 'function' &&
-      parseInt(THREE.REVISION, 10) >= MIN_THREE_REVISION;
-  }
-
-  function initSpaceSky() {
-    const doApply = () => {
-      let attempts = 0;
-      const tryPatch = () => {
-        if (++attempts > 20) { showToast('Space Sky', 'info', 'Could not find game scene'); return; }
-        const gs = gameRef.get()?.gameScene;
-        if (!gs?.sky) { setTimeout(tryPatch, 500); return; }
-        new THREE.CubeTextureLoader()
-          .setPath('https://threejs.org/examples/textures/cube/MilkyWay/')
-          .load(
-            ['dark-s_px.jpg', 'dark-s_nx.jpg', 'dark-s_py.jpg', 'dark-s_ny.jpg', 'dark-s_pz.jpg', 'dark-s_nz.jpg'],
-            (cubeTexture) => {
-              gs.sky._waddleOriginalUpdate = gs.sky.update.bind(gs.sky);
-              gs.sky.update = function () { this._waddleOriginalUpdate(); this.gameScene.scene.background = cubeTexture; };
-              gs.scene.background = cubeTexture;
-            }
-          );
-      };
-      tryPatch();
-    };
-    if (isThreeCompatible()) { doApply(); return; }
-    const script = el('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js';
-    script.onload = () => { if (isThreeCompatible()) doApply(); else showToast('Space Sky', 'info', 'Three.js version mismatch'); };
-    script.onerror = () => showToast('Space Sky', 'info', 'Failed to load Three.js');
-    document.head.appendChild(script);
-  }
-  async function safeInit() {
-    try {
-      await ensureDOMReady();
-      injectStyles();
-      patchLocalStorageForToken();
-      const badge = div(null);
-      badge.id = 'waddle-badge';
-      badge.textContent = `🐧 Waddle v${SCRIPT_VERSION}`;
-      document.body.appendChild(badge);
-      restoreSavedState();
-      createMenu();
-      setupKeyboardHandler();
-      initializeCrosshairModule();
-      initHudCanvas();
-      startTargetHUDLoop();
-      initSpaceSky();
-      if (afkSettings.autoEnable) afkDetector.start();
-      showToast('Welcome To Waddle!', 'info', 'Press \\ to open menu');
-      setTimeout(() => {
-        Object.entries(state.features).forEach(([feature, enabled]) => {
-          if (!enabled) return;
-          try { featureManager[feature]?.start(); } catch (_) {}
-        });
-      }, 100);
-    } catch (err) {
-      console.error('[Waddle] Init failed:', err);
-      showToast('Init failed', 'info', 'Check console');
+function setupKeyboardHandler() {
+  window.addEventListener('keydown', e => {
+    if (isTyping() || e.repeat) return;
+    if (e.key === '\\') { e.preventDefault(); toggleMenu(); return; }
+    if (e.key === 'Escape' && state.menuOverlay?.classList.contains('show')) {
+      e.preventDefault();
+      state.menuOverlay.classList.remove('show');
     }
+  });
+}
+
+function restoreSavedState() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+    if (raw) Object.assign(state.features, migrateSettings(raw));
+  } catch (_) {}
+}
+
+function globalCleanup() {
+  Object.keys(state.features).forEach(f => { if (state.features[f]) featureManager[f]?.cleanup(); });
+  Object.values(state.intervals).forEach(id => { if (id != null) clearInterval(id); });
+  if (state.rafId) cancelAnimationFrame(state.rafId);
+  if (state._resizeHandler) window.removeEventListener('resize', state._resizeHandler);
+  state._crosshairObserver?.disconnect();
+  afkDetector.stop();
+}
+
+window.addEventListener('beforeunload', globalCleanup);
+
+function ensureDOMReady() {
+  return new Promise(resolve => {
+    if (document.body && document.head) { resolve(); return; }
+    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', resolve, { once: true }); return; }
+    const t = setInterval(() => { if (document.body && document.head) { clearInterval(t); resolve(); } }, 50);
+  });
+}
+
+const MIN_THREE_REVISION = 128;
+function isThreeCompatible() {
+  return typeof THREE !== 'undefined' &&
+    typeof THREE.CubeTextureLoader === 'function' &&
+    parseInt(THREE.REVISION, 10) >= MIN_THREE_REVISION;
+}
+
+function initSpaceSky() {
+  const doApply = () => {
+    let attempts = 0;
+    const tryPatch = () => {
+      if (++attempts > 20) { showToast('Space Sky', 'info', 'Could not find game scene'); return; }
+      const gs = gameRef.get()?.gameScene;
+      if (!gs?.sky) { setTimeout(tryPatch, 500); return; }
+      new THREE.CubeTextureLoader()
+        .setPath('https://threejs.org/examples/textures/cube/MilkyWay/')
+        .load(
+          ['dark-s_px.jpg', 'dark-s_nx.jpg', 'dark-s_py.jpg', 'dark-s_ny.jpg', 'dark-s_pz.jpg', 'dark-s_nz.jpg'],
+          cubeTexture => {
+            gs.sky._waddleOriginalUpdate = gs.sky.update.bind(gs.sky);
+            gs.sky.update = function() { this._waddleOriginalUpdate(); this.gameScene.scene.background = cubeTexture; };
+            gs.scene.background = cubeTexture;
+          }
+        );
+    };
+    tryPatch();
+  };
+  if (isThreeCompatible()) { doApply(); return; }
+  const script = Object.assign(el('script'), {
+    src: 'https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js',
+    onload: () => isThreeCompatible() ? doApply() : showToast('Space Sky', 'info', 'Three.js version mismatch'),
+    onerror: () => showToast('Space Sky', 'info', 'Failed to load Three.js')
+  });
+  document.head.appendChild(script);
+}
+
+async function safeInit() {
+  try {
+    await ensureDOMReady();
+    injectStyles();
+    patchLocalStorageForToken();
+    document.body.appendChild(Object.assign(div(null), {
+      id: 'waddle-badge',
+      textContent: `🐧 Waddle v${SCRIPT_VERSION}`
+    }));
+    restoreSavedState();
+    createMenu();
+    setupKeyboardHandler();
+    initializeCrosshairModule();
+    initHudCanvas();
+    startTargetHUDLoop();
+    initSpaceSky();
+    if (afkSettings.autoEnable) afkDetector.start();
+    showToast('Welcome To Waddle!', 'info', 'Press \\ to open menu');
+    setTimeout(() => {
+      Object.entries(state.features).forEach(([feature, enabled]) => {
+        if (!enabled) return;
+        try { featureManager[feature]?.start(); } catch (_) {}
+      });
+    }, 100);
+  } catch (err) {
+    console.error('[Waddle] Init failed:', err);
+    showToast('Init failed', 'info', 'Check console');
   }
-  safeInit();
+}
+
+safeInit();
 })();
