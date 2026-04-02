@@ -373,7 +373,9 @@ function patchLocalStorageForToken() {
       if (game?.chat && typeof game.chat.addChat === 'function') {
         clearInterval(state.intervals.waitForGame);
         state.intervals.waitForGame = null;
-        game.chat.addChat({ text: `\\${THEME_COLOR}\\[Waddle]\\reset\\ \\lime\\v${SCRIPT_VERSION} \\yellow\\running! \\magenta\\Visit \\royalblue\\GitHub: \\cyan\\TheM1ddleM1n/Waddle` });
+        game.chat.addChat({ text: `\\${THEME_COLOR}\\[Waddle]\\reset\\ \\lime\\v${SCRIPT_VERSION} \\yellow\\is now running!` });
+        game.chat.addChat({ text: `\\cyan\\Questions? \\magenta\\Visit \\royalblue\\GitHub: \\cyan\\TheM1ddleM1n/Waddle` });
+        game.chat.addChat({ text: `\\yellow\\Enjoying Waddle? \\orange\\Leave a \\red\\★ \\orange\\star on GitHub!` });
       }
     }, 500);
   })();
