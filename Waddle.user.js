@@ -70,7 +70,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
 
 function setSkinBannerName(banner, name) {
   if (!banner) return;
-  if (!name) { banner.innerHTML = `<span style="color:var(--text-dim)">Username is not detected yet — enter a game first</span>`; return; }
+  if (!name) { banner.innerHTML = `<span style="color:var(--text-dim)">No username — join a game first</span>`; return; }
   const rank = localStorage.getItem(WADDLE_RANK_KEY);
   const level = localStorage.getItem(WADDLE_LEVEL_KEY);
   const rankBadge = rank ? `<span style="background:var(--c-dim);border:1px solid var(--c-border);color:var(--c);font-size:.6rem;font-weight:700;padding:1px 6px;border-radius:4px;margin-right:6px;text-transform:uppercase;letter-spacing:.5px;">${rank}</span>` : '';
@@ -117,7 +117,7 @@ function patchLocalStorageForToken() {
     _orig(key, value);
     if (key === SESSION_KEY) {
       const username = getPlayerUsername();
-      showToast('Session Token Captured!', 'enabled', username ? `Ready to equip skins as ${username}` : 'Token saved — open Closet to equip skins');
+      showToast('Session Token Captured', 'enabled', username ? `Ready to equip any skin as ${username}` : 'Token saved! — open Closet to equip skins');
     }
   };
 }
@@ -170,7 +170,7 @@ function patchLocalStorageForToken() {
     { id: 'display', label: 'Display', icon: '📊' },
     { id: 'utilities', label: 'Utilities', icon: '🛠️' },
     { id: 'customSkin', label: 'Closet', icon: '👗' },
-    { id: 'about', label: 'About Waddle', icon: 'ℹ️' }
+    { id: 'about', label: 'About', icon: 'ℹ️' }
   ];
 
   const FEATURE_MAP = {
@@ -258,7 +258,7 @@ function patchLocalStorageForToken() {
       afkDetector._graceUntil = Date.now() + 2000;
       showToast('Auto Anti-AFK', 'enabled', 'You went idle');
       if (afkSettings.sendChat) {
-        sendAfkChatMessage('I am currently AFK. I will be back soon 😊');
+        sendAfkChatMessage('I am currently AFK, be back soon 😊');
       }
       afkDetector._wasOff = !state.features.antiAfk;
       if (afkDetector._wasOff) setAfkActive(true);
@@ -373,7 +373,7 @@ function patchLocalStorageForToken() {
       if (game?.chat && typeof game.chat.addChat === 'function') {
         clearInterval(state.intervals.waitForGame);
         state.intervals.waitForGame = null;
-        game.chat.addChat({ text: `\\${THEME_COLOR}\\[Server]\\reset\\ You are running Waddle v${SCRIPT_VERSION}. \\royalblue\\If you have any questions please contact TheM1ddleM1n on Github` });
+        game.chat.addChat({ text: `\\${THEME_COLOR}\\[Waddle]\\reset\\ Running v${SCRIPT_VERSION}. \\royalblue\\Questions? GitHub: TheM1ddleM1n/Waddle` });
       }
     }, 500);
   })();
