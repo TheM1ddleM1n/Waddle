@@ -11,6 +11,6 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [6.4] - 2026-01-01
 ### Changed
-Renamed modules, updated AFK message and chat text
-Removed Clock module, unused code and dead links
-General code quality improvements and HUD refactor
+- Renamed modules, updated AFK message and chat text
+- Removed Clock module, unused code and dead links
+- General code quality improvements and HUD refactor
