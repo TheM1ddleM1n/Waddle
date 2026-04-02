@@ -1,0 +1,34 @@
+name: Question / Help
+description: Ask a question or get help with Waddle
+title: "[Question] "
+labels: question
+assignees: TheM1ddleM1n
+
+body:
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Before you ask
+      options:
+        - label: I have read the README
+          required: true
+        - label: This has NOT been asked before (check existing issues)
+          required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: What do you need help with?
+      placeholder: "How do I get Waddle working on Firefox?"
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Any extra detail that might help us answer — browser, OS, Tampermonkey version, etc.
+      placeholder: "I'm on Chrome 124, Windows 11, Tampermonkey 5.x"
+      render: markdown
