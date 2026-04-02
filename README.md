@@ -44,18 +44,6 @@
 
 <img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/7c6555a4-9084-4970-b6aa-9f467a504666" />
 
-
----
-
-## 📝 Current Version
-### [6.4] - Streamline Patches
-- Clock removed; time is accessible by exiting full screen.
-- Removed a unused line of code (connection)
-- refractor HUD helper to reduce boilerplate
-- Fix Auto Anti-AFK to avoid showing toasts in menus
-- we don't even have a troubleshooting page lol so removed from `config.yml`
-- Code Quality Update
-
 ---
 
 ## 👥 Credits
