@@ -13,9 +13,9 @@ body:
       options:
         - label: This feature has NOT been requested before by other people
           required: true
-        - label: This aligns with Waddle’s scope (JavaScript / Tampermonkey / Miniblox API)
+        - label: This aligns with Waddle’s scope. So using: (JavaScript / Tampermonkey / React Scope)
           required: true
-        - label: I have considered performance impact (no BOTTLENECKS are present in code)
+        - label: I have considered ANY performance impacts that are in MY code (no BOTTLENECKS are present in code)
           required: true
 
   - type: textarea
