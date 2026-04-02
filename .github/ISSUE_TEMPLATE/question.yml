@@ -1,7 +1,7 @@
-name: Question / Help
+name: Questions
 description: Ask a question or get help with Waddle
-title: "[Question] "
-labels: question
+title: "[Questions] "
+labels: questions
 assignees: TheM1ddleM1n
 
 body:
