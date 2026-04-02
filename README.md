@@ -36,7 +36,7 @@
 | 📊 FPS & Ping | Color-coded performance counter |
 | 📍 Coordinates | Live X Y Z, 10 updates/sec |
 | ⌨️ Key Display | WASD + mouse buttons, lights up on press |
-| 🐧 Anti-AFK | AutoMessage to imply that you are AFK and jumps every 3 seconds or so |
+| 🐧 Anti-AFK | AutoMessage to imply that you are AFK and jumps (thats it) |
 | 🎨 Custom Skin | Equip any skin from the UI |
 | 🔇 Chat Mute | Hides all incoming chat messages |
 
