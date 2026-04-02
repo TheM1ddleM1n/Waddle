@@ -1,0 +1,72 @@
+name: Auto Changelog
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Waddle.user.js'
+
+permissions:
+  contents: write
+
+jobs:
+  update-changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Update CHANGELOG.md
+        run: |
+          node -e "
+          const { execSync } = require('child_process');
+          const { readFileSync, writeFileSync } = require('fs');
+
+          const SKIP = [/^chore:/i, /^ci:/i, /\[skip ci\]/i, /^merge/i];
+
+          const src = readFileSync('Waddle.user.js', 'utf8');
+          const version = (src.match(/@version\s+([\d.]+)/) || [])[1];
+          if (!version) throw new Error('Could not find @version in Waddle.user.js');
+
+          const date = new Date().toISOString().slice(0, 10);
+
+          const messages = execSync('git log -1 --format=%B HEAD')
+            .toString().trim().split('\n')
+            .map(l => l.trim())
+            .filter(l => l && !SKIP.some(p => p.test(l)));
+
+          if (!messages.length) { console.log('Nothing to log.'); process.exit(0); }
+
+          let changelog = readFileSync('CHANGELOG.md', 'utf8');
+          const bullets = messages.map(m => '- ' + m).join('\n');
+
+          if (changelog.includes('## [' + version + ']')) {
+            changelog = changelog.replace(
+              new RegExp('(## \\\\[' + version.replace('.', '\\\\.') + '\\\\][^\n]*\n### Changed\n)'),
+              '\$1' + bullets + '\n'
+            );
+            console.log('Appended to existing [' + version + '] block.');
+          } else {
+            const divider = '---';
+            const idx = changelog.indexOf(divider);
+            if (idx === -1) throw new Error('Could not find --- divider in CHANGELOG.md');
+            const entry = '## [' + version + '] - ' + date + '\n### Changed\n' + bullets + '\n';
+            changelog =
+              changelog.slice(0, idx + divider.length) +
+              '\n\n' + entry +
+              changelog.slice(idx + divider.length).replace(/^\n+/, '\n');
+            console.log('Created new [' + version + '] block.');
+          }
+
+          writeFileSync('CHANGELOG.md', changelog, 'utf8');
+          "
+
+      - name: Commit changelog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git diff --cached --quiet || git commit -m "chore: update changelog [skip ci]"
+          git push
