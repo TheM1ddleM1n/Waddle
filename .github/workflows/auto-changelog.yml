@@ -18,49 +18,101 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Update CHANGELOG.md
+      - name: Generate summary and update CHANGELOG.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           node -e "
           const { execSync } = require('child_process');
           const { readFileSync, writeFileSync } = require('fs');
+          const https = require('https');
 
-          const SKIP = [/^chore:/i, /^ci:/i, /\[skip ci\]/i, /^merge/i];
-
-          const src = readFileSync('Waddle.user.js', 'utf8');
-          const version = (src.match(/@version\s+([\d.]+)/) || [])[1];
-          if (!version) throw new Error('Could not find @version in Waddle.user.js');
-
-          const date = new Date().toISOString().slice(0, 10);
-
-          const messages = execSync('git log -1 --format=%B HEAD')
-            .toString().trim().split('\n')
-            .map(l => l.trim())
-            .filter(l => l && !SKIP.some(p => p.test(l)));
-
-          if (!messages.length) { console.log('Nothing to log.'); process.exit(0); }
-
-          let changelog = readFileSync('CHANGELOG.md', 'utf8');
-          const bullets = messages.map(m => '- ' + m).join('\n');
-
-          if (changelog.includes('## [' + version + ']')) {
-            changelog = changelog.replace(
-              new RegExp('(## \\\\[' + version.replace('.', '\\\\.') + '\\\\][^\n]*\n### Changed\n)'),
-              '\$1' + bullets + '\n'
-            );
-            console.log('Appended to existing [' + version + '] block.');
-          } else {
-            const divider = '---';
-            const idx = changelog.indexOf(divider);
-            if (idx === -1) throw new Error('Could not find --- divider in CHANGELOG.md');
-            const entry = '## [' + version + '] - ' + date + '\n### Changed\n' + bullets + '\n';
-            changelog =
-              changelog.slice(0, idx + divider.length) +
-              '\n\n' + entry +
-              changelog.slice(idx + divider.length).replace(/^\n+/, '\n');
-            console.log('Created new [' + version + '] block.');
+          function post(payload) {
+            return new Promise((resolve, reject) => {
+              const body = JSON.stringify(payload);
+              const req = https.request({
+                hostname: 'models.inference.ai.azure.com',
+                path: '/chat/completions',
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': 'Bearer ' + process.env.GH_TOKEN,
+                  'Content-Length': Buffer.byteLength(body),
+                },
+              }, res => {
+                let data = '';
+                res.on('data', c => data += c);
+                res.on('end', () => resolve(JSON.parse(data)));
+              });
+              req.on('error', reject);
+              req.write(body);
+              req.end();
+            });
           }
 
-          writeFileSync('CHANGELOG.md', changelog, 'utf8');
+          async function main() {
+            const src = readFileSync('Waddle.user.js', 'utf8');
+            const version = (src.match(/@version\s+([\d.]+)/) || [])[1];
+            if (!version) throw new Error('Could not find @version in Waddle.user.js');
+
+            const date = new Date().toISOString().slice(0, 10);
+            const diff = execSync('git diff HEAD~1 HEAD -- Waddle.user.js').toString().slice(0, 6000);
+
+            if (!diff.trim()) { console.log('No diff found.'); process.exit(0); }
+
+            const result = await post({
+              model: 'gpt-4o-mini',
+              messages: [
+                {
+                  role: 'system',
+                  content: [
+                    'You summarize code diffs into concise changelog bullet points.',
+                    'Output ONLY a JSON array of short plain-English strings.',
+                    'Each string should describe one change, addition, or fix.',
+                    'No markdown, no code blocks, no extra text — just the raw JSON array.',
+                    'Example: [\"Fixed Anti-AFK toast showing in menus\", \"Added FPS color threshold for 30fps\"]',
+                  ].join(' '),
+                },
+                {
+                  role: 'user',
+                  content: diff,
+                },
+              ],
+              temperature: 0.3,
+              max_tokens: 300,
+            });
+
+            const raw = result.choices?.[0]?.message?.content?.trim() ?? '[]';
+            let messages;
+            try { messages = JSON.parse(raw); } catch { messages = [raw]; }
+            if (!messages.length) { console.log('No changes extracted.'); process.exit(0); }
+
+            const bullets = messages.map(m => '- ' + m).join('\n');
+            let changelog = readFileSync('CHANGELOG.md', 'utf8');
+
+            if (changelog.includes('## [' + version + ']')) {
+              changelog = changelog.replace(
+                new RegExp('(## \\\\[' + version.replace('.', '\\\\.') + '\\\\][^\n]*\n### Changed\n)'),
+                '\$1' + bullets + '\n'
+              );
+              console.log('Appended to existing [' + version + '] block.');
+            } else {
+              const divider = '---';
+              const idx = changelog.indexOf(divider);
+              if (idx === -1) throw new Error('Could not find --- divider in CHANGELOG.md');
+              const entry = '## [' + version + '] - ' + date + '\n### Changed\n' + bullets + '\n';
+              changelog =
+                changelog.slice(0, idx + divider.length) +
+                '\n\n' + entry +
+                changelog.slice(idx + divider.length).replace(/^\n+/, '\n');
+              console.log('Created new [' + version + '] block.');
+            }
+
+            writeFileSync('CHANGELOG.md', changelog, 'utf8');
+            writeFileSync('/tmp/summary.txt', messages.join(', '), 'utf8');
+          }
+
+          main().catch(e => { console.error(e); process.exit(1); });
           "
 
       - name: Commit changelog
@@ -68,5 +120,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add CHANGELOG.md
-          git diff --cached --quiet || git commit -m "chore: update changelog [skip ci]"
+          SUMMARY=$(cat /tmp/summary.txt 2>/dev/null || echo "update changelog")
+          git diff --cached --quiet || git commit -m "chore: $SUMMARY [skip ci]"
           git push
