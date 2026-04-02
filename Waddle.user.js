@@ -157,7 +157,7 @@ function patchLocalStorageForToken() {
     antiAfk: {
       id: 'anti-afk-counter', cls: 'counter',
       pos: { left: '50px', top: '290px' },
-      build: spanWidget('Anti-AFK Active'),
+      build: spanWidget('AntiAFK Active'),
     },
     keyDisplay: {
       id: 'key-display-container', cls: 'key-display-container',
@@ -180,8 +180,8 @@ function patchLocalStorageForToken() {
       { label: 'KeyStrokes', feature: 'keyDisplay' },
     ],
     utilities: [
-      { label: 'Anti-AFK', feature: 'antiAfk' },
-      { label: 'Chat-Mute', feature: 'muteChat' }
+      { label: 'AntiAFK', feature: 'antiAfk' },
+      { label: 'ChatMute', feature: 'muteChat' }
     ]
   };
 
@@ -258,7 +258,7 @@ function patchLocalStorageForToken() {
       afkDetector._graceUntil = Date.now() + 2000;
       showToast('Auto Anti-AFK', 'enabled', 'You went idle');
       if (afkSettings.sendChat) {
-        sendAfkChatMessage('I am currently AFK. Be Back Soon :D');
+        sendAfkChatMessage('I am currently AFK. I will be back soon 😊');
       }
       afkDetector._wasOff = !state.features.antiAfk;
       if (afkDetector._wasOff) setAfkActive(true);
@@ -373,7 +373,7 @@ function patchLocalStorageForToken() {
       if (game?.chat && typeof game.chat.addChat === 'function') {
         clearInterval(state.intervals.waitForGame);
         state.intervals.waitForGame = null;
-        game.chat.addChat({ text: `\\${THEME_COLOR}\\[Server]\\reset\\ You are running Waddle v${SCRIPT_VERSION}. \\royalblue\\If you have any questions contact TheM1ddleM1n on Github` });
+        game.chat.addChat({ text: `\\${THEME_COLOR}\\[Server]\\reset\\ You are running Waddle v${SCRIPT_VERSION}. \\royalblue\\If you have any questions please contact TheM1ddleM1n on Github` });
       }
     }, 500);
   })();
