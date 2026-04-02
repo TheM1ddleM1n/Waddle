@@ -1,5 +1,5 @@
 name: Feature Request
-description: Please suggest an idea for WaddleClient
+description: Please suggest an idea for Waddle
 title: "[Feature] "
 labels: enhancement
 assignees: TheM1ddleM1n
@@ -22,8 +22,8 @@ body:
     id: description
     attributes:
       label: Description
-      description: "Reading some other person's mind doesn't exist yet, tell us what you want."
-      placeholder: "A new feature that automatically pets my cat when using Waddle client"
+      description: "Reading other people's minds does not exist yet, tell us what you want."
+      placeholder: "A new feature that automatically will pet my cat when using Waddle"
       render: markdown
     validations:
       required: true
@@ -69,10 +69,10 @@ body:
     attributes:
       label: Additional Context
       description: |
-        Give use more details.
+        Give us more details.
         Pictures also help ([A picture is 1,000 words](https://en.wikipedia.org/wiki/A_picture_is_worth_a_thousand_words))
         - Related features or examples from other tools/clients
-        - Screenshots or mockup ideas (if applicable)
+        - Screenshots or mockup ideas (if Screenshot/Mockup = True)
         - Priority level: `Nice-to-have` / `Important` / `Critical`
       placeholder: idk what to put here as a placeholder, lol.
       render: markdown
