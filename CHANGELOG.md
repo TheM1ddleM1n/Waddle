@@ -7,6 +7,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [6.4] - 2026-01-01
 ### Changed
+- Updated version number from 6.5 to 6.4
 - Refactored HUD helper to reduce boilerplate
 - Fixed Auto Anti-AFK to avoid showing toasts in menus
 - Removed unused `connection` line of code
