@@ -8,7 +8,6 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [6.5] - 2026-04-02
 ### Changed
 - Updated chat messages for Waddle script
-- Updated chat message format and styling
 - Updated messages and improved user prompts
 - Updated version to 6.5
 
