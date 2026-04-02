@@ -49,78 +49,78 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
 };
 
   function getPlayerUsername() {
-    try {
-      const game = gameRef.get();
-      const playerId = game?.player?.id;
-      const sorted = game?.playerList?.sortedPlayerData;
-      if (sorted?.length && playerId != null) {
-        for (let i = 0; i < sorted.length; i++) {
-          if (sorted[i]?.id === playerId) {
-            const { name, level, rank } = sorted[i];
-            if (name) localStorage.setItem(WADDLE_USERNAME_KEY, name);
-            if (level != null) localStorage.setItem(WADDLE_LEVEL_KEY, level);
-            if (rank != null) localStorage.setItem(WADDLE_RANK_KEY, rank);
-            return name;
-          }
+  try {
+    const game = gameRef.get();
+    const playerId = game?.player?.id;
+    const sorted = game?.playerList?.sortedPlayerData;
+    if (sorted?.length && playerId != null) {
+      for (let i = 0; i < sorted.length; i++) {
+        if (sorted[i]?.id === playerId) {
+          const { name, level, rank } = sorted[i];
+          if (name) localStorage.setItem(WADDLE_USERNAME_KEY, name);
+          if (level != null) localStorage.setItem(WADDLE_LEVEL_KEY, level);
+          if (rank != null) localStorage.setItem(WADDLE_RANK_KEY, rank);
+          return name;
         }
       }
-    } catch (_) {}
-    return localStorage.getItem(WADDLE_USERNAME_KEY) || null;
-  }
-
-  function setSkinBannerName(banner, name) {
-    if (!banner) return;
-    if (!name) {
-      banner.innerHTML = `<span style="color:var(--text-dim)">Username is not detected yet — enter a game first</span>`;
-      return;
     }
-    const level = localStorage.getItem(WADDLE_LEVEL_KEY);
-    const rank = localStorage.getItem(WADDLE_RANK_KEY);
-    const rankBadge = rank
-      ? `<span style="background:var(--c-dim);border:1px solid var(--c-border);color:var(--c);font-size:.6rem;font-weight:700;padding:1px 6px;border-radius:4px;margin-right:6px;text-transform:uppercase;letter-spacing:.5px;">${rank}</span>`
-      : '';
-    const levelBadge = level
-      ? `<span style="color:var(--text-dim);font-size:.68rem;margin-right:6px">Lv.${level}</span>`
-      : '';
-    banner.innerHTML = `${rankBadge}${levelBadge}<span style="color:var(--c)">${name}</span>`;
-  }
+  } catch (_) {}
+  return localStorage.getItem(WADDLE_USERNAME_KEY) || null;
+}
 
-  function pollUsername(element) {
-    const poll = setInterval(() => {
-      const found = getPlayerUsername();
-      if (found) { setSkinBannerName(element, found); clearInterval(poll); }
-      if (!document.contains(element)) clearInterval(poll);
-    }, 1000);
-  }
+function setSkinBannerName(banner, name) {
+  if (!banner) return;
+  if (!name) { banner.innerHTML = `<span style="color:var(--text-dim)">Username is not detected yet — enter a game first</span>`; return; }
+  const rank = localStorage.getItem(WADDLE_RANK_KEY);
+  const level = localStorage.getItem(WADDLE_LEVEL_KEY);
+  const rankBadge = rank ? `<span style="background:var(--c-dim);border:1px solid var(--c-border);color:var(--c);font-size:.6rem;font-weight:700;padding:1px 6px;border-radius:4px;margin-right:6px;text-transform:uppercase;letter-spacing:.5px;">${rank}</span>` : '';
+  const levelBadge = level ? `<span style="color:var(--text-dim);font-size:.68rem;margin-right:6px">Lv.${level}</span>` : '';
+  banner.innerHTML = `${rankBadge}${levelBadge}<span style="color:var(--c)">${name}</span>`;
+}
 
-  async function applySkin(skinId) {
-    if (state._skinApplying) return;
-    state._skinApplying = true;
-    const token = localStorage.getItem(SESSION_KEY);
-    if (!token) {
-      showToast('No Session Token found', 'disabled', 'Log in first');
-      state._skinApplying = false;
-      return;
-    }
-    try {
-      const res = await fetch(SKIN_API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'authorization': token },
-        body: JSON.stringify({ type: 'skin', id: skinId.toLowerCase() })
-      });
-      if (!res.ok) throw new Error(res.status);
-      const data = await res.json();
-      if (data?.success === false) throw new Error(data.message || 'Server rejected request');
-      localStorage.setItem(EQUIPPED_SKIN_KEY, skinId.toLowerCase());
-      refreshSkinBadges();
-      showToast('Skin Applied!', 'enabled', `${skinId} equipped`);
-      state._skinApplying = false;
-      setTimeout(() => location.reload(), 1200);
-    } catch (e) {
-      showToast('Skin Failed', 'disabled', 'Could not apply skin: ' + e.message);
-      state._skinApplying = false;
-    }
+function pollUsername(element) {
+  const poll = setInterval(() => {
+    const found = getPlayerUsername();
+    if (found) { setSkinBannerName(element, found); clearInterval(poll); }
+    if (!document.contains(element)) clearInterval(poll);
+  }, 1000);
+}
+
+async function applySkin(skinId) {
+  if (state._skinApplying) return;
+  state._skinApplying = true;
+  const token = localStorage.getItem(SESSION_KEY);
+  if (!token) { showToast('No Session Token found', 'disabled', 'Log in first'); state._skinApplying = false; return; }
+  try {
+    const res = await fetch(SKIN_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'authorization': token },
+      body: JSON.stringify({ type: 'skin', id: skinId.toLowerCase() })
+    });
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    if (data?.success === false) throw new Error(data.message || 'Server rejected request');
+    localStorage.setItem(EQUIPPED_SKIN_KEY, skinId.toLowerCase());
+    refreshSkinBadges();
+    showToast('Skin Applied!', 'enabled', `${skinId} equipped`);
+    setTimeout(() => location.reload(), 1200);
+  } catch (e) {
+    showToast('Skin Failed', 'disabled', 'Could not apply skin: ' + e.message);
+  } finally {
+    state._skinApplying = false;
   }
+}
+
+function patchLocalStorageForToken() {
+  const _orig = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(key, value) {
+    _orig(key, value);
+    if (key === SESSION_KEY) {
+      const username = getPlayerUsername();
+      showToast('Session Token Captured!', 'enabled', username ? `Ready to equip skins as ${username}` : 'Token saved — open Closet to equip skins');
+    }
+  };
+}
 
   const spanWidget = text => wrap => {
     const span = el('span', 'counter-time-text', text);
@@ -386,9 +386,9 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
   }
 
   function injectStyles() {
-    if (!document.head) return false;
-    const style = el('style');
-    style.textContent = `
+  if (!document.head) return;
+  const style = el('style');
+  style.textContent = `
 * { box-sizing:border-box; }
 :root {
   --c:#00FFFF; --c-dim:rgba(0,255,255,.15); --c-border:rgba(0,255,255,.25);
@@ -490,30 +490,27 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
 .waddle-toggle input:checked + .waddle-toggle-track::after { transform:translateX(16px); }
 .afk-delay-input { background:var(--bg2); color:var(--c); border:1px solid var(--c-border); border-radius:var(--radius); padding:3px 7px; font-size:.82rem; width:52px; text-align:center; outline:none; }
 `;
-    document.head.appendChild(style);
-    return true;
-  }
+  document.head.appendChild(style);
+}
 
   function showToast(title, type = 'info', message = '') {
-    if (!['enabled', 'disabled', 'info'].includes(type)) type = 'info';
-    if (!document.body) return;
-    if (!state.toastContainer || !document.contains(state.toastContainer)) {
-      state.toastContainer = document.getElementById('waddle-toasts') || (() => {
-        const c = div(null);
-        c.id = 'waddle-toasts';
-        document.body.appendChild(c);
-        return c;
-      })();
-    }
-    const toast = div('waddle-toast');
-    const icon = div(`toast-icon ${type}`);
-    icon.textContent = { enabled:'✅', disabled:'❌', info:'❗' }[type];
-    const body = div('toast-body');
-    body.innerHTML = `<div class="toast-title">${title}</div>${message ? `<div class="toast-msg">${message}</div>` : ''}`;
-    toast.append(icon, body);
-    state.toastContainer.appendChild(toast);
-    setTimeout(() => { toast.classList.add('hide'); setTimeout(() => toast.remove(), 280); }, 2800);
+  if (!document.body) return;
+  if (!['enabled', 'disabled', 'info'].includes(type)) type = 'info';
+  if (!state.toastContainer || !document.contains(state.toastContainer)) {
+    state.toastContainer = document.getElementById('waddle-toasts') || Object.assign(div(null), { id: 'waddle-toasts' });
+    document.body.appendChild(state.toastContainer);
   }
+  const icon = Object.assign(div(`toast-icon ${type}`), {
+    textContent: { enabled: '✅', disabled: '❌', info: '❗' }[type]
+  });
+  const body = Object.assign(div('toast-body'), {
+    innerHTML: `<div class="toast-title">${title}</div>${message ? `<div class="toast-msg">${message}</div>` : ''}`
+  });
+  const toast = div('waddle-toast');
+  toast.append(icon, body);
+  state.toastContainer.appendChild(toast);
+  setTimeout(() => { toast.classList.add('hide'); setTimeout(() => toast.remove(), 280); }, 2800);
+}
 
   function makeLine(styles) {
     const d = div(null);
@@ -568,151 +565,143 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
   }
 
   class LRUCache {
-    constructor(max) { this.max = max; this._map = new Map(); }
-    get(key) {
-      if (!this._map.has(key)) return undefined;
-      const val = this._map.get(key);
-      this._map.delete(key);
-      return this._map.set(key, val).get(key);
-    }
-    set(key, val) {
-      if (this._map.has(key)) this._map.delete(key);
-      else if (this._map.size >= this.max) this._map.delete(this._map.keys().next().value);
-      this._map.set(key, val);
-    }
-    has(key) { return this._map.has(key); }
+  constructor(max) { this.max = max; this._map = new Map(); }
+  get(key) {
+    if (!this._map.has(key)) return undefined;
+    const val = this._map.get(key);
+    this._map.delete(key);
+    this._map.set(key, val);
+    return val;
+  }
+  set(key, val) {
+    if (this._map.has(key)) this._map.delete(key);
+    else if (this._map.size >= this.max) this._map.delete(this._map.keys().next().value);
+    this._map.set(key, val);
+  }
+  has(key) { return this._map.has(key); }
+}
+
+function startTargetHUDLoop() {
+  const canvas = document.getElementById('wb-hud-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) { showToast('Target HUD', 'info', 'Canvas 2D context unavailable'); return; }
+
+  const MAX_RANGE = 5;
+  const W = 220, R = 10, H = 52;
+  const ENTITY_SCAN_INTERVAL = 50;
+  const PAUSE_CHECK_INTERVAL = 200;
+  const faceImgCache = new LRUCache(64);
+  const playerFaceCache = new LRUCache(64);
+  let entityMapKey = null;
+  let cachedNearest = null;
+  let cachedMinDist = Infinity;
+  let lastEntityScan = 0;
+  let cachedPauseMenu = false;
+  let lastPauseCheck = 0;
+  let cachedBorderGradient = null;
+  let cachedBorderGradientKey = '';
+  let lastDrawnName = '';
+  let lastDrawnFaceSrc = '';
+  let lastDrawnType = '';
+  let needsRedraw = true;
+
+  function clearHUD(resetNearest = false) {
+    if (lastDrawnType || resetNearest) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    lastDrawnType = '';
+    needsRedraw = true;
+    if (resetNearest) cachedNearest = null;
   }
 
-  function startTargetHUDLoop() {
-    const canvas = document.getElementById('wb-hud-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) { showToast('Target HUD', 'info', 'Canvas 2D context unavailable'); return; }
-
-    const MAX_RANGE = 5;
-    const W = 220, R = 10, H_ENTITY = 52, H_BLOCK = 52;
-    const ENTITY_SCAN_INTERVAL = 50;
-    const PAUSE_CHECK_INTERVAL = 200;
-    const faceImgCache = new LRUCache(64);
-    const playerFaceCache = new LRUCache(64);
-    let entityMapKey = null;
-    let cachedNearest = null;
-    let cachedMinDist = Infinity;
-    let lastEntityScan = 0;
-    let cachedPauseMenu = false;
-    let lastPauseCheck = 0;
-    let cachedBorderGradient = null;
-    let cachedBorderGradientKey = '';
-    let lastDrawnName = '';
-    let lastDrawnFaceSrc = '';
-    let lastDrawnType = '';
-    let needsRedraw = true;
-
-    function clearHUD(resetNearest = false) {
-      if (lastDrawnType || resetNearest) ctx.clearRect(0, 0, canvas.width, canvas.height);
-      lastDrawnType = '';
-      needsRedraw = true;
-      if (resetNearest) cachedNearest = null;
+  function findEntityMapKey(world) {
+    if (entityMapKey && world[entityMapKey] instanceof Map) return entityMapKey;
+    for (const [k, v] of Object.entries(world)) {
+      if (!(v instanceof Map) || v.size === 0) continue;
+      const first = v.values().next().value;
+      if (first && typeof first.getHealth === 'function' && first.pos) return (entityMapKey = k);
     }
+    return null;
+  }
 
-    function findEntityMapKey(world) {
-      if (entityMapKey && world[entityMapKey] instanceof Map) return entityMapKey;
-      for (const [k, v] of Object.entries(world)) {
-        if (!(v instanceof Map) || v.size === 0) continue;
-        const first = v.values().next().value;
-        if (first && typeof first.getHealth === 'function' && first.pos) return (entityMapKey = k);
-      }
-      return null;
-    }
+  function getBorderGradient(x, y, h) {
+    const key = `${x},${y},${h}`;
+    if (cachedBorderGradient && cachedBorderGradientKey === key) return cachedBorderGradient;
+    const g = ctx.createLinearGradient(x, y, x + W, y + h);
+    g.addColorStop(0, '#7c3aed');
+    g.addColorStop(1, '#2563eb');
+    cachedBorderGradientKey = key;
+    return (cachedBorderGradient = g);
+  }
 
-    function getBorderGradient(x, y, h) {
-      const key = `${x},${y},${h}`;
-      if (cachedBorderGradient && cachedBorderGradientKey === key) return cachedBorderGradient;
-      const g = ctx.createLinearGradient(x, y, x + W, y + h);
-      g.addColorStop(0, '#7c3aed');
-      g.addColorStop(1, '#2563eb');
-      cachedBorderGradient = g;
-      cachedBorderGradientKey = key;
-      return g;
-    }
+  function drawHUDCard(x, y, drawContent) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+    ctx.shadowBlur = 18;
+    roundRect(ctx, x, y, W, H, R);
+    ctx.fillStyle = '#0b0b14';
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = getBorderGradient(x, y, H);
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    drawContent();
+    ctx.restore();
+  }
 
-    function drawHUDCard(x, y, h, drawContent) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,0.9)';
-      ctx.shadowBlur = 18;
-      roundRect(ctx, x, y, W, h, R);
-      ctx.fillStyle = '#0b0b14';
-      ctx.fill();
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
-      ctx.strokeStyle = getBorderGradient(x, y, h);
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      drawContent();
-      ctx.restore();
-    }
+  let domFaceEl = null, domNameEl = null, domQueryAge = 0;
+  const DOM_QUERY_INTERVAL = 500;
 
-    let domFaceEl = null, domNameEl = null, domQueryAge = 0;
-    const DOM_QUERY_INTERVAL = 500;
+  function getDOM(now) {
+    if (now - domQueryAge <= DOM_QUERY_INTERVAL) return;
+    domFaceEl = document.querySelector('.css-1pj0jj0 img');
+    domNameEl = document.querySelector('.css-1pj0jj0 p');
+    domQueryAge = now;
+  }
 
-    function getDOM(now) {
-      if (now - domQueryAge <= DOM_QUERY_INTERVAL) return;
-      domFaceEl = document.querySelector('.css-1pj0jj0 img');
-      domNameEl = document.querySelector('.css-1pj0jj0 p');
-      domQueryAge = now;
-    }
-
-    function drawEntityHUD(faceSrc, faceName) {
-      const x = (canvas.width - W) / 2, y = 16;
-      if (
-        faceName === lastDrawnName &&
-        faceSrc === lastDrawnFaceSrc &&
-        lastDrawnType === 'entity' &&
-        !needsRedraw
-      ) return;
-      lastDrawnName = faceName;
-      lastDrawnFaceSrc = faceSrc;
-      lastDrawnType = 'entity';
-      needsRedraw = false;
-      drawHUDCard(x, y, H_ENTITY, () => {
-        if (faceSrc) {
-          let img = faceImgCache.get(faceSrc);
-          if (!img) {
-            img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.src = faceSrc;
-            faceImgCache.set(faceSrc, img);
-          }
-          if (img.complete && img.naturalWidth > 0) ctx.drawImage(img, x + 10, y + 10, 34, 34);
+  function drawEntityHUD(faceSrc, faceName) {
+    const x = (canvas.width - W) / 2, y = 16;
+    if (faceName === lastDrawnName && faceSrc === lastDrawnFaceSrc && lastDrawnType === 'entity' && !needsRedraw) return;
+    lastDrawnName = faceName;
+    lastDrawnFaceSrc = faceSrc;
+    lastDrawnType = 'entity';
+    needsRedraw = false;
+    drawHUDCard(x, y, () => {
+      if (faceSrc) {
+        let img = faceImgCache.get(faceSrc);
+        if (!img) {
+          img = Object.assign(new Image(), { crossOrigin: 'anonymous', src: faceSrc });
+          faceImgCache.set(faceSrc, img);
         }
-        const nameX = faceSrc ? x + 52 : x + 10;
-        ctx.font = 'bold 13px Poppins,sans-serif';
-        ctx.fillStyle = '#e2e8f0';
-        ctx.textAlign = 'left';
-        ctx.fillText(faceName, nameX, y + 26);
-      });
-    }
+        if (img.complete && img.naturalWidth > 0) ctx.drawImage(img, x + 10, y + 10, 34, 34);
+      }
+      ctx.font = 'bold 13px Poppins,sans-serif';
+      ctx.fillStyle = '#e2e8f0';
+      ctx.textAlign = 'left';
+      ctx.fillText(faceName, faceSrc ? x + 52 : x + 10, y + 26);
+    });
+  }
 
-    function drawBlockHUD(blockName) {
-      const x = (canvas.width - W) / 2, y = 16;
-      if (blockName === lastDrawnName && lastDrawnType === 'block' && !needsRedraw) return;
-      lastDrawnName = blockName;
-      lastDrawnType = 'block';
-      lastDrawnFaceSrc = '';
-      needsRedraw = false;
-      drawHUDCard(x, y, H_BLOCK, () => {
-        ctx.font = '22px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText('🧱', x + 10, y + 32);
-        ctx.font = 'bold 13px Poppins,sans-serif';
-        ctx.fillStyle = '#e2e8f0';
-        ctx.fillText(blockName, x + 44, y + 21);
-        ctx.font = '10px Poppins,sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,1)';
-        ctx.fillText('Block', x + 44, y + 36);
-      });
-    }
+  function drawBlockHUD(blockName) {
+    const x = (canvas.width - W) / 2, y = 16;
+    if (blockName === lastDrawnName && lastDrawnType === 'block' && !needsRedraw) return;
+    lastDrawnName = blockName;
+    lastDrawnType = 'block';
+    lastDrawnFaceSrc = '';
+    needsRedraw = false;
+    drawHUDCard(x, y, () => {
+      ctx.font = '22px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('🧱', x + 10, y + 32);
+      ctx.font = 'bold 13px Poppins,sans-serif';
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillText(blockName, x + 44, y + 21);
+      ctx.font = '10px Poppins,sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,1)';
+      ctx.fillText('Block', x + 44, y + 36);
+    });
+  }
 
     function tick() {
       try {
@@ -1708,6 +1697,7 @@ document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
     try {
       await ensureDOMReady();
       injectStyles();
+      patchLocalStorageForToken();
       const badge = div(null);
       badge.id = 'waddle-badge';
       badge.textContent = `🐧 Waddle v${SCRIPT_VERSION}`;
