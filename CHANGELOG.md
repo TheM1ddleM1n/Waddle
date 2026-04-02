@@ -13,3 +13,4 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Removed Clock module — system time is accessible by exiting fullscreen
 - Removed troubleshooting link from `config.yml` (page does not exist)
 - General code quality improvements
+- Added Questions.yml
