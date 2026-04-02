@@ -54,6 +54,7 @@
 - refractor HUD helper to reduce boilerplate
 - Fix Auto Anti-AFK to avoid showing toasts in menus
 - we don't even have a troubleshooting page lol so removed from `config.yml`
+- Code Quality Update
 
 ---
 
