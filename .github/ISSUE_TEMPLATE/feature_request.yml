@@ -13,7 +13,7 @@ body:
       options:
         - label: This feature has NOT been requested before by other people
           required: true
-        - label: This aligns with Waddle’s scope. So using: (JavaScript / Tampermonkey / ReactScope)
+        - label: This aligns with Waddle’s scope. So using (JavaScript / Tampermonkey / React Scope)
           required: true
         - label: I have considered ANY performance impacts that are in MY code (no BOTTLENECKS are present in code)
           required: true
