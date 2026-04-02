@@ -46,8 +46,6 @@ jobs:
                 let data = '';
                 res.on('data', c => data += c);
                 res.on('end', () => {
-                  console.log('API status:', res.statusCode);
-                  console.log('API response:', data.slice(0, 500));
                   try { resolve(JSON.parse(data)); }
                   catch (e) { reject(new Error('Bad JSON: ' + data.slice(0, 200))); }
                 });
@@ -62,11 +60,9 @@ jobs:
             const src = readFileSync('Waddle.user.js', 'utf8');
             const version = (src.match(/@version\s+([\d.]+)/) || [])[1];
             if (!version) throw new Error('Could not find @version in Waddle.user.js');
-            console.log('Version:', version);
 
             const date = new Date().toISOString().slice(0, 10);
             const diff = execSync('git diff HEAD~1 HEAD -- Waddle.user.js').toString().slice(0, 6000);
-            console.log('Diff length:', diff.length);
 
             if (!diff.trim()) { console.log('No diff found.'); process.exit(0); }
 
@@ -90,8 +86,6 @@ jobs:
             });
 
             const raw = result.choices?.[0]?.message?.content?.trim() ?? '[]';
-            console.log('Model output:', raw);
-
             let messages;
             try { messages = JSON.parse(raw); }
             catch { messages = [raw]; }
@@ -106,7 +100,6 @@ jobs:
                 new RegExp('(## \\\\[' + version.replace('.', '\\\\.') + '\\\\][^\n]*\n### Changed\n)'),
                 '\$1' + bullets + '\n'
               );
-              console.log('Appended to existing [' + version + '] block.');
             } else {
               const divider = '---';
               const idx = changelog.indexOf(divider);
@@ -116,7 +109,6 @@ jobs:
                 changelog.slice(0, idx + divider.length) +
                 '\n\n' + entry +
                 changelog.slice(idx + divider.length).replace(/^\n+/, '\n');
-              console.log('Created new [' + version + '] block.');
             }
 
             writeFileSync('CHANGELOG.md', changelog, 'utf8');
