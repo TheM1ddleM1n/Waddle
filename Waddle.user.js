@@ -383,7 +383,7 @@ const SCRIPT_VERSION = '6.8';
         clearInt('waitForGame');
         game.chat.addChat({ text: `\\${THEME_COLOR}\\[Waddle]\\reset\\ \\lime\\v${SCRIPT_VERSION} \\yellow\\is now running!` });
         game.chat.addChat({ text: `\\cyan\\Questions? \\magenta\\Visit \\royalblue\\GitHub: \\cyan\\TheM1ddleM1n/Waddle` });
-        game.chat.addChat({ text: `\\yellow\\Enjoying Waddle? \\orange\\Leave a \\red\\★ \\orange\\star on GitHub!` });
+        game.chat.addChat({ text: `\\yellow\\Enjoying Waddle? \\orange\\Leave a \\red\\★ \\orange\\star on \\royalblue\\GitHub!` });
       }
     }, 500);
   })();
@@ -1646,7 +1646,7 @@ const SCRIPT_VERSION = '6.8';
       startTargetHUDLoop();
       initSpaceSky();
       if (afkSettings.autoEnable) afkDetector.start();
-      showToast('Welcome To Waddle!', 'info', 'Press \\ to open menu');
+      showToast('Welcome To Waddle!', 'info', 'Press \\ to open UI');
       setTimeout(() => {
         Object.entries(state.features).forEach(([feature, enabled]) => {
           if (!enabled) return;
