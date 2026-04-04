@@ -40,7 +40,7 @@ Please include:
 
 ## Response
 
-- Acknowledgement within **48 hours**
-- A fix or mitigation within **7 days** for critical issues
-- Credit given in the changelog if you want it
+- I will pick up your message in a **48 hours** timeframe
+- A fix or mitigation within **7 days** for critical issues 
+- Credit given in the readme/userscript if you want it
 - If i cannot fix the issue - you will have to email miniblox to either mitigate or fix
