@@ -2,12 +2,11 @@
 
 ## Supported Versions
 
-Only the latest version of Waddle receives security fixes.
+Note: Only the **latest version of Waddle** will receive security fixes.
 
 | Version | Supported |
 |---------|-----------|
 | Latest  | ✅        |
-| Older   | ❌        |
 
 ## Known Data Handling
 
@@ -25,7 +24,7 @@ a public issue — public issues could expose other users' sessions.
 
 ## Reporting a Vulnerability
 
-**Do not open a public GitHub issue for security vulnerabilities.**
+**Do NOT open a public GitHub issue for security vulnerabilities.**
 
 Report privately via one of:
 
@@ -44,3 +43,4 @@ Please include:
 - Acknowledgement within **48 hours**
 - A fix or mitigation within **7 days** for critical issues
 - Credit given in the changelog if you want it
+- If i cannot fix the issue - you will have to email miniblox to either mitigate or fix
