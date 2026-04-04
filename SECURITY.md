@@ -24,13 +24,12 @@ a public issue — public issues could expose other users' sessions.
 
 ## Reporting a Vulnerability
 
-**Do NOT open a public GitHub issue for security vulnerabilities.**
+**Do NOT open a PUBLIC GitHub issue for security vulnerabilities.**
 
-Report privately via one of:
+Report privately ONLY by:
 
 - GitHub Private Vulnerability Reporting — click **"Report a vulnerability"**
   under the [Security tab](../../security/advisories/new) of this repo
-- Direct message **@TheM1ddleM1n** on GitHub
 
 Please include:
 - A clear description of the vulnerability
