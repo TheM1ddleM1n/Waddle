@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Waddle
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
-// @version      7
+// @version      v7
 // @description  The ULTIMATE miniblox.io enhancement suite!
 // @author       Scripter, TheM1ddleM1n
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/Waddle/refs/heads/main/Penguin.png
@@ -49,7 +49,7 @@ const SCRIPT_VERSION = '7';
   const lsSet = (k, v) => localStorage.setItem(k, v);
   const show = (el, display = 'block') => { if (el) el.style.display = display; };
   const makeKeyEvent = (type, key, code, keyCode) =>
-    new KeyboardEvent(type, { key, code, keyCode, which: keyCode, bubbles: true, cancelable: true });
+  new KeyboardEvent(type, { key, code, keyCode, which: keyCode, bubbles: true, cancelable: true });
   const makeListener = (target, evt, fn, opts) => {
     target.addEventListener(evt, fn, opts);
     return () => target.removeEventListener(evt, fn, opts);
@@ -190,7 +190,7 @@ const SCRIPT_VERSION = '7';
 
   const CATEGORIES = [
     { id: 'display', label: 'Display', icon: '📊' },
-    { id: 'utilities', label: 'Utilities', icon: '🛠️' },
+    { id: 'utilities', label: 'Utility', icon: '🛠️' },
     { id: 'customSkin', label: 'Closet', icon: '👗' },
     { id: 'about', label: 'About', icon: 'ℹ️' }
   ];
@@ -199,7 +199,7 @@ const SCRIPT_VERSION = '7';
     display: [
       { label: 'FPS/CPS', feature: 'performance' },
       { label: 'Positions', feature: 'coords' },
-      { label: 'KeyStrokes', feature: 'keyDisplay' },
+      { label: 'Keystrokes', feature: 'keyDisplay' },
     ],
     utilities: [
       { label: 'AntiAFK', feature: 'antiAfk' },
@@ -276,7 +276,7 @@ const SCRIPT_VERSION = '7';
       afkDetector._triggered = true;
       afkDetector._graceUntil = Date.now() + 2000;
       showToast('Auto Anti-AFK', 'enabled', 'You went idle');
-      if (afkSettings.sendChat) sendAfkChatMessage('I am currently AFK, be back soon 😊');
+      if (afkSettings.sendChat) sendAfkChatMessage('I am currently AFK, be back soon 🕶️');
       afkDetector._wasOff = !state.features.antiAfk;
       if (afkDetector._wasOff) setAfkActive(true);
     },
@@ -355,7 +355,6 @@ const SCRIPT_VERSION = '7';
   };
 
   const KNOWN_FEATURES = new Set(Object.keys(state.features));
-
   function migrateSettings(raw) {
     if (!raw?.features) return {};
     return Object.fromEntries(
