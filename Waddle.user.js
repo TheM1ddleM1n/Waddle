@@ -653,21 +653,17 @@ const SCRIPT_VERSION = '6.8';
     }
 
     function drawHUDCard(x, y, drawContent) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,0.9)';
-      ctx.shadowBlur = 18;
-      roundRect(ctx, x, y, W, H, R);
-      ctx.fillStyle = '#0b0b14';
-      ctx.fill();
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
-      ctx.strokeStyle = getBorderGradient(x, y, H);
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      drawContent();
-      ctx.restore();
-    }
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  Object.assign(ctx, { shadowColor: 'rgba(0,0,0,0.9)', shadowBlur: 18 });
+  roundRect(ctx, x, y, W, H, R);
+  ctx.fillStyle = '#0b0b14';
+  ctx.fill();
+  Object.assign(ctx, { shadowColor: 'transparent', shadowBlur: 0, strokeStyle: getBorderGradient(x, y, H), lineWidth: 1.5 });
+  ctx.stroke();
+  drawContent();
+  ctx.restore();
+}
 
     let domFaceEl = null, domNameEl = null, domQueryAge = 0;
     const DOM_QUERY_INTERVAL = 500;
