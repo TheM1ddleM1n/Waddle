@@ -43,25 +43,31 @@ const SCRIPT_VERSION = '6.8';
     return e;
   };
   const div = (cls, text, id) => el('div', cls, text, id);
-
+  const divId = (id, cls, text) => div(cls, text, id);
+  const byId = id => document.getElementById(id);
+  const lsGet = k => localStorage.getItem(k);
+  const lsSet = (k, v) => localStorage.setItem(k, v);
+  const show = (el, display = 'block') => { if (el) el.style.display = display; };
+  const makeKeyEvent = (type, key, code, keyCode) =>
+    new KeyboardEvent(type, { key, code, keyCode, which: keyCode, bubbles: true, cancelable: true });
+  const makeListener = (target, evt, fn, opts) => {
+    target.addEventListener(evt, fn, opts);
+    return () => target.removeEventListener(evt, fn, opts);
+  };
   const roundRect = (ctx, x, y, w, h, r) => {
     ctx.beginPath();
     ctx.roundRect(x, y, w, h, r);
     ctx.closePath();
   };
-
-  const divId = (id, cls, text) => div(cls, text, id);
-  const clearInt = (key) => {
-    clearInterval(state.intervals[key]);
-    state.intervals[key] = null;
-  };
+  const clearInt = (key) => { clearInterval(state.intervals[key]); state.intervals[key] = null; };
+  const setInt = (key, fn, ms) => { state.intervals[key] = setInterval(fn, ms); };
 
   function hideAllPanels() {
     const { grid, title, about, skin } = getPanelEls();
-    if (grid) grid.style.display = 'none';
-    if (title) title.style.display = 'none';
-    if (about) about.style.display = 'none';
-    if (skin) skin.style.display = 'none';
+    show(grid, 'none');
+    show(title, 'none');
+    show(about, 'none');
+    show(skin, 'none');
   }
 
   function getPlayerUsername() {
@@ -73,22 +79,22 @@ const SCRIPT_VERSION = '6.8';
         for (let i = 0; i < sorted.length; i++) {
           if (sorted[i]?.id === playerId) {
             const { name, level, rank } = sorted[i];
-            if (name) localStorage.setItem(WADDLE_USERNAME_KEY, name);
-            if (level != null) localStorage.setItem(WADDLE_LEVEL_KEY, level);
-            if (rank != null) localStorage.setItem(WADDLE_RANK_KEY, rank);
+            if (name) lsSet(WADDLE_USERNAME_KEY, name);
+            if (level != null) lsSet(WADDLE_LEVEL_KEY, level);
+            if (rank != null) lsSet(WADDLE_RANK_KEY, rank);
             return name;
           }
         }
       }
     } catch (_) {}
-    return localStorage.getItem(WADDLE_USERNAME_KEY) || null;
+    return lsGet(WADDLE_USERNAME_KEY) || null;
   }
 
   function setSkinBannerName(banner, name) {
     if (!banner) return;
     if (!name) { banner.innerHTML = `<span style="color:var(--text-dim)">No username — join a game first</span>`; return; }
-    const rank = localStorage.getItem(WADDLE_RANK_KEY);
-    const level = localStorage.getItem(WADDLE_LEVEL_KEY);
+    const rank = lsGet(WADDLE_RANK_KEY);
+    const level = lsGet(WADDLE_LEVEL_KEY);
     const rankBadge = rank ? `<span style="background:var(--c-dim);border:1px solid var(--c-border);color:var(--c);font-size:.6rem;font-weight:700;padding:1px 6px;border-radius:4px;margin-right:6px;text-transform:uppercase;letter-spacing:.5px;">${rank}</span>` : '';
     const levelBadge = level ? `<span style="color:var(--text-dim);font-size:.68rem;margin-right:6px">Lv.${level}</span>` : '';
     banner.innerHTML = `${rankBadge}${levelBadge}<span style="color:var(--c)">${name}</span>`;
@@ -105,7 +111,7 @@ const SCRIPT_VERSION = '6.8';
   async function applySkin(skinId) {
     if (state._skinApplying) return;
     state._skinApplying = true;
-    const token = localStorage.getItem(SESSION_KEY);
+    const token = lsGet(SESSION_KEY);
     if (!token) { showToast('No Session Token found', 'disabled', 'Log in first'); state._skinApplying = false; return; }
     try {
       const res = await fetch(SKIN_API, {
@@ -116,7 +122,7 @@ const SCRIPT_VERSION = '6.8';
       if (!res.ok) throw new Error(res.status);
       const data = await res.json();
       if (data?.success === false) throw new Error(data.message || 'Server rejected request');
-      localStorage.setItem(EQUIPPED_SKIN_KEY, skinId.toLowerCase());
+      lsSet(EQUIPPED_SKIN_KEY, skinId.toLowerCase());
       refreshSkinBadges();
       showToast('Skin Applied!', 'enabled', `${skinId} equipped`);
       setTimeout(() => location.reload(), 1200);
@@ -228,19 +234,19 @@ const SCRIPT_VERSION = '6.8';
   };
 
   const afkSettings = {
-    get autoEnable() { return localStorage.getItem('waddle_afk_auto') === 'true'; },
-    set autoEnable(v) { localStorage.setItem('waddle_afk_auto', v ? 'true' : 'false'); },
-    get sendChat() { return localStorage.getItem('waddle_afk_chat') !== 'false'; },
-    set sendChat(v) { localStorage.setItem('waddle_afk_chat', v ? 'true' : 'false'); },
+    get autoEnable() { return lsGet('waddle_afk_auto') === 'true'; },
+    set autoEnable(v) { lsSet('waddle_afk_auto', v ? 'true' : 'false'); },
+    get sendChat() { return lsGet('waddle_afk_chat') !== 'false'; },
+    set sendChat(v) { lsSet('waddle_afk_chat', v ? 'true' : 'false'); },
     get idleDelay() {
-      const v = parseInt(localStorage.getItem('waddle_afk_delay') || '10', 10);
+      const v = parseInt(lsGet('waddle_afk_delay') || '10', 10);
       return isNaN(v) || v < 5 ? 10 : v > 120 ? 120 : v;
     },
     set idleDelay(v) {
       v = parseInt(v, 10);
       if (isNaN(v) || v < 5) v = 5;
       if (v > 120) v = 120;
-      localStorage.setItem('waddle_afk_delay', v);
+      lsSet('waddle_afk_delay', v);
     },
   };
 
@@ -286,12 +292,15 @@ const SCRIPT_VERSION = '6.8';
     },
 
     start() {
-      this._events.forEach(evt => window.addEventListener(evt, this._onActivity, { passive: true }));
+      this._removeListeners = this._events.map(evt =>
+        makeListener(window, evt, this._onActivity, { passive: true })
+      );
       this._resetTimer();
     },
 
     stop() {
-      this._events.forEach(evt => window.removeEventListener(evt, this._onActivity));
+      this._removeListeners?.forEach(r => r());
+      this._removeListeners = null;
       clearTimeout(this._timer);
       this._timer = null;
       if (this._triggered) {
@@ -361,13 +370,13 @@ const SCRIPT_VERSION = '6.8';
       if (e) positions[type] = { left: e.style.left, top: e.style.top };
     });
     state._dragPositionsCache = positions;
-    localStorage.setItem(DRAG_POSITIONS_KEY, JSON.stringify(positions));
+    lsSet(DRAG_POSITIONS_KEY, JSON.stringify(positions));
   }
 
   function getDragPositions() {
     if (state._dragPositionsCache) return state._dragPositionsCache;
     try {
-      state._dragPositionsCache = JSON.parse(localStorage.getItem(DRAG_POSITIONS_KEY) || 'null') || {};
+      state._dragPositionsCache = JSON.parse(lsGet(DRAG_POSITIONS_KEY) || 'null') || {};
     } catch (_) {
       state._dragPositionsCache = {};
     }
@@ -376,14 +385,14 @@ const SCRIPT_VERSION = '6.8';
 
   (function () {
     let attempts = 0;
-    state.intervals.waitForGame = setInterval(() => {
+    setInt('waitForGame', () => {
       if (++attempts > 40) { clearInt('waitForGame'); return; }
       const game = gameRef.get();
       if (game?.chat && typeof game.chat.addChat === 'function') {
         clearInt('waitForGame');
         game.chat.addChat({ text: `\\${THEME_COLOR}\\[Waddle]\\reset\\ \\lime\\v${SCRIPT_VERSION} \\yellow\\is now running!` });
         game.chat.addChat({ text: `\\cyan\\Questions? \\magenta\\Visit \\royalblue\\GitHub: \\cyan\\TheM1ddleM1n/Waddle` });
-        game.chat.addChat({ text: `\\yellow\\Enjoying Waddle? \\orange\\Leave a \\red\\★ \\orange\\star on \\royalblue\\GitHub!` });
+        game.chat.addChat({ text: `\\yellow\\Enjoying Waddle? \\orange\\Leave a \\red\\★ \\orange\\star on GitHub!` });
       }
     }, 500);
   })();
@@ -391,7 +400,7 @@ const SCRIPT_VERSION = '6.8';
   function saveSettings() {
     clearTimeout(state._saveTimer);
     state._saveTimer = setTimeout(() => {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify({ features: state.features }));
+      lsSet(SETTINGS_KEY, JSON.stringify({ features: state.features }));
     }, 100);
   }
 
@@ -432,7 +441,7 @@ const SCRIPT_VERSION = '6.8';
 .waddle-module-dot { width:8px; height:8px; border-radius:50%; background:var(--text-dim); flex-shrink:0; transition:background .12s ease; }
 .waddle-module.active .waddle-module-dot { background:var(--c); box-shadow:0 0 6px var(--c); }
 #waddle-about { flex:1; padding:18px; display:flex; flex-direction:column; gap:14px; overflow-y:auto; color:var(--text); }
-.about-block,#waddle-afk-settings { background:var(--bg3); border:1px solid rgba(255,255,255,.07); border-radius:var(--radius)); }
+.about-block,#waddle-afk-settings { background:var(--bg3); border:1px solid rgba(255,255,255,.07); border-radius:var(--radius); }
 .about-block { padding:14px; }
 .about-block h3,.skin-section-header,.afk-settings-title { font-weight:700; color:var(--c); text-transform:uppercase; }
 .about-block h3 { font-size:.75rem; letter-spacing:1px; margin:0 0 10px; }
@@ -507,7 +516,7 @@ const SCRIPT_VERSION = '6.8';
     if (!document.body) return;
     if (!['enabled', 'disabled', 'info'].includes(type)) type = 'info';
     if (!state.toastContainer || !document.contains(state.toastContainer)) {
-      state.toastContainer = document.getElementById('waddle-toasts') || divId('waddle-toasts');
+      state.toastContainer = byId('waddle-toasts') || divId('waddle-toasts');
       document.body.appendChild(state.toastContainer);
     }
     const icon = Object.assign(div(`toast-icon ${type}`), {
@@ -561,11 +570,11 @@ const SCRIPT_VERSION = '6.8';
         requestAnimationFrame(() => { state._crosshairRafPending = false; checkCrosshair(); });
       }
     });
-    state._crosshairObserver.observe(document.getElementById('react') || document.body, { childList: true, subtree: true });
+    state._crosshairObserver.observe(byId('react') || document.body, { childList: true, subtree: true });
   }
 
   function initHudCanvas() {
-    const canvas = document.getElementById('wb-hud-canvas') || Object.assign(el('canvas'), { id: 'wb-hud-canvas' });
+    const canvas = byId('wb-hud-canvas') || Object.assign(el('canvas'), { id: 'wb-hud-canvas' });
     if (canvas.parentNode) return;
     const resize = () => Object.assign(canvas, { width: window.innerWidth, height: window.innerHeight });
     resize();
@@ -592,7 +601,7 @@ const SCRIPT_VERSION = '6.8';
   }
 
   function startTargetHUDLoop() {
-    const canvas = document.getElementById('wb-hud-canvas');
+    const canvas = byId('wb-hud-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) { showToast('Target HUD', 'info', 'Canvas 2D context unavailable'); return; }
@@ -885,12 +894,34 @@ const SCRIPT_VERSION = '6.8';
       e._offsetY = ev.clientY - e.getBoundingClientRect().top;
       e.classList.add('dragging');
     }, { passive: true });
-    window.addEventListener('mouseup', onMouseUp, { passive: true });
-    window.addEventListener('mousemove', onMouseMove, { passive: true });
-    e._dragCleanup = () => {
-      window.removeEventListener('mouseup', onMouseUp);
-      window.removeEventListener('mousemove', onMouseMove);
-    };
+    const removeUp = makeListener(window, 'mouseup', onMouseUp, { passive: true });
+    const removeMove = makeListener(window, 'mousemove', onMouseMove, { passive: true });
+    e._dragCleanup = () => { removeUp(); removeMove(); };
+  }
+
+  function initBatteryInfo() {
+    if (!navigator.getBattery) return;
+    navigator.getBattery().then(bat => {
+      const pct = () => Math.round(bat.level * 100);
+      const color = p => p > 50 ? '#22c55e' : p > 20 ? '#eab308' : '#ef4444';
+      const text = p => {
+        const status = (p === 100 && bat.charging) ? 'Fully Charged!' : bat.charging ? 'Charging...' :
+          p <= 20 ? 'Plug in your charger.' : bat.dischargingTime !== Infinity ? `⏱ ~${Math.round(bat.dischargingTime / 60)}m left` : '';
+        return `${p > 20 ? '🔋' : '🪫'} ${p}% ${status}`;
+      };
+      const update = () => {
+        const el = byId('waddle-sys-battery');
+        if (!el) return;
+        const p = pct();
+        el.textContent = text(p);
+        el.style.color = color(p);
+      };
+      update();
+      ['levelchange', 'chargingchange', 'dischargingtimechange'].forEach(e => bat.addEventListener(e, update));
+    }).catch(() => {
+      const el = byId('waddle-sys-battery');
+      if (el) el.textContent = 'Battery N/A';
+    });
   }
 
   function getSystemInfo() {
@@ -902,7 +933,7 @@ const SCRIPT_VERSION = '6.8';
     } else if (/Windows/.test(ua)) {
       os = 'Windows 10';
       navigator.userAgentData?.getHighEntropyValues?.(['platformVersion']).then(d => {
-        const el = document.getElementById('waddle-sys-os');
+        const el = byId('waddle-sys-os');
         if (el) el.textContent = parseInt(d.platformVersion || '0') >= 13 ? 'Windows 11' : 'Windows 10';
       }).catch(() => {});
     } else if (/Mac OS X/.test(ua)) {
@@ -944,30 +975,7 @@ const SCRIPT_VERSION = '6.8';
       webgl2 = !!window.WebGL2RenderingContext;
     } catch (_) {}
 
-    if (navigator.getBattery) {
-      navigator.getBattery().then(bat => {
-        const pct = () => Math.round(bat.level * 100);
-        const color = (p) => p > 50 ? '#22c55e' : p > 20 ? '#eab308' : '#ef4444';
-        const text = (p) => {
-          const status = (p === 100 && bat.charging) ? 'Fully Charged!' : bat.charging ? 'Charging...' :
-            p <= 20 ? 'Plug in your charger.' : bat.dischargingTime !== Infinity ? `⏱ ~${Math.round(bat.dischargingTime / 60)}m left` : '';
-          return `${p > 20 ? '🔋' : '🪫'} ${p}% ${status}`;
-        };
-        const update = () => {
-          const el = document.getElementById('waddle-sys-battery');
-          if (!el) return;
-          const p = pct();
-          el.textContent = text(p);
-          el.style.color = color(p);
-        };
-        update();
-        ['levelchange', 'chargingchange', 'dischargingtimechange'].forEach(e => bat.addEventListener(e, update));
-      }).catch(() => {
-        const el = document.getElementById('waddle-sys-battery');
-        if (el) el.textContent = 'Battery N/A';
-      });
-    }
-
+    initBatteryInfo();
     return {
       os, browser, gpu, gpuVendor, webgl2,
       cores: navigator.hardwareConcurrency || '?',
@@ -1031,7 +1039,7 @@ const SCRIPT_VERSION = '6.8';
     let color = '#00FF00';
     if (fps < 30) color = '#FF0000';
     else if (fps < 60) color = '#FFFF00';
-    const fpsEl = document.getElementById('fps-val');
+    const fpsEl = byId('fps-val');
     if (fpsEl) fpsEl.textContent = `FPS: ${game.inGame ? fps : '--'}`;
     if (state.lastPerformanceColor !== color) {
       state.counters.performance.style.borderColor = color;
@@ -1082,13 +1090,9 @@ const SCRIPT_VERSION = '6.8';
       chatInput.dispatchEvent(new Event('input', { bubbles: true }));
       chatInput.focus();
       setTimeout(() => {
-        chatInput.dispatchEvent(new KeyboardEvent('keydown', {
-          key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true
-        }));
+        chatInput.dispatchEvent(makeKeyEvent('keydown', 'Enter', 'Enter', 13));
         setTimeout(() => {
-          chatInput.dispatchEvent(new KeyboardEvent('keydown', {
-            key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true, cancelable: true
-          }));
+          chatInput.dispatchEvent(makeKeyEvent('keydown', 'Escape', 'Escape', 27));
           chatInput.blur();
         }, 50);
       }, 80);
@@ -1096,9 +1100,7 @@ const SCRIPT_VERSION = '6.8';
     };
 
     if (!tryViaInput()) {
-      document.body.dispatchEvent(new KeyboardEvent('keydown', {
-        key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true
-      }));
+      document.body.dispatchEvent(makeKeyEvent('keydown', 'Enter', 'Enter', 13));
       setTimeout(() => {
         if (!tryViaInput()) {
           try {
@@ -1133,8 +1135,8 @@ const SCRIPT_VERSION = '6.8';
         updatePerformanceCounter(gameRef.get());
         if (!state._cpsListeners) {
           const updateSvgFill = (buttons) => {
-            const lEl = document.getElementById('cps-svg-lmb');
-            const rEl = document.getElementById('cps-svg-rmb');
+            const lEl = byId('cps-svg-lmb');
+            const rEl = byId('cps-svg-rmb');
             if (lEl) lEl.style.fill = (buttons & 1) ? 'rgba(0,255,255,0.32)' : 'rgba(0,255,255,0.05)';
             if (rEl) rEl.style.fill = (buttons & 2) ? 'rgba(0,255,255,0.32)' : 'rgba(0,255,255,0.05)';
           };
@@ -1148,13 +1150,13 @@ const SCRIPT_VERSION = '6.8';
           window.addEventListener('mousedown', md, { passive: true });
           window.addEventListener('mouseup', mu, { passive: true });
           state._cpsListeners = { md, mu };
-          state.intervals.cps = setInterval(() => {
+          setInt('cps', () => {
             const now = performance.now();
             const trim = arr => { while (arr.length && now - arr[0] > 1000) arr.shift(); };
             trim(state.cpsLmbTimes);
             trim(state.cpsRmbTimes);
-            const lEl = document.getElementById('cps-lmb-val');
-            const rEl = document.getElementById('cps-rmb-val');
+            const lEl = byId('cps-lmb-val');
+            const rEl = byId('cps-rmb-val');
             if (lEl) lEl.textContent = state.cpsLmbTimes.length;
             if (rEl) rEl.textContent = state.cpsRmbTimes.length;
           }, 100);
@@ -1202,18 +1204,14 @@ const SCRIPT_VERSION = '6.8';
           [' ', 'Space', 32],
         ];
         let idx = 0;
-        state.intervals.antiAfk = setInterval(() => {
+        setInt('antiAfk', () => {
           if (!state.features.antiAfk) return;
           const [key, code, keyCode] = keys[idx];
           idx = (idx + 1) % keys.length;
           if (document.pointerLockElement) {
             const target = document.activeElement || document.body;
-            target.dispatchEvent(new KeyboardEvent('keydown', {
-              key, code, keyCode, which: keyCode, bubbles: true, cancelable: true
-            }));
-            setTimeout(() => target.dispatchEvent(new KeyboardEvent('keyup', {
-              key, code, keyCode, which: keyCode, bubbles: true, cancelable: true
-            })), 50);
+            target.dispatchEvent(makeKeyEvent('keydown', key, code, keyCode));
+            setTimeout(() => target.dispatchEvent(makeKeyEvent('keyup', key, code, keyCode)), 50);
           }
         }, 500);
       },
@@ -1236,16 +1234,13 @@ const SCRIPT_VERSION = '6.8';
           const k = e.key === ' ' ? 'space' : e.key.toLowerCase();
           if (k in state.keys) { state.keys[k] = false; updateKeyDisplay(k, false); }
         };
-        window.addEventListener('keydown', kd, { passive: true });
-        window.addEventListener('keyup', ku, { passive: true });
-        state._keyListeners = { kd, ku };
+        const removeKd = makeListener(window, 'keydown', kd, { passive: true });
+        const removeKu = makeListener(window, 'keyup', ku, { passive: true });
+        state._keyListeners = { remove: () => { removeKd(); removeKu(); } };
       },
       cleanup() {
-        if (state._keyListeners) {
-          window.removeEventListener('keydown', state._keyListeners.kd);
-          window.removeEventListener('keyup', state._keyListeners.ku);
-          state._keyListeners = null;
-        }
+        state._keyListeners?.remove();
+        state._keyListeners = null;
         removeCounter('keyDisplay');
         Object.keys(state.keys).forEach(k => { state.keys[k] = false; });
       }
@@ -1260,7 +1255,7 @@ const SCRIPT_VERSION = '6.8';
         };
         if (!tryMute()) showToast('Chat-Mute', 'info', 'Waiting for game.chat to load...');
         else showToast('Chat-Mute', 'enabled', 'Chat messages will be hidden');
-        state.intervals.chatMuteRetry = setInterval(tryMute, 2000);
+        setInt('chatMuteRetry', tryMute, 2000);
       },
       cleanup() {
         clearInt('chatMuteRetry');
@@ -1290,7 +1285,7 @@ const SCRIPT_VERSION = '6.8';
   }
 
   function refreshSkinBadges() {
-    const equippedSkin = (localStorage.getItem(EQUIPPED_SKIN_KEY) || '').toLowerCase();
+    const equippedSkin = (lsGet(EQUIPPED_SKIN_KEY) || '').toLowerCase();
     document.querySelectorAll('#skin-grid-view .skin-btn').forEach(btn => {
       const isEquipped = (btn.querySelector('span')?.textContent || '').toLowerCase() === equippedSkin;
       btn.classList.toggle('equipped', isEquipped);
@@ -1301,27 +1296,27 @@ const SCRIPT_VERSION = '6.8';
   }
 
   function setSkinConfirmVisible(visible, skinName) {
-    // #6 — absorb the skinPanel show logic so callers don't need to set it separately
-    const skinPanel = document.getElementById('waddle-skin-panel');
-    const gridView = document.getElementById('skin-grid-view');
-    const confirmView = document.getElementById('skin-confirm-view');
-    if (skinPanel) { skinPanel.style.display = 'flex'; skinPanel.style.flexDirection = 'column'; }
-    if (gridView) gridView.style.display = visible ? 'none' : 'flex';
+    const skinPanel = byId('waddle-skin-panel');
+    const gridView = byId('skin-grid-view');
+    const confirmView = byId('skin-confirm-view');
+    show(skinPanel, 'flex');
+    if (skinPanel) skinPanel.style.flexDirection = 'column';
+    show(gridView, visible ? 'none' : 'flex');
     if (confirmView) confirmView.classList.toggle('show', visible);
     if (!visible) return;
-    const current = localStorage.getItem(EQUIPPED_SKIN_KEY) || 'None';
-    const fromEl = document.getElementById('skin-confirm-from');
+    const current = lsGet(EQUIPPED_SKIN_KEY) || 'None';
+    const fromEl = byId('skin-confirm-from');
     if (fromEl) fromEl.textContent = current.charAt(0).toUpperCase() + current.slice(1);
-    const nameEl = document.getElementById('skin-confirm-name');
+    const nameEl = byId('skin-confirm-name');
     if (nameEl) nameEl.textContent = skinName;
   }
 
   function getPanelEls() {
     return {
-      grid: document.getElementById('waddle-module-grid'),
-      title: document.getElementById('waddle-panel-title'),
-      about: document.getElementById('waddle-about'),
-      skin: document.getElementById('waddle-skin-panel'),
+      grid: byId('waddle-module-grid'),
+      title: byId('waddle-panel-title'),
+      about: byId('waddle-about'),
+      skin: byId('waddle-skin-panel'),
     };
   }
 
@@ -1329,7 +1324,7 @@ const SCRIPT_VERSION = '6.8';
     const section = div(null);
     section.appendChild(div('skin-section-header', label));
     const skinGrid = div('skin-grid');
-    const equippedSkin = (localStorage.getItem(EQUIPPED_SKIN_KEY) || '').toLowerCase();
+    const equippedSkin = (lsGet(EQUIPPED_SKIN_KEY) || '').toLowerCase();
     skinList.forEach(name => {
       const btn = div('skin-btn');
       const isEquipped = name.toLowerCase() === equippedSkin;
@@ -1347,9 +1342,8 @@ const SCRIPT_VERSION = '6.8';
 
   function buildSkinPanel() {
     hideAllPanels();
-
-    const isFirstTime = !localStorage.getItem(EQUIPPED_SKIN_KEY);
-    const hasToken = !!localStorage.getItem(SESSION_KEY);
+    const isFirstTime = !lsGet(EQUIPPED_SKIN_KEY);
+    const hasToken = !!lsGet(SESSION_KEY);
     if (isFirstTime && hasToken) {
       const username = getPlayerUsername();
       showToast('Token Found!', 'enabled', username ? `Detected as ${username} — token automatically applied!` : 'Token found and automatically applied!');
@@ -1357,7 +1351,7 @@ const SCRIPT_VERSION = '6.8';
       showToast('No Token', 'disabled', 'Log into Miniblox first then re-open the skin panel');
     }
 
-    let skinPanel = document.getElementById('waddle-skin-panel');
+    let skinPanel = byId('waddle-skin-panel');
     if (!skinPanel) {
       skinPanel = divId('waddle-skin-panel');
       const username = getPlayerUsername();
@@ -1388,20 +1382,19 @@ const SCRIPT_VERSION = '6.8';
         </div>
       `;
       skinPanel.appendChild(confirmView);
-      document.getElementById('waddle-panel').appendChild(skinPanel);
-      document.getElementById('skin-confirm-yes').addEventListener('click', async () => {
-        const skinName = document.getElementById('skin-confirm-name').textContent;
+      byId('waddle-panel').appendChild(skinPanel);
+      byId('skin-confirm-yes').addEventListener('click', async () => {
+        const skinName = byId('skin-confirm-name').textContent;
         setSkinConfirmVisible(false);
         await applySkin(skinName);
       });
-      document.getElementById('skin-confirm-no').addEventListener('click', () => setSkinConfirmVisible(false));
+      byId('skin-confirm-no').addEventListener('click', () => setSkinConfirmVisible(false));
     } else {
-      const banner = document.getElementById('skin-user-banner');
+      const banner = byId('skin-user-banner');
       const refreshed = getPlayerUsername();
       setSkinBannerName(banner, refreshed);
       if (!refreshed) pollUsername(banner);
     }
-
     refreshSkinBadges();
     setSkinConfirmVisible(false);
   }
@@ -1451,19 +1444,15 @@ const SCRIPT_VERSION = '6.8';
   function buildModulePanel(categoryId) {
     hideAllPanels();
     const { grid, title, about } = getPanelEls();
-    if (categoryId === 'about') {
-      if (about) about.style.display = 'flex';
-      return;
-    }
+    if (categoryId === 'about') { show(about, 'flex'); return; }
     if (categoryId === 'customSkin') { buildSkinPanel(); return; }
-    if (grid) grid.style.display = 'grid';
-    if (title) { title.style.display = 'block'; title.textContent = categoryId; }
+    show(grid, 'grid');
+    if (title) { show(title); title.textContent = categoryId; }
     if (!state._panelCache[categoryId]) {
       state._panelCache[categoryId] = (FEATURE_MAP[categoryId] || []).map(({ label, feature }) => {
         const btn = div('waddle-module');
         btn.dataset.feature = feature;
-        const dot = div('waddle-module-dot');
-        btn.append(el('span', null, label), dot);
+        btn.append(el('span', null, label), div('waddle-module-dot'));
         btn.addEventListener('click', () => {
           const en = toggleFeature(feature);
           btn.classList.toggle('active', en);
@@ -1490,7 +1479,6 @@ const SCRIPT_VERSION = '6.8';
     if (!document.body) return null;
     const overlay = divId('waddle-overlay');
     overlay.dataset.version = SCRIPT_VERSION;
-
     const sidebar = divId('waddle-sidebar');
     sidebar.appendChild(divId('waddle-logo', null, '🐧 Waddle'));
     CATEGORIES.forEach(({ id, label, icon }) => {
@@ -1500,7 +1488,7 @@ const SCRIPT_VERSION = '6.8';
       cat.onclick = () => switchCategory(id);
       sidebar.appendChild(cat);
     });
-    sidebar.appendChild(divId('waddle-sidebar-footer', null, 'Press \\ to toggle Waddle UI'));
+    sidebar.appendChild(divId('waddle-sidebar-footer', null, 'Press \\ to toggle'));
 
     const sys = getSystemInfo();
     const sysRow = (label, val) =>
@@ -1513,6 +1501,7 @@ const SCRIPT_VERSION = '6.8';
       ['Cores', sys.cores], ['RAM', sys.ram], ['Screen', sys.screen],
       ['Timezone', sys.timezone], ['Battery', `<span id="waddle-sys-battery">${sys.battery}</span>`],
     ].map(([l, v]) => sysRow(l, v)).join('')}</table>`;
+
     const creditsBlock = div('about-block');
     creditsBlock.innerHTML = `
       <h3>Credits</h3>
@@ -1525,6 +1514,7 @@ const SCRIPT_VERSION = '6.8';
         <div><div class="role" style="color:#f39c12">Enhanced By</div><a href="https://github.com/TheM1ddleM1n" target="_blank">@TheM1ddleM1n</a></div>
       </div>
     `;
+
     const linksBlock = div('about-block');
     linksBlock.innerHTML = '<h3>🔗 GitHub</h3>';
     const linksRow = div('about-links');
@@ -1539,9 +1529,8 @@ const SCRIPT_VERSION = '6.8';
     linksBlock.appendChild(linksRow);
 
     const aboutPanel = divId('waddle-about');
-    aboutPanel.style.display = 'none';
+    show(aboutPanel, 'none');
     aboutPanel.append(sysBlock, creditsBlock, linksBlock);
-
     const panel = divId('waddle-panel');
     panel.append(
       divId('waddle-panel-title', null, state.activeCategory),
@@ -1574,7 +1563,7 @@ const SCRIPT_VERSION = '6.8';
 
   function restoreSavedState() {
     try {
-      const raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+      const raw = JSON.parse(lsGet(SETTINGS_KEY) || 'null');
       if (raw) Object.assign(state.features, migrateSettings(raw));
     } catch (_) {}
   }
@@ -1589,6 +1578,7 @@ const SCRIPT_VERSION = '6.8';
   }
 
   window.addEventListener('beforeunload', globalCleanup);
+
   function ensureDOMReady() {
     return new Promise(resolve => {
       if (document.body && document.head) { resolve(); return; }
@@ -1631,7 +1621,6 @@ const SCRIPT_VERSION = '6.8';
     script.onerror = () => showToast('Space Sky', 'info', 'Failed to load Three.js');
     document.head.appendChild(script);
   }
-
   async function safeInit() {
     try {
       await ensureDOMReady();
@@ -1646,7 +1635,7 @@ const SCRIPT_VERSION = '6.8';
       startTargetHUDLoop();
       initSpaceSky();
       if (afkSettings.autoEnable) afkDetector.start();
-      showToast('Welcome To Waddle!', 'info', 'Press \\ to open UI');
+      showToast('Welcome To Waddle!', 'info', 'Press \\ to open menu');
       setTimeout(() => {
         Object.entries(state.features).forEach(([feature, enabled]) => {
           if (!enabled) return;
