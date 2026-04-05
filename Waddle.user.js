@@ -24,6 +24,7 @@ const SCRIPT_VERSION = '7';
   const WADDLE_USERNAME_KEY = 'waddle_username';
   const WADDLE_LEVEL_KEY = 'waddle_level';
   const WADDLE_RANK_KEY = 'waddle_rank';
+  const SKIN_API = 'https://session.coolmathblox.ca/accounts/set_cosmetic';
   const DRAGGABLE_WIDGETS = Object.freeze(['performance', 'coords', 'antiAfk', 'keyDisplay']);
 
   const STANDARD_SKINS = Object.freeze([
@@ -33,7 +34,6 @@ const SCRIPT_VERSION = '7';
   ]);
 
   const CUSTOM_SKINS = Object.freeze(['Remlin', 'Cat', 'Ethan', 'Sushi', 'Duck', 'Tester', 'Banana', 'Qhyun']);
-  const SKIN_API = 'https://session.coolmathblox.ca/accounts/set_cosmetic';
 
   const el = (tag, cls, text, id) => {
     const e = document.createElement(tag);
