@@ -1,4 +1,4 @@
-name: Sync Version Vx.x
+name: Sync Version
 
 on:
   push:
