@@ -14,7 +14,6 @@
 ---
 
 ## ⚡ Install
-
 1. Install [Tampermonkey](https://www.tampermonkey.net/)
 2. Click **[→ Install Waddle](https://github.com/TheM1ddleM1n/Waddle/raw/main/Waddle.user.js)**
 3. Open Miniblox, press `\` and start playing
@@ -33,10 +32,11 @@
 ### Toggleable via `\` menu
 | Feature | Description |
 |---------|-------------|
-| 📊 FPS & Ping | Color-coded performance counter |
-| 📍 Coordinates | Live X Y Z, 10 updates/sec |
-| ⌨️ Key Display | WASD + mouse buttons, lights up on press |
-| 🐧 Anti-AFK | AutoMessage to imply that you are AFK and jumps (thats it) |
+| 📊 FPS & CPS | Color-coded performance counter with left/right click rate |
+| 📍 Coordinates | Live X Y Z position + movement speed in blocks/sec |
+| ⌨️ Key Display | WASD + space, lights up on press |
+| ✨ Trail | Fading cyan position dots behind your movement (third person only) |
+| 🐧 Anti-AFK | Auto-jumps and sends an AFK message to prevent being kicked |
 | 🎨 Custom Skin | Equip any skin from the UI |
 | 🔇 Chat Mute | Hides all incoming chat messages |
 
@@ -45,11 +45,9 @@
 <img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/7c6555a4-9084-4970-b6aa-9f467a504666" />
 <img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/8eb83a63-a864-41e3-a945-8676a1b645c0" />
 
-
 ---
 
 ## 👥 Credits
-
 | Role | Contributor |
 |------|-------------|
 | Original Creator | [@Scripter132132](https://github.com/Scripter132132) |
