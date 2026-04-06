@@ -32,7 +32,6 @@ const SCRIPT_VERSION = '7';
     'Adele', 'Chris', 'Deadpool', 'Galactus', 'Heather', 'Ironman', 'Joe', 'Levi', 'Lexi', 'Natalie', 'Remus', 'Sara', 'Transformer', 'Vindicate', 'Adventure Guy',
     'Aether', 'Apex', 'Ariel', 'Aurora', 'Celeste', 'Cody', 'Ember', 'Finn', 'Glory', 'Hunter', 'Katie', 'Nova', 'Panda', 'Raven', 'Seraphina', 'Vain', 'Zane'
   ]);
-
   const CUSTOM_SKINS = Object.freeze(['Remlin', 'Cat', 'Ethan', 'Sushi', 'Duck', 'Tester', 'Banana', 'Qhyun']);
 
   const el = (tag, cls, text, id) => {
@@ -200,6 +199,7 @@ const SCRIPT_VERSION = '7';
       { label: 'FPS/CPS', feature: 'performance' },
       { label: 'Positions', feature: 'coords' },
       { label: 'Keystrokes', feature: 'keyDisplay' },
+      { label: 'Trail', feature: 'trail' },
     ],
     utilities: [
       { label: 'AntiAFK', feature: 'antiAfk' },
@@ -325,9 +325,9 @@ const SCRIPT_VERSION = '7';
 
   const state = {
     features: {
-      performance: false, coords: false, antiAfk: false, keyDisplay: false, muteChat: false,
+      performance: false, coords: false, antiAfk: false, keyDisplay: false, muteChat: false, trail: false,
     },
-    counters: { performance: null, coords: null, antiAfk: null, keyDisplay: null },
+    counters: { performance: null, coords: null, antiAfk: null, keyDisplay: null, trail: null },
     menuOverlay: null,
     activeCategory: 'display',
     rafId: null,
@@ -352,6 +352,7 @@ const SCRIPT_VERSION = '7';
     _mutedChat: null,
     _skinApplying: false,
     _dragPositionsCache: null,
+    _trailPoints: [],
   };
 
   const KNOWN_FEATURES = new Set(Object.keys(state.features));
@@ -714,7 +715,6 @@ const SCRIPT_VERSION = '7';
         ctx.fillText('Block', x + 44, y + 36);
       });
     }
-
     function tick() {
       try {
         const now = performance.now();
@@ -1240,6 +1240,46 @@ const SCRIPT_VERSION = '7';
         Object.keys(state.keys).forEach(k => { state.keys[k] = false; });
       }
     },
+     trail: {
+  start() {
+    if (state.intervals.trail) return;
+    const c = Object.assign(el('canvas'), { id: 'wb-trail-canvas' });
+    Object.assign(c.style, { position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: '4998' });
+    const resize = () => Object.assign(c, { width: innerWidth, height: innerHeight });
+    resize();
+    document.body.appendChild(c);
+    window.addEventListener('resize', resize, { passive: true });
+    c._r = () => window.removeEventListener('resize', resize);
+    const ctx = c.getContext('2d');
+    setInt('trail', () => {
+      const game = gameRef.get();
+      const pos = game?.player?.pos;
+      const cam = game?.gameScene?.camera;
+      ctx.clearRect(0, 0, c.width, c.height);
+      if (!pos || !cam || !document.pointerLockElement || game.player.perspective !== 1 || typeof THREE === 'undefined') return;
+      const now = performance.now();
+      state._trailPoints.push({ x: pos.x, y: pos.y, z: pos.z, born: now });
+      if (state._trailPoints.length > 120) state._trailPoints.shift();
+      state._trailPoints = state._trailPoints.filter(p => now - p.born < 2000);
+      state._trailPoints.forEach(p => {
+        const v = new THREE.Vector3(p.x, p.y, p.z).project(cam);
+        if (v.z >= 1) return;
+        const age = (now - p.born) / 2000;
+        ctx.beginPath();
+        ctx.arc((v.x * .5 + .5) * c.width, (-v.y * .5 + .5) * c.height, (1 - age) * 5 + 1, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0,255,255,${((1 - age) * .75).toFixed(2)})`;
+        ctx.fill();
+      });
+    }, 50);
+  },
+  cleanup() {
+    clearInt('trail');
+    state._trailPoints = [];
+    const c = byId('wb-trail-canvas');
+    c?._r?.();
+    c?.remove();
+  }
+},
     muteChat: {
       start() {
         const tryMute = () => {
