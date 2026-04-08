@@ -35,7 +35,6 @@
 | 📊 FPS & CPS | Color-coded performance counter with left/right click rate |
 | 📍 Coordinates | Live X Y Z position + movement speed in blocks/sec |
 | ⌨️ Key Display | WASD + space, lights up on press |
-| ✨ Trail | Fading cyan position dots behind your movement (third person only) |
 | 🐧 Anti-AFK | Auto-jumps and sends an AFK message to prevent being kicked |
 | 🎨 Custom Skin | Equip any skin from the UI |
 | 🔇 Chat Mute | Hides all incoming chat messages |
