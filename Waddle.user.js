@@ -106,9 +106,10 @@ const SCRIPT_VERSION = '7.1';
     const rankNormalized = (rank || '').toLowerCase();
     const cleanName = remainingName || name;
     const inferredBase64 = (() => {
-      try { return btoa(unescape(encodeURIComponent(cleanName))); } catch (_) { return null; }
+      try { return btoa(unescape(encodeURIComponent(cleanName))).slice(0, 16); } catch (_) { return null; }
     })();
-    const base64Face = leadingTags.find(tag => tag.toLowerCase() !== rankNormalized) || inferredBase64;
+    const menuFaceToken = getOwnMenuFaceToken();
+    const base64Face = leadingTags.find(tag => tag.toLowerCase() !== rankNormalized) || menuFaceToken || inferredBase64;
     const levelBadge = level ? `<span style="background:var(--c-dim);border:1px solid var(--c-border);color:var(--c);font-size:.62rem;font-weight:700;padding:2px 6px;border-radius:4px;margin-right:6px;letter-spacing:.4px;">[Lv.${level}]</span>` : '';
     const base64Badge = base64Face ? `<span style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.18);color:#d6f6ff;font-size:.62rem;font-weight:700;padding:2px 6px;border-radius:4px;margin-right:6px;letter-spacing:.4px;">[${base64Face}]</span>` : '';
     const rankBadge = rank ? `<span style="background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.45);color:#5dff97;font-size:.62rem;font-weight:700;padding:2px 6px;border-radius:4px;margin-right:6px;letter-spacing:.4px;">[${rank}]</span>` : '';
@@ -121,6 +122,15 @@ const SCRIPT_VERSION = '7.1';
       if (found) { setSkinBannerName(element, found); clearInterval(poll); }
       if (!document.contains(element)) clearInterval(poll);
     }, 1000);
+  }
+
+  function getOwnMenuFaceToken() {
+    const img = document.querySelector('.css-1pj0jj0 img, .chakra-stack.css-1q5zbtn img, .chakra-stack.css-33dobs img');
+    const src = img?.getAttribute('src') || '';
+    if (!src) return null;
+    const base64 = src.match(/base64,([A-Za-z0-9+/=]+)/)?.[1];
+    if (base64) return base64.slice(0, 16);
+    try { return btoa(unescape(encodeURIComponent(src))).slice(0, 16); } catch (_) { return null; }
   }
 
   async function applySkin(skinId) {
@@ -548,13 +558,23 @@ const SCRIPT_VERSION = '7.1';
   background:#181126 !important;
 }
 
-/* Keep menu buttons stationary on hover/active */
+/* Keep all buttons stationary; allow subtle non-movement hover feedback */
+button,
 .chakra-button,
+button:hover,
 .chakra-button:hover,
+button:active,
 .chakra-button:active,
+button:focus-visible,
 .chakra-button:focus-visible {
   transform:none !important;
   animation:none !important;
+  transition:background-color .12s ease, border-color .12s ease, filter .12s ease !important;
+}
+
+button:hover,
+.chakra-button:hover {
+  filter:brightness(1.06) !important;
 }
 `;
     document.head.appendChild(style);
