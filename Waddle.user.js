@@ -92,14 +92,24 @@ const SCRIPT_VERSION = '7.1';
   function setSkinBannerName(banner, name) {
     if (!banner) return;
     if (!name) { banner.innerHTML = `<span style="color:var(--text-dim)">No username — join a game first</span>`; return; }
-    const base64Face = (name.match(/^\[([^\]]+)\]\s*/) || [null, null])[1];
-    const cleanName = base64Face ? name.replace(/^\[[^\]]+\]\s*/, '') : name;
     const rank = lsGet(WADDLE_RANK_KEY);
     const level = lsGet(WADDLE_LEVEL_KEY);
-    const base64Badge = base64Face ? `<span style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.18);color:#d6f6ff;font-size:.62rem;font-weight:700;padding:2px 6px;border-radius:4px;margin-right:6px;letter-spacing:.4px;">[${base64Face}]</span>` : '';
+    const leadingTags = [];
+    const tagRegex = /^\[([^\]]+)\]\s*/;
+    let remainingName = name;
+    while (true) {
+      const match = remainingName.match(tagRegex);
+      if (!match) break;
+      leadingTags.push(match[1]);
+      remainingName = remainingName.replace(tagRegex, '');
+    }
+    const rankNormalized = (rank || '').toLowerCase();
+    const base64Face = leadingTags.find(tag => tag.toLowerCase() !== rankNormalized) || null;
+    const cleanName = remainingName || name;
     const levelBadge = level ? `<span style="background:var(--c-dim);border:1px solid var(--c-border);color:var(--c);font-size:.62rem;font-weight:700;padding:2px 6px;border-radius:4px;margin-right:6px;letter-spacing:.4px;">[Lv.${level}]</span>` : '';
+    const base64Badge = base64Face ? `<span style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.18);color:#d6f6ff;font-size:.62rem;font-weight:700;padding:2px 6px;border-radius:4px;margin-right:6px;letter-spacing:.4px;">[${base64Face}]</span>` : '';
     const rankBadge = rank ? `<span style="background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.45);color:#5dff97;font-size:.62rem;font-weight:700;padding:2px 6px;border-radius:4px;margin-right:6px;letter-spacing:.4px;">[${rank}]</span>` : '';
-    banner.innerHTML = `${base64Badge}${levelBadge}${rankBadge}<span style="color:var(--text)">[${cleanName}]</span>`;
+    banner.innerHTML = `${levelBadge}${base64Badge}${rankBadge}<span style="color:var(--text)">[${cleanName}]</span>`;
   }
 
   function pollUsername(element) {
@@ -510,6 +520,8 @@ const SCRIPT_VERSION = '7.1';
   border-radius:8px !important;
   box-shadow:none !important;
   padding:12px !important;
+  width:100% !important;
+  align-items:stretch !important;
 }
 
 .chakra-button.css-cuh8pi {
@@ -520,6 +532,8 @@ const SCRIPT_VERSION = '7.1';
   box-shadow:none !important;
   font-weight:700 !important;
   transition:background .15s ease, border-color .15s ease !important;
+  width:100% !important;
+  justify-content:flex-start !important;
 }
 
 .chakra-button.css-cuh8pi:hover {
