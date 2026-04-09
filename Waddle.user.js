@@ -133,6 +133,58 @@ const SCRIPT_VERSION = '7.1';
     try { return btoa(unescape(encodeURIComponent(src))).slice(0, 16); } catch (_) { return null; }
   }
 
+  function getFallbackBase64Token(name) {
+    if (!name) return null;
+    try { return btoa(unescape(encodeURIComponent(name))).slice(0, 16); } catch (_) { return null; }
+  }
+
+  function refreshMenuProfileBadges() {
+    const username = getPlayerUsername();
+    if (!username) return;
+    const rank = lsGet(WADDLE_RANK_KEY) || '';
+    const level = lsGet(WADDLE_LEVEL_KEY) || '';
+    const base64Face = getOwnMenuFaceToken() || getFallbackBase64Token(username);
+    if (!base64Face) return;
+    const candidates = document.querySelectorAll('p,span,div');
+    for (const node of candidates) {
+      const text = node.textContent?.trim();
+      if (!text || text.length > 72 || !text.includes(username)) continue;
+      const rect = node.getBoundingClientRect();
+      if (rect.top > 220 || rect.left < window.innerWidth * 0.62) continue;
+      const rankBadge = rank ? `<span style="color:#39ff67">[${rank}]</span>` : '';
+      const levelBadge = level ? `<span style="color:#9ff8ff">[Lv.${level}]</span>` : '';
+      node.innerHTML = `${levelBadge} <span style="color:#d6f6ff">[${base64Face}]</span> ${rankBadge} <span style="color:#fff">${username}</span>`;
+      break;
+    }
+  }
+
+  function stabilizeMenuButtons() {
+    const targets = new Set(['play', 'settings', 'friends', 'party', 'shop', 'rankings', 'contact', 'customize', 'free coins!', 'daily login bonus']);
+    const nodes = document.querySelectorAll('button,[role="button"],div,span');
+    for (const node of nodes) {
+      const label = node.textContent?.trim().replace(/\s+/g, ' ').toLowerCase();
+      if (!label) continue;
+      const isKnown = targets.has(label) || label.includes('play');
+      if (!isKnown) continue;
+      const anchors = [node, node.parentElement, node.parentElement?.parentElement].filter(Boolean);
+      anchors.forEach(target => {
+        if (target.dataset.waddleBtnStable === '1') return;
+        target.dataset.waddleBtnStable = '1';
+        target.style.setProperty('transform', 'none', 'important');
+        target.style.setProperty('animation', 'none', 'important');
+        target.style.setProperty('transition', 'background-color .12s ease, border-color .12s ease, filter .12s ease', 'important');
+        target.addEventListener('mouseenter', () => {
+          target.style.setProperty('transform', 'none', 'important');
+          target.style.setProperty('filter', 'brightness(1.06)', 'important');
+        });
+        target.addEventListener('mouseleave', () => {
+          target.style.setProperty('transform', 'none', 'important');
+          target.style.removeProperty('filter');
+        });
+      });
+    }
+  }
+
   async function applySkin(skinId) {
     if (state._skinApplying) return;
     state._skinApplying = true;
@@ -1687,6 +1739,10 @@ function maybeStopRaf() {
       initHudCanvas();
       startTargetHUDLoop();
       initSpaceSky();
+      setInt('menuHudSync', () => {
+        refreshMenuProfileBadges();
+        stabilizeMenuButtons();
+      }, 350);
       if (afkSettings.autoEnable) afkDetector.start();
       showToast('Welcome To Waddle!', 'info', 'Press \\ to open menu');
       setTimeout(() => {
