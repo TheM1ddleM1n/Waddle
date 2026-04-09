@@ -92,11 +92,14 @@ const SCRIPT_VERSION = '7.1';
   function setSkinBannerName(banner, name) {
     if (!banner) return;
     if (!name) { banner.innerHTML = `<span style="color:var(--text-dim)">No username — join a game first</span>`; return; }
+    const base64Face = (name.match(/^\[([^\]]+)\]\s*/) || [null, null])[1];
+    const cleanName = base64Face ? name.replace(/^\[[^\]]+\]\s*/, '') : name;
     const rank = lsGet(WADDLE_RANK_KEY);
     const level = lsGet(WADDLE_LEVEL_KEY);
-    const rankBadge = rank ? `<span style="background:var(--c-dim);border:1px solid var(--c-border);color:var(--c);font-size:.6rem;font-weight:700;padding:1px 6px;border-radius:4px;margin-right:6px;text-transform:uppercase;letter-spacing:.5px;">${rank}</span>` : '';
-    const levelBadge = level ? `<span style="color:var(--text-dim);font-size:.68rem;margin-right:6px">Lv.${level}</span>` : '';
-    banner.innerHTML = `${rankBadge}${levelBadge}<span style="color:var(--c)">${name}</span>`;
+    const base64Badge = base64Face ? `<span style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.18);color:#d6f6ff;font-size:.62rem;font-weight:700;padding:2px 6px;border-radius:4px;margin-right:6px;letter-spacing:.4px;">[${base64Face}]</span>` : '';
+    const levelBadge = level ? `<span style="background:var(--c-dim);border:1px solid var(--c-border);color:var(--c);font-size:.62rem;font-weight:700;padding:2px 6px;border-radius:4px;margin-right:6px;letter-spacing:.4px;">[Lv.${level}]</span>` : '';
+    const rankBadge = rank ? `<span style="background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.45);color:#5dff97;font-size:.62rem;font-weight:700;padding:2px 6px;border-radius:4px;margin-right:6px;letter-spacing:.4px;">[${rank}]</span>` : '';
+    banner.innerHTML = `${base64Badge}${levelBadge}${rankBadge}<span style="color:var(--text)">[${cleanName}]</span>`;
   }
 
   function pollUsername(element) {
@@ -498,6 +501,35 @@ const SCRIPT_VERSION = '7.1';
 .waddle-toggle input:checked + .waddle-toggle-track { background:var(--c); }
 .waddle-toggle input:checked + .waddle-toggle-track::after { transform:translateX(16px); }
 .afk-delay-input { background:var(--bg2); color:var(--c); border:1px solid var(--c-border); border-radius:var(--radius); padding:3px 7px; font-size:.82rem; width:52px; text-align:center; outline:none; }
+
+/* Miniblox Chakra UI simplification overrides */
+.chakra-stack.css-1q5zbtn,
+.chakra-stack.css-33dobs {
+  background:rgba(14, 12, 20, .9) !important;
+  border:1px solid rgba(255,255,255,.2) !important;
+  border-radius:8px !important;
+  box-shadow:none !important;
+  padding:12px !important;
+}
+
+.chakra-button.css-cuh8pi {
+  background:#1f1730 !important;
+  color:#fff !important;
+  border:1px solid rgba(255,255,255,.25) !important;
+  border-radius:8px !important;
+  box-shadow:none !important;
+  font-weight:700 !important;
+  transition:background .15s ease, border-color .15s ease !important;
+}
+
+.chakra-button.css-cuh8pi:hover {
+  background:#2b2042 !important;
+  border-color:rgba(255,255,255,.45) !important;
+}
+
+.chakra-button.css-cuh8pi:active {
+  background:#181126 !important;
+}
 `;
     document.head.appendChild(style);
   }
