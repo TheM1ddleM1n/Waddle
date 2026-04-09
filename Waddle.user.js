@@ -161,19 +161,14 @@ const SCRIPT_VERSION = '7.1';
       },
     },
     coords: {
-      id: 'coords-counter', cls: 'counter',
-      pos: { left: '50px', top: '220px' },
-      build(wrap) {
-        wrap.style.display = 'flex';
-        wrap.style.flexDirection = 'column';
-        wrap.style.gap = '3px';
-        const posSpan = el('span', 'counter-time-text', '📍 X: 0 Y: 0 Z: 0');
-        wrap.appendChild(posSpan);
-        wrap.appendChild(spdSpan);
-        wrap._posSpan = posSpan;
-        wrap._spdSpan = spdSpan;
-      },
-    },
+  id: 'coords-counter', cls: 'counter',
+  pos: { left: '50px', top: '220px' },
+  build(wrap) {
+    const posSpan = el('span', 'counter-time-text', '📍 X: 0 Y: 0 Z: 0');
+    wrap.appendChild(posSpan);
+    wrap._posSpan = posSpan;
+  },
+},
     antiAfk: {
       id: 'anti-afk-counter', cls: 'counter',
       pos: { left: '50px', top: '290px' },
