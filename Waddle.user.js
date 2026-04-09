@@ -24,6 +24,9 @@ const SCRIPT_VERSION = '7.1';
   const WADDLE_USERNAME_KEY = 'waddle_username';
   const WADDLE_LEVEL_KEY = 'waddle_level';
   const WADDLE_RANK_KEY = 'waddle_rank';
+  const WALLPAPER_KEY = 'waddle_wallpaper_url';
+  const PROFILE_FACE_B64_KEY = 'waddle_profile_face_b64';
+  const DEFAULT_WALLPAPER = 'https://images.unsplash.com/photo-1465101162946-4377e57745c3?auto=format&fit=crop&w=1920&q=80';
   const SKIN_API = 'https://session.coolmathblox.ca/accounts/set_cosmetic';
   const DRAGGABLE_WIDGETS = Object.freeze(['performance', 'coords', 'antiAfk', 'keyDisplay']);
 
@@ -105,6 +108,90 @@ const SCRIPT_VERSION = '7.1';
       if (found) { setSkinBannerName(element, found); clearInterval(poll); }
       if (!document.contains(element)) clearInterval(poll);
     }, 1000);
+  }
+
+  function getWallpaperUrl() {
+    const saved = lsGet(WALLPAPER_KEY);
+    if (saved) return saved;
+    lsSet(WALLPAPER_KEY, DEFAULT_WALLPAPER);
+    return DEFAULT_WALLPAPER;
+  }
+
+  function applyPersistentWallpaper() {
+    const wallpaper = getWallpaperUrl();
+    if (!document.body) return;
+    document.body.style.backgroundImage = `linear-gradient(rgba(9,10,26,.62), rgba(14,8,28,.72)), url("${wallpaper}")`;
+    document.body.style.backgroundPosition = 'center center';
+    document.body.style.backgroundRepeat = 'no-repeat';
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundAttachment = 'fixed';
+  }
+
+  function ensureWallpaperAlwaysOn() {
+    applyPersistentWallpaper();
+    if (state._wallpaperObserver) return;
+    state._wallpaperObserver = new MutationObserver(() => applyPersistentWallpaper());
+    state._wallpaperObserver.observe(document.body, { attributes: true, attributeFilter: ['style', 'class'] });
+  }
+
+  async function createFaceBase64(src) {
+    return new Promise(resolve => {
+      if (!src) { resolve(null); return; }
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const size = 64;
+          const canvas = document.createElement('canvas');
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { resolve(null); return; }
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(img, 8, 8, 8, 8, 0, 0, size, size);
+          resolve(canvas.toDataURL('image/png'));
+        } catch (_) { resolve(null); }
+      };
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
+  }
+
+  async function updateTopRightProfileCard() {
+    const card = byId('waddle-topright-profile');
+    if (!card) return;
+    const level = lsGet(WADDLE_LEVEL_KEY) || '--';
+    const rank = lsGet(WADDLE_RANK_KEY) || '';
+    const username = getPlayerUsername() || 'Unknown';
+    const faceNode = document.querySelector('.css-1pj0jj0 img');
+    const faceSrc = faceNode?.src || lsGet(PROFILE_FACE_B64_KEY) || '';
+    if (faceNode?.src) {
+      const base64 = await createFaceBase64(faceNode.src);
+      if (base64) lsSet(PROFILE_FACE_B64_KEY, base64);
+    }
+    const useFace = lsGet(PROFILE_FACE_B64_KEY) || faceSrc;
+    const rankMarkup = rank ? `<span class="waddle-rank-pill">[${rank}]</span>` : '';
+    card.innerHTML = `
+      <div class="waddle-profile-row">
+        <img class="waddle-profile-face" src="${useFace || ''}" alt="face" />
+        <span class="waddle-level-pill">${level}</span>
+        ${rankMarkup}
+        <span class="waddle-username">${username}</span>
+      </div>
+      <div class="waddle-profile-subrow">${rankMarkup}<span>Lv.${level} ${username}</span></div>
+    `;
+  }
+
+  function ensureTopRightProfileCard() {
+    if (!document.body) return;
+    let card = byId('waddle-topright-profile');
+    if (!card) {
+      card = divId('waddle-topright-profile');
+      document.body.appendChild(card);
+    }
+    updateTopRightProfileCard();
+    if (state._profileSyncInterval) return;
+    state._profileSyncInterval = setInterval(updateTopRightProfileCard, 1500);
   }
 
   async function applySkin(skinId) {
@@ -343,6 +430,8 @@ const SCRIPT_VERSION = '7.1';
     _mutedChat: null,
     _skinApplying: false,
     _dragPositionsCache: null,
+    _profileSyncInterval: null,
+    _wallpaperObserver: null,
   };
 
   const KNOWN_FEATURES = new Set(Object.keys(state.features));
@@ -405,7 +494,40 @@ const SCRIPT_VERSION = '7.1';
   --text:#e0e0e0; --text-dim:#666; --radius:6px; --fw:600;
   --glow:0 0 12px rgba(0,255,255,.5); --shadow:0 8px 32px rgba(0,0,0,.8);
 }
+body { background-color:#170d2a !important; }
 .css-xhoozx,[class*="crosshair"],img[src*="crosshair"],.css-1pj0jj0 { display:none !important; }
+.chakra-button.css-32lhf4,.chakra-button.css-he6upe,.chakra-button.css-1dkorm4,.chakra-button.css-cuh8pi,.chakra-button.css-18wnugv {
+  background:rgba(0,0,0,.4) !important;
+  border:2.26415px solid #000 !important;
+  border-radius:0 !important;
+  padding:8px !important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06) !important;
+  transition:transform .12s ease, box-shadow .12s ease !important;
+}
+.chakra-button.css-1dkorm4 { border-color:rgb(108, 91, 0) !important; }
+.chakra-button.css-32lhf4:hover,.chakra-button.css-he6upe:hover,.chakra-button.css-1dkorm4:hover,.chakra-button.css-cuh8pi:hover,.chakra-button.css-18wnugv:hover {
+  transform:translateY(-1px) !important;
+  box-shadow:0 0 0 1px rgba(255,255,255,.22), 0 8px 18px rgba(0,0,0,.35) !important;
+}
+.oSAXb5qPKj78_Sp8Oz9A { border-radius:3px !important; padding:3px !important; }
+#waddle-topright-profile {
+  position:fixed; top:14px; right:14px; z-index:9997; min-width:255px;
+  background:linear-gradient(180deg, rgba(18,9,34,.92), rgba(16,13,30,.92));
+  border:3px solid #0a0614; box-shadow:0 8px 24px rgba(0,0,0,.55);
+  padding:8px 10px; color:#f8f9ff; font-family:'Trebuchet MS', sans-serif;
+}
+.waddle-profile-row { display:flex; align-items:center; gap:8px; font-weight:800; }
+.waddle-profile-face { width:30px; height:30px; image-rendering:pixelated; border:2px solid #29223f; background:#0f0a1c; }
+.waddle-level-pill {
+  min-width:32px; text-align:center; font-size:1rem; line-height:1;
+  color:#e7f3ff; border:2px solid #39ff4a; border-radius:7px; padding:3px 6px;
+}
+.waddle-rank-pill { color:#30ff47; text-transform:uppercase; font-size:.88rem; text-shadow:0 0 8px rgba(63,255,89,.45); }
+.waddle-username { color:#fff; font-size:1.05rem; letter-spacing:.3px; }
+.waddle-profile-subrow {
+  margin-top:6px; border-top:2px solid rgba(255,255,255,.18); padding-top:5px;
+  display:flex; gap:7px; align-items:center; font-size:.86rem; color:#c8d3eb;
+}
 #waddle-overlay { position:fixed; inset:0; background:rgba(0,0,0,.65); backdrop-filter:blur(8px); z-index:9999; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .15s ease; }
 #waddle-overlay.show { opacity:1; pointer-events:auto; }
 #waddle-window { display:flex; width:782px; height:483px; background:var(--bg); border:1px solid var(--c-border); border-radius:10px; box-shadow:var(--shadow),0 0 40px rgba(0,255,255,.08); overflow:hidden; user-select:none; }
@@ -1546,9 +1668,11 @@ function maybeStopRaf() {
   function globalCleanup() {
     Object.keys(state.features).forEach(f => { if (state.features[f]) featureManager[f]?.cleanup(); });
     Object.values(state.intervals).forEach(id => { if (id != null) clearInterval(id); });
+    if (state._profileSyncInterval) clearInterval(state._profileSyncInterval);
     if (state.rafId) cancelAnimationFrame(state.rafId);
     if (state._resizeHandler) window.removeEventListener('resize', state._resizeHandler);
     state._crosshairObserver?.disconnect();
+    state._wallpaperObserver?.disconnect();
     afkDetector.stop();
   }
 
@@ -1605,6 +1729,8 @@ function maybeStopRaf() {
       restoreSavedState();
       createMenu();
       setupKeyboardHandler();
+      ensureWallpaperAlwaysOn();
+      ensureTopRightProfileCard();
       initializeCrosshairModule();
       initHudCanvas();
       startTargetHUDLoop();
