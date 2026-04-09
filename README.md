@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🐧 Waddle - DISCONTINUED
+# 🐧 Waddle
 ### The Ultimate Miniblox Enhancement Suite
 
 ![Version](https://img.shields.io/badge/version-7.2-39ff14?style=for-the-badge)
