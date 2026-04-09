@@ -53,7 +53,7 @@
 | Enhancement & Maintenance | [@TheM1ddleM1n](https://github.com/TheM1ddleM1n) |
 | Inspired By | Scripter's NovaCore Client |
 
-> ⚠️ SECURITY: The custom skin feature reads your Miniblox session token from localStorage and sends it to `coolmathblox.ca` to apply skins — only use if you trust this.
+> ⚠️ SECURITY: The custom skin feature reads your Miniblox session token from localStorage and sends it to `coolmathblox.ca` to apply skins — only use if you trust this
 
 ---
 
