@@ -168,7 +168,6 @@ const SCRIPT_VERSION = '7.1';
         wrap.style.flexDirection = 'column';
         wrap.style.gap = '3px';
         const posSpan = el('span', 'counter-time-text', '📍 X: 0 Y: 0 Z: 0');
-        const spdSpan = el('span', 'counter-time-text', '⚡ 0.00 b/s');
         wrap.appendChild(posSpan);
         wrap.appendChild(spdSpan);
         wrap._posSpan = posSpan;
@@ -346,8 +345,6 @@ const SCRIPT_VERSION = '7.1';
     _cpsListeners: null,
     _saveTimer: null,
     _crosshairRafPending: false,
-    _lastSpeedPos: null,
-    _lastSpeedTime: 0,
     _mutedChat: null,
     _skinApplying: false,
     _dragPositionsCache: null,
@@ -988,51 +985,38 @@ try {
   }
 
   function needsRaf() {
-    return state.features.performance || state.features.coords;
-  }
+  return state.features.performance || state.features.coords;
+}
 
-  function startPerformanceLoop() {
-    if (state.rafId) return;
-    const loop = (t) => {
-      if (!needsRaf()) { state.rafId = null; return; }
-      const game = gameRef.get(t);
-      if (t - state.lastPerformanceUpdate >= 500 && state.counters.performance) {
-        updatePerformanceCounter(game);
-        state.lastPerformanceUpdate = t;
+function startPerformanceLoop() {
+  if (state.rafId) return;
+  const loop = (t) => {
+    if (!needsRaf()) { state.rafId = null; return; }
+    const game = gameRef.get(t);
+    if (t - state.lastPerformanceUpdate >= 500 && state.counters.performance) {
+      updatePerformanceCounter(game);
+      state.lastPerformanceUpdate = t;
+    }
+    if (t - state.lastCoordsUpdate >= 100) {
+      const pos = game?.player?.pos;
+      const w = state.counters.coords;
+      if (pos && w?._posSpan) {
+        w._posSpan.textContent = `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`;
       }
-      if (t - state.lastCoordsUpdate >= 100) {
-        const pos = game?.player?.pos;
-        const w = state.counters.coords;
-        if (pos) {
-          let speed = 0;
-          if (state._lastSpeedPos) {
-            const dx = pos.x - state._lastSpeedPos.x;
-            const dz = pos.z - state._lastSpeedPos.z;
-            const dt = (t - state._lastSpeedTime) / 1000;
-            const raw = dt > 0 ? Math.sqrt(dx * dx + dz * dz) / dt : 0;
-            speed = raw < 0.05 ? 0 : raw;
-          }
-          state._lastSpeedPos = { x: pos.x, z: pos.z };
-          state._lastSpeedTime = t;
-          if (w) {
-            if (w._posSpan) w._posSpan.textContent = `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`;
-            if (w._spdSpan) w._spdSpan.textContent = `⚡ ${speed.toFixed(2)} b/s`;
-          }
-        }
-        state.lastCoordsUpdate = t;
-      }
-      state.rafId = requestAnimationFrame(loop);
-    };
+      state.lastCoordsUpdate = t;
+    }
     state.rafId = requestAnimationFrame(loop);
-  }
+  };
+  state.rafId = requestAnimationFrame(loop);
+}
 
-  function stopPerformanceLoop() {
-    if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null; }
-  }
+function stopPerformanceLoop() {
+  if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null; }
+}
 
-  function maybeStopRaf() {
-    if (!needsRaf()) stopPerformanceLoop();
-  }
+function maybeStopRaf() {
+  if (!needsRaf()) stopPerformanceLoop();
+}
 
   function updatePerformanceCounter(game) {
     if (!game || !state.counters.performance) return;
@@ -1177,21 +1161,16 @@ try {
       }
     },
     coords: {
-      start() {
-        if (!state.counters.coords) createWidget('coords');
-        state._lastSpeedPos = null;
-        state._lastSpeedTime = 0;
-        const w = state.counters.coords;
-        if (w?._posSpan) w._posSpan.textContent = '📍 X: 0 Y: 0 Z: 0';
-        if (w?._spdSpan) w._spdSpan.textContent = '⚡ 0.00 b/s';
-        startPerformanceLoop();
-      },
-      cleanup() {
-        state._lastSpeedPos = null;
-        state._lastSpeedTime = 0;
-        removeWidgetAndCheckRaf('coords');
-      }
-    },
+  start() {
+    if (!state.counters.coords) createWidget('coords');
+    const w = state.counters.coords;
+    if (w?._posSpan) w._posSpan.textContent = '📍 X: 0 Y: 0 Z: 0';
+    startPerformanceLoop();
+  },
+  cleanup() {
+    removeWidgetAndCheckRaf('coords');
+  }
+},
     antiAfk: {
       start() {
         if (state.intervals.antiAfk) return;
