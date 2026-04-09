@@ -33,7 +33,7 @@
 | Feature | Description |
 |---------|-------------|
 | 📊 FPS & CPS | Color-coded performance counter with left/right click rate |
-| 📍 Coordinates | Live X Y Z position + movement speed in blocks/sec |
+| 📍 Coordinates | Live X Y Z position |
 | ⌨️ Key Display | WASD + space, lights up on press |
 | 🐧 Anti-AFK | Auto-jumps and sends an AFK message to prevent being kicked |
 | 🎨 Custom Skin | Equip any skin from the UI |
