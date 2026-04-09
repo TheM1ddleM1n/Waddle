@@ -104,8 +104,11 @@ const SCRIPT_VERSION = '7.1';
       remainingName = remainingName.replace(tagRegex, '');
     }
     const rankNormalized = (rank || '').toLowerCase();
-    const base64Face = leadingTags.find(tag => tag.toLowerCase() !== rankNormalized) || null;
     const cleanName = remainingName || name;
+    const inferredBase64 = (() => {
+      try { return btoa(unescape(encodeURIComponent(cleanName))); } catch (_) { return null; }
+    })();
+    const base64Face = leadingTags.find(tag => tag.toLowerCase() !== rankNormalized) || inferredBase64;
     const levelBadge = level ? `<span style="background:var(--c-dim);border:1px solid var(--c-border);color:var(--c);font-size:.62rem;font-weight:700;padding:2px 6px;border-radius:4px;margin-right:6px;letter-spacing:.4px;">[Lv.${level}]</span>` : '';
     const base64Badge = base64Face ? `<span style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.18);color:#d6f6ff;font-size:.62rem;font-weight:700;padding:2px 6px;border-radius:4px;margin-right:6px;letter-spacing:.4px;">[${base64Face}]</span>` : '';
     const rankBadge = rank ? `<span style="background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.45);color:#5dff97;font-size:.62rem;font-weight:700;padding:2px 6px;border-radius:4px;margin-right:6px;letter-spacing:.4px;">[${rank}]</span>` : '';
@@ -543,6 +546,15 @@ const SCRIPT_VERSION = '7.1';
 
 .chakra-button.css-cuh8pi:active {
   background:#181126 !important;
+}
+
+/* Keep menu buttons stationary on hover/active */
+.chakra-button,
+.chakra-button:hover,
+.chakra-button:active,
+.chakra-button:focus-visible {
+  transform:none !important;
+  animation:none !important;
 }
 `;
     document.head.appendChild(style);
