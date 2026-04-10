@@ -2,7 +2,7 @@
 // @name         Waddle
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
 // @version      7.2
-// @description  The ULTIMATE miniblox.io enhancement suite!
+// @description  The ULTIMATE miniblox.io enhancement suite! Have fun!
 // @author       Scripter, TheM1ddleM1n
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/Waddle/refs/heads/main/Penguin.png
 // @match        https://miniblox.io/
