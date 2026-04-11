@@ -26,6 +26,8 @@ const SCRIPT_VERSION = '7.2';
   const WADDLE_RANK_KEY = 'waddle_rank';
   const SKIN_API = 'https://session.coolmathblox.ca/accounts/set_cosmetic';
   const DRAGGABLE_WIDGETS = Object.freeze(['performance', 'coords', 'antiAfk', 'keyDisplay']);
+  const KEYBIND_KEY = 'waddle_keybind';
+  const DEFAULT_KEYBIND = '\\';
 
   const STANDARD_SKINS = Object.freeze([
     'Alice', 'Bob', 'Techno', 'BigGelo', 'Corrupted', 'Diana', 'Dr. Strange', 'Endoskeleton', 'Ganyu', 'George', 'Holly', 'Hutao', 'Jake', 'James', 'Klee', 'Kyoko',
@@ -161,14 +163,14 @@ const SCRIPT_VERSION = '7.2';
       },
     },
     coords: {
-  id: 'coords-counter', cls: 'counter',
-  pos: { left: '50px', top: '220px' },
-  build(wrap) {
-    const posSpan = el('span', 'counter-time-text', '📍 X: 0 Y: 0 Z: 0');
-    wrap.appendChild(posSpan);
-    wrap._posSpan = posSpan;
-  },
-},
+      id: 'coords-counter', cls: 'counter',
+      pos: { left: '50px', top: '220px' },
+      build(wrap) {
+        const posSpan = el('span', 'counter-time-text', '📍 X: 0 Y: 0 Z: 0');
+        wrap.appendChild(posSpan);
+        wrap._posSpan = posSpan;
+      },
+    },
     antiAfk: {
       id: 'anti-afk-counter', cls: 'counter',
       pos: { left: '50px', top: '290px' },
@@ -240,6 +242,17 @@ const SCRIPT_VERSION = '7.2';
       if (isNaN(v) || v < 5) v = 5;
       if (v > 120) v = 120;
       lsSet('waddle_afk_delay', v);
+    },
+  };
+
+  const keybindSettings = {
+    get key() {
+      return lsGet(KEYBIND_KEY) || DEFAULT_KEYBIND;
+    },
+    set key(v) {
+      if (typeof v === 'string' && v.length > 0) {
+        lsSet(KEYBIND_KEY, v);
+      }
     },
   };
 
@@ -643,17 +656,17 @@ const SCRIPT_VERSION = '7.2';
     }
 
     function drawHUDCard(x, y, drawContent) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.save();
-  Object.assign(ctx, { shadowColor: 'rgba(0,0,0,0.9)', shadowBlur: 18 });
-  roundRect(ctx, x, y, W, H, R);
-  ctx.fillStyle = '#0b0b14';
-  ctx.fill();
-  Object.assign(ctx, { shadowColor: 'transparent', shadowBlur: 0, strokeStyle: getBorderGradient(x, y, H), lineWidth: 1.5 });
-  ctx.stroke();
-  drawContent();
-  ctx.restore();
-}
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      Object.assign(ctx, { shadowColor: 'rgba(0,0,0,0.9)', shadowBlur: 18 });
+      roundRect(ctx, x, y, W, H, R);
+      ctx.fillStyle = '#0b0b14';
+      ctx.fill();
+      Object.assign(ctx, { shadowColor: 'transparent', shadowBlur: 0, strokeStyle: getBorderGradient(x, y, H), lineWidth: 1.5 });
+      ctx.stroke();
+      drawContent();
+      ctx.restore();
+    }
 
     let domFaceEl = null, domNameEl = null, domQueryAge = 0;
     const DOM_QUERY_INTERVAL = 500;
@@ -948,25 +961,25 @@ const SCRIPT_VERSION = '7.2';
     const browser = browserMatch ? `${browserMatch[1]} ${RegExp.$1.split('.')[0]}` : 'Unknown';
 
     let gpu = 'Unknown', gpuVendor = 'Unknown', webgl2 = false;
-try {
-  const gl = document.createElement('canvas').getContext('webgl') ||
+    try {
+      const gl = document.createElement('canvas').getContext('webgl') ||
              document.createElement('canvas').getContext('experimental-webgl');
-  if (gl) {
-    const dbg = gl.getExtension('WEBGL_debug_renderer_info');
-    if (dbg) {
-      const raw = gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL);
-      const vendor = gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL);
-      gpuVendor = /nvidia/i.test(vendor) ? 'NVIDIA'
-        : /amd|ati/i.test(vendor) ? 'AMD'
-        : /intel/i.test(vendor) ? 'Intel'
-        : /apple/i.test(vendor) ? 'Apple'
-        : vendor.split(' ')[0];
-      const family = raw.match(/GeForce|Radeon|Arc|UHD Graphics|Iris|Apple M\d/i);
-      gpu = family ? `${gpuVendor} ${family[0]}` : `${gpuVendor} GPU`;
-    }
-  }
-  webgl2 = !!window.WebGL2RenderingContext;
-} catch (_) {}
+      if (gl) {
+        const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+        if (dbg) {
+          const raw = gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL);
+          const vendor = gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL);
+          gpuVendor = /nvidia/i.test(vendor) ? 'NVIDIA'
+            : /amd|ati/i.test(vendor) ? 'AMD'
+            : /intel/i.test(vendor) ? 'Intel'
+            : /apple/i.test(vendor) ? 'Apple'
+            : vendor.split(' ')[0];
+          const family = raw.match(/GeForce|Radeon|Arc|UHD Graphics|Iris|Apple M\d/i);
+          gpu = family ? `${gpuVendor} ${family[0]}` : `${gpuVendor} GPU`;
+        }
+      }
+      webgl2 = !!window.WebGL2RenderingContext;
+    } catch (_) {}
 
     initBatteryInfo();
     return {
@@ -980,38 +993,38 @@ try {
   }
 
   function needsRaf() {
-  return state.features.performance || state.features.coords;
-}
+    return state.features.performance || state.features.coords;
+  }
 
-function startPerformanceLoop() {
-  if (state.rafId) return;
-  const loop = (t) => {
-    if (!needsRaf()) { state.rafId = null; return; }
-    const game = gameRef.get(t);
-    if (t - state.lastPerformanceUpdate >= 500 && state.counters.performance) {
-      updatePerformanceCounter(game);
-      state.lastPerformanceUpdate = t;
-    }
-    if (t - state.lastCoordsUpdate >= 100) {
-      const pos = game?.player?.pos;
-      const w = state.counters.coords;
-      if (pos && w?._posSpan) {
-        w._posSpan.textContent = `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`;
+  function startPerformanceLoop() {
+    if (state.rafId) return;
+    const loop = (t) => {
+      if (!needsRaf()) { state.rafId = null; return; }
+      const game = gameRef.get(t);
+      if (t - state.lastPerformanceUpdate >= 500 && state.counters.performance) {
+        updatePerformanceCounter(game);
+        state.lastPerformanceUpdate = t;
       }
-      state.lastCoordsUpdate = t;
-    }
+      if (t - state.lastCoordsUpdate >= 100) {
+        const pos = game?.player?.pos;
+        const w = state.counters.coords;
+        if (pos && w?._posSpan) {
+          w._posSpan.textContent = `📍 X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`;
+        }
+        state.lastCoordsUpdate = t;
+      }
+      state.rafId = requestAnimationFrame(loop);
+    };
     state.rafId = requestAnimationFrame(loop);
-  };
-  state.rafId = requestAnimationFrame(loop);
-}
+  }
 
-function stopPerformanceLoop() {
-  if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null; }
-}
+  function stopPerformanceLoop() {
+    if (state.rafId) { cancelAnimationFrame(state.rafId); state.rafId = null; }
+  }
 
-function maybeStopRaf() {
-  if (!needsRaf()) stopPerformanceLoop();
-}
+  function maybeStopRaf() {
+    if (!needsRaf()) stopPerformanceLoop();
+  }
 
   function updatePerformanceCounter(game) {
     if (!game || !state.counters.performance) return;
@@ -1156,16 +1169,16 @@ function maybeStopRaf() {
       }
     },
     coords: {
-  start() {
-    if (!state.counters.coords) createWidget('coords');
-    const w = state.counters.coords;
-    if (w?._posSpan) w._posSpan.textContent = '📍 X: 0 Y: 0 Z: 0';
-    startPerformanceLoop();
-  },
-  cleanup() {
-    removeWidgetAndCheckRaf('coords');
-  }
-},
+      start() {
+        if (!state.counters.coords) createWidget('coords');
+        const w = state.counters.coords;
+        if (w?._posSpan) w._posSpan.textContent = '📍 X: 0 Y: 0 Z: 0';
+        startPerformanceLoop();
+      },
+      cleanup() {
+        removeWidgetAndCheckRaf('coords');
+      }
+    },
     antiAfk: {
       start() {
         if (state.intervals.antiAfk) return;
@@ -1416,6 +1429,53 @@ function maybeStopRaf() {
     return block;
   }
 
+  function buildKeybindSettingsBlock() {
+    const block = div('about-block');
+    block.style.gridColumn = '1 / -1';
+    block.style.marginTop = '10px';
+    block.appendChild(el('h3', null, '⌨️ Menu Keybind'));
+
+    const row = div('afk-setting-row');
+    row.style.marginTop = '8px';
+    row.appendChild(el('span', null, 'Press any key to change'));
+
+    const keybindInput = el('input', 'afk-delay-input');
+    keybindInput.type = 'text';
+    keybindInput.value = keybindSettings.key;
+    keybindInput.readOnly = true;
+    keybindInput.style.width = '80px';
+    keybindInput.style.cursor = 'pointer';
+    keybindInput.style.textAlign = 'center';
+
+    keybindInput.addEventListener('click', e => {
+      e.stopPropagation();
+      keybindInput.value = 'Press key...';
+      keybindInput.style.color = '#eab308';
+    });
+
+    keybindInput.addEventListener('keydown', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.key === 'Escape') {
+        keybindInput.value = keybindSettings.key;
+        keybindInput.style.color = 'var(--c)';
+        keybindInput.blur();
+        return;
+      }
+      keybindSettings.key = e.key;
+      keybindInput.value = e.key;
+      keybindInput.style.color = 'var(--c)';
+      keybindInput.blur();
+      const footer = document.querySelector('#waddle-sidebar-footer');
+      if (footer) footer.textContent = `Press ${e.key} to toggle`;
+      showToast('Keybind Updated', 'enabled', `Menu now opens with: ${e.key}`);
+    });
+
+    row.appendChild(keybindInput);
+    block.appendChild(row);
+    return block;
+  }
+
   function buildModulePanel(categoryId) {
     hideAllPanels();
     const { grid, title, about } = getPanelEls();
@@ -1441,7 +1501,10 @@ function maybeStopRaf() {
       btn.classList.toggle('active', !!state.features[btn.dataset.feature]);
       grid.appendChild(btn);
     });
-    if (categoryId === 'utilities') grid.appendChild(buildAfkSettingsBlock());
+    if (categoryId === 'utilities') {
+      grid.appendChild(buildAfkSettingsBlock());
+      grid.appendChild(buildKeybindSettingsBlock());
+    }
   }
 
   function switchCategory(categoryId) {
@@ -1463,7 +1526,7 @@ function maybeStopRaf() {
       cat.onclick = () => switchCategory(id);
       sidebar.appendChild(cat);
     });
-    sidebar.appendChild(divId('waddle-sidebar-footer', null, 'Press \\ to toggle'));
+    sidebar.appendChild(divId('waddle-sidebar-footer', null, `Press ${keybindSettings.key} to toggle`));
 
     const sys = getSystemInfo();
     const sysRow = (label, val) =>
@@ -1528,7 +1591,7 @@ function maybeStopRaf() {
   function setupKeyboardHandler() {
     window.addEventListener('keydown', e => {
       if (isTyping() || e.repeat) return;
-      if (e.key === '\\') { e.preventDefault(); toggleMenu(); return; }
+      if (e.key === keybindSettings.key) { e.preventDefault(); toggleMenu(); return; }
       if (e.key === 'Escape' && state.menuOverlay?.classList.contains('show')) {
         e.preventDefault();
         state.menuOverlay.classList.remove('show');
