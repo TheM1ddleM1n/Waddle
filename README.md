@@ -16,7 +16,7 @@
 ## ⚡ Install
 1. Install [Tampermonkey](https://www.tampermonkey.net/)
 2. Click **[→ Install Waddle](https://github.com/TheM1ddleM1n/Waddle/raw/main/Waddle.user.js)**
-3. Open Miniblox, press `\` and start playing
+3. Open Miniblox, press `\` (or any other keybind when you change it) and start playing
 
 ---
 
