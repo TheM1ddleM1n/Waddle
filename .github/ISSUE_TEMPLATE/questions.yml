@@ -10,9 +10,9 @@ body:
     attributes:
       label: Before you ask
       options:
-        - label: I have read the README
+        - label: I have READ the README
           required: true
-        - label: This has NOT been asked before (check existing issues)
+        - label: This has NOT been asked before (please check THE existing issues)
           required: true
 
   - type: textarea
@@ -28,7 +28,7 @@ body:
   - type: textarea
     id: context
     attributes:
-      label: Context
+      label: Context (Optional)
       description: Any extra detail that might help us answer — browser, OS, Tampermonkey version, etc.
-      placeholder: "I'm on Chrome 124, Windows 11, Tampermonkey 5.x"
+      placeholder: "I'm on Chrome 147, MacOS/ChromeOS/Windows 10/11, Tampermonkey 5.x"
       render: markdown
