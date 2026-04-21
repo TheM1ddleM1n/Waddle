@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 2
 
@@ -40,7 +40,6 @@ jobs:
           if (jsVersion === readmeVersion) { console.log('Already in sync.'); process.exit(0); }
 
           if (jsChanged && !readmeChanged) {
-            // Userscript changed — push its version to README
             const updated = readme.replace(
               /version-[\d.]+-/,
               'version-' + jsVersion + '-'
@@ -48,7 +47,6 @@ jobs:
             writeFileSync('README.md', updated, 'utf8');
             console.log('Updated README to v' + jsVersion);
           } else if (readmeChanged && !jsChanged) {
-            // README changed — push its version to both @version and SCRIPT_VERSION
             let updated = js.replace(
               /(@version\s+)[\d.]+/,
               '\$1' + readmeVersion
