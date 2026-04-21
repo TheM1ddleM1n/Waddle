@@ -27,7 +27,6 @@
 |---------|-------------|
 | 🎯 Crosshair | Cyan crosshair, auto-hides in menu |
 | 👁️ Target HUD | Player faces, mob names, block names |
-| 🌌 Space Sky | MilkyWay cubemap replaces the default sky entirely |
 
 ### Toggleable via `\` menu
 | Feature | Description |
@@ -36,7 +35,6 @@
 | 📍 Coordinates | Live X Y Z position |
 | ⌨️ Key Display | WASD + space, lights up on press |
 | 🐧 Anti-AFK | Auto-jumps and sends an AFK message to prevent being kicked |
-| 🎨 Custom Skin | Equip any skin from the UI |
 | 🔇 Chat Mute | Hides all incoming chat messages |
 
 > All draggable widgets **remember their position** across sessions
