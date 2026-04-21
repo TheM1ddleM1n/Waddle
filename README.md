@@ -41,9 +41,6 @@
 
 > All draggable widgets **remember their position** across sessions
 
-<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/7c6555a4-9084-4970-b6aa-9f467a504666" />
-<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/8eb83a63-a864-41e3-a945-8676a1b645c0" />
-
 ---
 
 ## 👥 Credits
