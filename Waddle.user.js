@@ -19,22 +19,12 @@ const SCRIPT_VERSION = '8';
   const SETTINGS_KEY = 'waddle_settings';
   const DRAG_POSITIONS_KEY = 'waddle_positions';
   const THEME_COLOR = '#00FFFF';
-  const SESSION_KEY = 'session_v1';
-  const EQUIPPED_SKIN_KEY = 'waddle_equipped_skin';
   const WADDLE_USERNAME_KEY = 'waddle_username';
   const WADDLE_LEVEL_KEY = 'waddle_level';
   const WADDLE_RANK_KEY = 'waddle_rank';
-  const SKIN_API = 'https://session.coolmathblox.ca/accounts/set_cosmetic';
   const DRAGGABLE_WIDGETS = Object.freeze(['performance', 'coords', 'antiAfk', 'keyDisplay']);
   const KEYBIND_KEY = 'waddle_keybind';
   const DEFAULT_KEYBIND = '\\';
-
-  const STANDARD_SKINS = Object.freeze([
-    'Alice', 'Bob', 'Techno', 'BigGelo', 'Corrupted', 'Diana', 'Dr. Strange', 'Endoskeleton', 'Ganyu', 'George', 'Holly', 'Hutao', 'Jake', 'James', 'Klee', 'Kyoko',
-    'Adele', 'Chris', 'Deadpool', 'Galactus', 'Heather', 'Ironman', 'Joe', 'Levi', 'Lexi', 'Natalie', 'Remus', 'Sara', 'Transformer', 'Vindicate', 'Adventure Guy',
-    'Aether', 'Apex', 'Ariel', 'Aurora', 'Celeste', 'Cody', 'Ember', 'Finn', 'Glory', 'Hunter', 'Katie', 'Nova', 'Panda', 'Raven', 'Seraphina', 'Vain', 'Zane'
-  ]);
-  const CUSTOM_SKINS = Object.freeze(['Remlin', 'Cat', 'Ethan', 'Sushi', 'Duck', 'Tester', 'Banana', 'Qhyun']);
 
   const el = (tag, cls, text, id) => {
     const e = document.createElement(tag);
@@ -50,7 +40,7 @@ const SCRIPT_VERSION = '8';
   const lsSet = (k, v) => localStorage.setItem(k, v);
   const show = (el, display = 'block') => { if (el) el.style.display = display; };
   const makeKeyEvent = (type, key, code, keyCode) =>
-  new KeyboardEvent(type, { key, code, keyCode, which: keyCode, bubbles: true, cancelable: true });
+    new KeyboardEvent(type, { key, code, keyCode, which: keyCode, bubbles: true, cancelable: true });
   const makeListener = (target, evt, fn, opts) => {
     target.addEventListener(evt, fn, opts);
     return () => target.removeEventListener(evt, fn, opts);
@@ -64,11 +54,10 @@ const SCRIPT_VERSION = '8';
   const setInt = (key, fn, ms) => { state.intervals[key] = setInterval(fn, ms); };
 
   function hideAllPanels() {
-    const { grid, title, about, skin } = getPanelEls();
+    const { grid, title, about } = getPanelEls();
     show(grid, 'none');
     show(title, 'none');
     show(about, 'none');
-    show(skin, 'none');
   }
 
   function getPlayerUsername() {
@@ -91,58 +80,17 @@ const SCRIPT_VERSION = '8';
     return lsGet(WADDLE_USERNAME_KEY) || null;
   }
 
-  function setSkinBannerName(banner, name) {
-    if (!banner) return;
-    if (!name) { banner.innerHTML = `<span style="color:var(--text-dim)">No username — join a game first</span>`; return; }
-    const rank = lsGet(WADDLE_RANK_KEY);
-    const level = lsGet(WADDLE_LEVEL_KEY);
-    const rankBadge = rank ? `<span style="background:var(--c-dim);border:1px solid var(--c-border);color:var(--c);font-size:.6rem;font-weight:700;padding:1px 6px;border-radius:4px;margin-right:6px;text-transform:uppercase;letter-spacing:.5px;">${rank}</span>` : '';
-    const levelBadge = level ? `<span style="color:var(--text-dim);font-size:.68rem;margin-right:6px">Lv.${level}</span>` : '';
-    banner.innerHTML = `${rankBadge}${levelBadge}<span style="color:var(--c)">${name}</span>`;
-  }
-
-  function pollUsername(element) {
+  function pollUsername(element, onFound) {
     const poll = setInterval(() => {
       const found = getPlayerUsername();
-      if (found) { setSkinBannerName(element, found); clearInterval(poll); }
+      if (found) {
+        const lvl = lsGet(WADDLE_LEVEL_KEY);
+        const rnk = lsGet(WADDLE_RANK_KEY);
+        if (onFound) onFound(found, lvl, rnk);
+        clearInterval(poll);
+      }
       if (!document.contains(element)) clearInterval(poll);
     }, 1000);
-  }
-
-  async function applySkin(skinId) {
-    if (state._skinApplying) return;
-    state._skinApplying = true;
-    const token = lsGet(SESSION_KEY);
-    if (!token) { showToast('No Session Token found', 'disabled', 'Log in first'); state._skinApplying = false; return; }
-    try {
-      const res = await fetch(SKIN_API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'authorization': token },
-        body: JSON.stringify({ type: 'skin', id: skinId.toLowerCase() })
-      });
-      if (!res.ok) throw new Error(res.status);
-      const data = await res.json();
-      if (data?.success === false) throw new Error(data.message || 'Server rejected request');
-      lsSet(EQUIPPED_SKIN_KEY, skinId.toLowerCase());
-      refreshSkinBadges();
-      showToast('Skin Applied!', 'enabled', `${skinId} equipped`);
-      setTimeout(() => location.reload(), 1200);
-    } catch (e) {
-      showToast('Skin Failed', 'disabled', 'Could not apply skin: ' + e.message);
-    } finally {
-      state._skinApplying = false;
-    }
-  }
-
-  function patchLocalStorageForToken() {
-    const _orig = localStorage.setItem.bind(localStorage);
-    localStorage.setItem = function (key, value) {
-      _orig(key, value);
-      if (key === SESSION_KEY) {
-        const username = getPlayerUsername();
-        showToast('Session Token Captured', 'enabled', username ? `Ready to equip any skin as ${username}` : 'Token saved! — open Closet to equip skins');
-      }
-    };
   }
 
   const spanWidget = text => wrap => {
@@ -186,7 +134,6 @@ const SCRIPT_VERSION = '8';
   const CATEGORIES = [
     { id: 'display', label: 'Display', icon: '📊' },
     { id: 'utilities', label: 'Utility', icon: '🛠️' },
-    { id: 'customSkin', label: 'Closet', icon: '👗' },
     { id: 'about', label: 'About', icon: 'ℹ️' }
   ];
 
@@ -354,7 +301,6 @@ const SCRIPT_VERSION = '8';
     _saveTimer: null,
     _crosshairRafPending: false,
     _mutedChat: null,
-    _skinApplying: false,
     _dragPositionsCache: null,
   };
 
@@ -428,29 +374,23 @@ const SCRIPT_VERSION = '8';
 .waddle-cat:hover { color:var(--text); background:rgba(255,255,255,.04); }
 .waddle-cat.active { color:var(--c); border-left-color:var(--c); background:var(--c-dim); }
 .waddle-cat-icon { font-size:1.15rem; }
-#waddle-sidebar-footer { margin-top:auto; padding:14px 16px; font-size:.75rem; color:var(--text-dim); border-top:1px solid var(--c-border); }
+#waddle-sidebar-footer { margin-top:auto; padding:14px 16px; font-size:.75rem; color:var(--text-dim); border-top:1px solid var(--c-border); line-height:1.6; }
 #waddle-panel { flex:1; display:flex; flex-direction:column; overflow:hidden; }
 #waddle-panel-title { padding:16px 20px 12px; font-size:.8rem; font-weight:var(--fw); color:var(--text-dim); letter-spacing:1.5px; text-transform:uppercase; border-bottom:1px solid rgba(255,255,255,.05); }
 #waddle-module-grid { flex:1; display:grid; grid-template-columns:1fr 1fr; gap:9px; padding:16px; align-content:start; overflow-y:auto; }
-#waddle-module-grid::-webkit-scrollbar,#waddle-skin-panel::-webkit-scrollbar { width:4px; }
-#waddle-module-grid::-webkit-scrollbar-thumb,#waddle-skin-panel::-webkit-scrollbar-thumb { background:var(--c-border); border-radius:2px; }
-.waddle-module,.skin-btn { background:var(--bg3); border:1px solid rgba(255,255,255,.07); border-radius:var(--radius); cursor:pointer; font-weight:var(--fw); color:var(--text-dim); transition:all .12s ease; }
-.waddle-module { padding:12px 14px; display:flex; align-items:center; justify-content:space-between; font-size:.92rem; }
-.waddle-module:hover,.skin-btn:hover { border-color:var(--c-border); color:var(--text); }
-.waddle-module.active,.skin-btn.equipped { border-color:var(--c); background:var(--c-dim); color:var(--c); }
-.waddle-module.active { box-shadow:inset 0 0 8px rgba(0,255,255,.08); }
-.skin-btn { padding:14px 10px; text-align:center; font-size:.88rem; position:relative; }
-.skin-btn.equipped { cursor:default; }
+#waddle-module-grid::-webkit-scrollbar { width:4px; }
+#waddle-module-grid::-webkit-scrollbar-thumb { background:var(--c-border); border-radius:2px; }
+.waddle-module { background:var(--bg3); border:1px solid rgba(255,255,255,.07); border-radius:var(--radius); cursor:pointer; font-weight:var(--fw); color:var(--text-dim); transition:all .12s ease; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; font-size:.92rem; }
+.waddle-module:hover { border-color:var(--c-border); color:var(--text); }
+.waddle-module.active { border-color:var(--c); background:var(--c-dim); color:var(--c); box-shadow:inset 0 0 8px rgba(0,255,255,.08); }
 .waddle-module-dot { width:8px; height:8px; border-radius:50%; background:var(--text-dim); flex-shrink:0; transition:background .12s ease; }
 .waddle-module.active .waddle-module-dot { background:var(--c); box-shadow:0 0 6px var(--c); }
 #waddle-about { flex:1; padding:18px; display:flex; flex-direction:column; gap:14px; overflow-y:auto; color:var(--text); }
 .about-block,#waddle-afk-settings { background:var(--bg3); border:1px solid rgba(255,255,255,.07); border-radius:var(--radius); }
 .about-block { padding:14px; }
-.about-block h3,.skin-section-header,.afk-settings-title { font-weight:700; color:var(--c); text-transform:uppercase; }
+.about-block h3,.afk-settings-title { font-weight:700; color:var(--c); text-transform:uppercase; }
 .about-block h3 { font-size:.75rem; letter-spacing:1px; margin:0 0 10px; }
-.skin-section-header,.afk-settings-title { font-size:.65rem; letter-spacing:1.5px; }
-.skin-section-header { margin-bottom:7px; padding-bottom:5px; border-bottom:1px solid var(--c-border); }
-.afk-settings-title { margin-bottom:2px; }
+.afk-settings-title { font-size:.65rem; letter-spacing:1.5px; }
 .about-credit { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
 .about-credit img { width:28px; height:28px; border-radius:50%; }
 .about-credit a { color:#aaa; font-size:.8rem; text-decoration:none; }
@@ -488,19 +428,6 @@ const SCRIPT_VERSION = '8';
 .key-box.space-box { width:100%; height:36px; margin-top:5px; }
 #waddle-crosshair-container { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:5000; pointer-events:none; }
 #wb-hud-canvas { position:fixed; inset:0; pointer-events:none; z-index:4999; }
-#waddle-skin-panel { flex:1; padding:16px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; }
-.skin-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; margin-bottom:14px; }
-.skin-equipped-badge { position:absolute; top:6px; right:7px; font-size:.6rem; font-weight:900; color:var(--c); letter-spacing:.5px; text-transform:uppercase; }
-#skin-confirm-view { display:none; flex-direction:column; align-items:center; justify-content:center; gap:16px; flex:1; text-align:center; }
-#skin-confirm-view.show { display:flex; }
-.skin-confirm-text { font-size:1rem; color:var(--text); font-weight:600; }
-.skin-confirm-text span { color:var(--c); }
-.skin-confirm-btns { display:flex; gap:12px; }
-.skin-confirm-yes,.skin-confirm-no { border-radius:var(--radius); padding:9px 28px; font-size:.88rem; font-weight:700; cursor:pointer; }
-.skin-confirm-yes { background:#22c55e; border:none; color:#000; transition:opacity .1s; }
-.skin-confirm-yes:hover { opacity:.85; }
-.skin-confirm-no { background:var(--bg3); border:1px solid rgba(255,255,255,.15); color:var(--text-dim); transition:all .1s; }
-.skin-confirm-no:hover { border-color:var(--c-border); color:var(--text); }
 #waddle-afk-settings { grid-column:1 / -1; padding:12px 14px; display:flex; flex-direction:column; gap:10px; }
 .afk-setting-row { display:flex; align-items:center; justify-content:space-between; font-size:.82rem; color:var(--text-dim); }
 .afk-setting-row span { color:var(--text); }
@@ -511,6 +438,7 @@ const SCRIPT_VERSION = '8';
 .waddle-toggle input:checked + .waddle-toggle-track { background:var(--c); }
 .waddle-toggle input:checked + .waddle-toggle-track::after { transform:translateX(16px); }
 .afk-delay-input { background:var(--bg2); color:var(--c); border:1px solid var(--c-border); border-radius:var(--radius); padding:3px 7px; font-size:.82rem; width:52px; text-align:center; outline:none; }
+#waddle-signed-in-line { font-size:.68rem; margin-top:5px; color:var(--text-dim); }
 `;
     document.head.appendChild(style);
   }
@@ -586,23 +514,6 @@ const SCRIPT_VERSION = '8';
     window.addEventListener('resize', state._resizeHandler, { passive: true });
   }
 
-  class LRUCache {
-    constructor(max) { this.max = max; this._map = new Map(); }
-    get(key) {
-      if (!this._map.has(key)) return undefined;
-      const val = this._map.get(key);
-      this._map.delete(key);
-      this._map.set(key, val);
-      return val;
-    }
-    set(key, val) {
-      if (this._map.has(key)) this._map.delete(key);
-      else if (this._map.size >= this.max) this._map.delete(this._map.keys().next().value);
-      this._map.set(key, val);
-    }
-    has(key) { return this._map.has(key); }
-  }
-
   function startTargetHUDLoop() {
     const canvas = byId('wb-hud-canvas');
     if (!canvas) return;
@@ -613,8 +524,14 @@ const SCRIPT_VERSION = '8';
     const W = 220, R = 10, H = 52;
     const ENTITY_SCAN_INTERVAL = 50;
     const PAUSE_CHECK_INTERVAL = 200;
-    const faceImgCache = new LRUCache(64);
-    const playerFaceCache = new LRUCache(64);
+    const faceImgCache = new Map();
+    const playerFaceCache = new Map();
+
+    const cacheSet = (map, key, val, max = 64) => {
+      if (map.size >= max) map.delete(map.keys().next().value);
+      map.set(key, val);
+    };
+
     let entityMapKey = null;
     let cachedNearest = null;
     let cachedMinDist = Infinity;
@@ -694,7 +611,7 @@ const SCRIPT_VERSION = '8';
           let img = faceImgCache.get(faceSrc);
           if (!img) {
             img = Object.assign(new Image(), { crossOrigin: 'anonymous', src: faceSrc });
-            faceImgCache.set(faceSrc, img);
+            cacheSet(faceImgCache, faceSrc, img);
           }
           if (img.complete && img.naturalWidth > 0) ctx.drawImage(img, x + 10, y + 10, 34, 34);
         }
@@ -718,6 +635,7 @@ const SCRIPT_VERSION = '8';
         ctx.fillText('Block', x + 44, y + 36);
       });
     }
+
     function tick() {
       try {
         const now = performance.now();
@@ -751,7 +669,7 @@ const SCRIPT_VERSION = '8';
             const domName = domNameEl?.textContent ?? null;
             if (cachedNearest.constructor?.name === 'ClientEntityPlayerOther') {
               const nameKey = (domSrc ? domName : null) || cachedNearest.name || '';
-              if (domSrc && nameKey) playerFaceCache.set(nameKey, domSrc);
+              if (domSrc && nameKey) cacheSet(playerFaceCache, nameKey, domSrc);
               drawEntityHUD(playerFaceCache.get(nameKey) ?? null, (domSrc ? domName : null) || cachedNearest.name || '???');
             } else {
               drawEntityHUD(null, cachedNearest.name || cachedNearest.constructor?.name?.replace('Entity', '') || '???');
@@ -895,101 +813,6 @@ const SCRIPT_VERSION = '8';
     const removeUp = makeListener(window, 'mouseup', onMouseUp, { passive: true });
     const removeMove = makeListener(window, 'mousemove', onMouseMove, { passive: true });
     e._dragCleanup = () => { removeUp(); removeMove(); };
-  }
-
-  function initBatteryInfo() {
-    if (!navigator.getBattery) return;
-    navigator.getBattery().then(bat => {
-      const pct = () => Math.round(bat.level * 100);
-      const color = p => p > 50 ? '#22c55e' : p > 20 ? '#eab308' : '#ef4444';
-      const text = p => {
-        const status = (p === 100 && bat.charging) ? 'Fully Charged!' : bat.charging ? 'Charging...' :
-          p <= 20 ? 'Plug in your charger.' : bat.dischargingTime !== Infinity ? `⏱ ~${Math.round(bat.dischargingTime / 60)}m left` : '';
-        return `${p > 20 ? '🔋' : '🪫'} ${p}% ${status}`;
-      };
-      const update = () => {
-        const el = byId('waddle-sys-battery');
-        if (!el) return;
-        const p = pct();
-        el.textContent = text(p);
-        el.style.color = color(p);
-      };
-      update();
-      ['levelchange', 'chargingchange', 'dischargingtimechange'].forEach(e => bat.addEventListener(e, update));
-    }).catch(() => {
-      const el = byId('waddle-sys-battery');
-      if (el) el.textContent = 'Battery N/A';
-    });
-  }
-
-  function getSystemInfo() {
-    const ua = navigator.userAgent;
-    let os = 'Unknown OS';
-    if (/CrOS/.test(ua)) {
-      const m = ua.match(/CrOS\s+\S+\s+([\d.]+)/);
-      os = 'ChromeOS' + (m ? ' ' + m[1] : '');
-    } else if (/Windows/.test(ua)) {
-      os = 'Windows 10';
-      navigator.userAgentData?.getHighEntropyValues?.(['platformVersion']).then(d => {
-        const el = byId('waddle-sys-os');
-        if (el) el.textContent = parseInt(d.platformVersion || '0') >= 13 ? 'Windows 11' : 'Windows 10';
-      }).catch(() => {});
-    } else if (/Mac OS X/.test(ua)) {
-      const m = ua.match(/Mac OS X ([\d_]+)/);
-      const version = m ? m[1].replace(/_/g, '.') : '';
-      const macNames = { '15': 'Sequoia', '14': 'Sonoma', '13': 'Ventura', '12': 'Monterey', '11': 'Big Sur', '10.15': 'Catalina', '10.14': 'Mojave', '10.13': 'High Sierra' };
-      const major = version.split('.').slice(0, version.startsWith('10') ? 2 : 1).join('.');
-      const name = macNames[major] || '';
-      os = `macOS ${version}${name ? ' (' + name + ')' : ''}`;
-    } else if (/Linux/.test(ua)) {
-      const distro = ['Ubuntu', 'Fedora', 'Debian', 'Arch', 'Manjaro'].find(d => new RegExp(d).test(ua));
-      if (distro) os = distro + ' Linux';
-      else if (/Android ([\d.]+)/.test(ua)) os = 'Android ' + RegExp.$1;
-      else os = 'Linux';
-    } else if (/iPhone OS ([\d_]+)/.test(ua)) {
-      os = 'iOS ' + RegExp.$1.replace(/_/g, '.');
-    }
-
-    const browserRules = [
-      [/Edg\/([\d.]+)/, 'Edge'],
-      [/OPR\/([\d.]+)/, 'Opera'],
-      [/Firefox\/([\d.]+)/, 'Firefox'],
-      [/Chrome\/([\d.]+)/, 'Chrome'],
-      [/Version\/([\d.]+).*Safari/, 'Safari'],
-    ];
-    const browserMatch = browserRules.find(([re]) => re.test(ua));
-    const browser = browserMatch ? `${browserMatch[1]} ${RegExp.$1.split('.')[0]}` : 'Unknown';
-
-    let gpu = 'Unknown', gpuVendor = 'Unknown', webgl2 = false;
-    try {
-      const gl = document.createElement('canvas').getContext('webgl') ||
-             document.createElement('canvas').getContext('experimental-webgl');
-      if (gl) {
-        const dbg = gl.getExtension('WEBGL_debug_renderer_info');
-        if (dbg) {
-          const raw = gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL);
-          const vendor = gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL);
-          gpuVendor = /nvidia/i.test(vendor) ? 'NVIDIA'
-            : /amd|ati/i.test(vendor) ? 'AMD'
-            : /intel/i.test(vendor) ? 'Intel'
-            : /apple/i.test(vendor) ? 'Apple'
-            : vendor.split(' ')[0];
-          const family = raw.match(/GeForce|Radeon|Arc|UHD Graphics|Iris|Apple M\d/i);
-          gpu = family ? `${gpuVendor} ${family[0]}` : `${gpuVendor} GPU`;
-        }
-      }
-      webgl2 = !!window.WebGL2RenderingContext;
-    } catch (_) {}
-
-    initBatteryInfo();
-    return {
-      os, browser, gpu, gpuVendor, webgl2,
-      cores: navigator.hardwareConcurrency || '?',
-      ram: navigator.deviceMemory ? navigator.deviceMemory + ' GB' : '?',
-      screen: `${screen.width}×${screen.height}`,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '?',
-      battery: navigator.getBattery ? 'Loading...' : 'N/A',
-    };
   }
 
   function needsRaf() {
@@ -1272,121 +1095,6 @@ const SCRIPT_VERSION = '8';
     return state.features[featureName];
   }
 
-  function refreshSkinBadges() {
-    const equippedSkin = (lsGet(EQUIPPED_SKIN_KEY) || '').toLowerCase();
-    document.querySelectorAll('#skin-grid-view .skin-btn').forEach(btn => {
-      const isEquipped = (btn.querySelector('span')?.textContent || '').toLowerCase() === equippedSkin;
-      btn.classList.toggle('equipped', isEquipped);
-      const badge = btn.querySelector('.skin-equipped-badge');
-      if (isEquipped && !badge) btn.appendChild(el('span', 'skin-equipped-badge', '✓ on'));
-      else if (!isEquipped && badge) badge.remove();
-    });
-  }
-
-  function setSkinConfirmVisible(visible, skinName) {
-    const skinPanel = byId('waddle-skin-panel');
-    const gridView = byId('skin-grid-view');
-    const confirmView = byId('skin-confirm-view');
-    show(skinPanel, 'flex');
-    if (skinPanel) skinPanel.style.flexDirection = 'column';
-    show(gridView, visible ? 'none' : 'flex');
-    if (confirmView) confirmView.classList.toggle('show', visible);
-    if (!visible) return;
-    const current = lsGet(EQUIPPED_SKIN_KEY) || 'None';
-    const fromEl = byId('skin-confirm-from');
-    if (fromEl) fromEl.textContent = current.charAt(0).toUpperCase() + current.slice(1);
-    const nameEl = byId('skin-confirm-name');
-    if (nameEl) nameEl.textContent = skinName;
-  }
-
-  function getPanelEls() {
-    return {
-      grid: byId('waddle-module-grid'),
-      title: byId('waddle-panel-title'),
-      about: byId('waddle-about'),
-      skin: byId('waddle-skin-panel'),
-    };
-  }
-
-  function buildSkinSection(label, skinList) {
-    const section = div(null);
-    section.appendChild(div('skin-section-header', label));
-    const skinGrid = div('skin-grid');
-    const equippedSkin = (lsGet(EQUIPPED_SKIN_KEY) || '').toLowerCase();
-    skinList.forEach(name => {
-      const btn = div('skin-btn');
-      const isEquipped = name.toLowerCase() === equippedSkin;
-      btn.appendChild(el('span', null, name));
-      if (isEquipped) { btn.classList.add('equipped'); btn.appendChild(el('span', 'skin-equipped-badge', '✓ on')); }
-      btn.addEventListener('click', () => {
-        if (btn.classList.contains('equipped')) { showToast('This Skin has already equipped', 'info', `${name} is your current skin.`); return; }
-        setSkinConfirmVisible(true, name);
-      });
-      skinGrid.appendChild(btn);
-    });
-    section.appendChild(skinGrid);
-    return section;
-  }
-
-  function buildSkinPanel() {
-    hideAllPanels();
-    const isFirstTime = !lsGet(EQUIPPED_SKIN_KEY);
-    const hasToken = !!lsGet(SESSION_KEY);
-    if (isFirstTime && hasToken) {
-      const username = getPlayerUsername();
-      showToast('Token Found!', 'enabled', username ? `Detected as ${username} — token automatically applied!` : 'Token found and automatically applied!');
-    } else if (isFirstTime && !hasToken) {
-      showToast('No Token', 'disabled', 'Log into Miniblox first then re-open the skin panel');
-    }
-
-    let skinPanel = byId('waddle-skin-panel');
-    if (!skinPanel) {
-      skinPanel = divId('waddle-skin-panel');
-      const username = getPlayerUsername();
-      const userBanner = divId('skin-user-banner');
-      Object.assign(userBanner.style, {
-        fontSize: '.75rem', fontWeight: '700', color: 'var(--text-dim)',
-        marginBottom: '6px', padding: '6px 10px', background: 'var(--bg3)',
-        border: '1px solid rgba(255,255,255,.07)', borderRadius: 'var(--radius)',
-        display: 'flex', alignItems: 'center', gap: '6px', flexShrink: '0'
-      });
-      setSkinBannerName(userBanner, username);
-      if (!username) pollUsername(userBanner);
-      skinPanel.appendChild(userBanner);
-
-      const scrollArea = divId('skin-grid-view');
-      scrollArea.style.display = 'flex';
-      scrollArea.style.flexDirection = 'column';
-      scrollArea.appendChild(buildSkinSection('Standard Skins', STANDARD_SKINS));
-      scrollArea.appendChild(buildSkinSection('Custom Skins', CUSTOM_SKINS));
-      skinPanel.appendChild(scrollArea);
-
-      const confirmView = divId('skin-confirm-view');
-      confirmView.innerHTML = `
-        <div class="skin-confirm-text">Do you want to switch from <span id="skin-confirm-from" style="color:var(--c)"></span> → <span id="skin-confirm-name" style="color:var(--c)"></span>?</div>
-        <div class="skin-confirm-btns">
-          <button class="skin-confirm-yes" id="skin-confirm-yes">Yes</button>
-          <button class="skin-confirm-no" id="skin-confirm-no">No</button>
-        </div>
-      `;
-      skinPanel.appendChild(confirmView);
-      byId('waddle-panel').appendChild(skinPanel);
-      byId('skin-confirm-yes').addEventListener('click', async () => {
-        const skinName = byId('skin-confirm-name').textContent;
-        setSkinConfirmVisible(false);
-        await applySkin(skinName);
-      });
-      byId('skin-confirm-no').addEventListener('click', () => setSkinConfirmVisible(false));
-    } else {
-      const banner = byId('skin-user-banner');
-      const refreshed = getPlayerUsername();
-      setSkinBannerName(banner, refreshed);
-      if (!refreshed) pollUsername(banner);
-    }
-    refreshSkinBadges();
-    setSkinConfirmVisible(false);
-  }
-
   function makeToggleRow(label, checked, onChange) {
     const row = div('afk-setting-row');
     row.appendChild(el('span', null, label));
@@ -1466,8 +1174,8 @@ const SCRIPT_VERSION = '8';
       keybindInput.value = e.key;
       keybindInput.style.color = 'var(--c)';
       keybindInput.blur();
-      const footer = document.querySelector('#waddle-sidebar-footer');
-      if (footer) footer.textContent = `Press ${e.key} to toggle`;
+      const kl = byId('waddle-keybind-line');
+      if (kl) kl.textContent = `Press ${e.key} to toggle`;
       showToast('Keybind Updated', 'enabled', `Menu now opens with: ${e.key}`);
     });
 
@@ -1480,7 +1188,6 @@ const SCRIPT_VERSION = '8';
     hideAllPanels();
     const { grid, title, about } = getPanelEls();
     if (categoryId === 'about') { show(about, 'flex'); return; }
-    if (categoryId === 'customSkin') { buildSkinPanel(); return; }
     show(grid, 'grid');
     if (title) { show(title); title.textContent = categoryId; }
     if (!state._panelCache[categoryId]) {
@@ -1513,6 +1220,14 @@ const SCRIPT_VERSION = '8';
     buildModulePanel(categoryId);
   }
 
+  function getPanelEls() {
+    return {
+      grid: byId('waddle-module-grid'),
+      title: byId('waddle-panel-title'),
+      about: byId('waddle-about'),
+    };
+  }
+
   function createMenu() {
     if (!document.body) return null;
     const overlay = divId('waddle-overlay');
@@ -1526,19 +1241,31 @@ const SCRIPT_VERSION = '8';
       cat.onclick = () => switchCategory(id);
       sidebar.appendChild(cat);
     });
-    sidebar.appendChild(divId('waddle-sidebar-footer', null, `Press ${keybindSettings.key} to toggle`));
 
-    const sys = getSystemInfo();
-    const sysRow = (label, val) =>
-      `<tr><td style="color:var(--c);font-weight:700;padding:3px 10px 3px 0;width:72px">${label}</td><td style="color:var(--text)">${val}</td></tr>`;
-    const sysBlock = div('about-block');
-    sysBlock.innerHTML = `<h3>🖥️ System</h3><table style="width:100%;border-collapse:collapse;font-size:.78rem;">${[
-      ['OS', `<span id="waddle-sys-os">${sys.os}</span>`],
-      ['Browser', sys.browser], ['GPU', sys.gpu], ['Vendor', sys.gpuVendor],
-      ['WebGL2', sys.webgl2 ? '✓ Supported' : '✗ Not supported'],
-      ['Cores', sys.cores], ['RAM', sys.ram], ['Screen', sys.screen],
-      ['Timezone', sys.timezone], ['Battery', `<span id="waddle-sys-battery">${sys.battery}</span>`],
-    ].map(([l, v]) => sysRow(l, v)).join('')}</table>`;
+    const footer = divId('waddle-sidebar-footer');
+    const keybindLine = divId('waddle-keybind-line');
+    keybindLine.textContent = `Press ${keybindSettings.key} to toggle`;
+    footer.appendChild(keybindLine);
+
+    const username = getPlayerUsername();
+    const level = lsGet(WADDLE_LEVEL_KEY);
+    const rank = lsGet(WADDLE_RANK_KEY);
+    const signedInLine = divId('waddle-signed-in-line');
+
+    const buildSignedInText = (name, lvl, rnk) => {
+      if (!name) {
+        signedInLine.innerHTML = `<span style="color:var(--text-dim)">Not signed in</span>`;
+        return;
+      }
+      const rankBadge = rnk ? `<span style="color:var(--c);font-weight:700">[${rnk}]</span> ` : '';
+      const levelBadge = lvl ? `<span style="color:var(--text-dim)">(${lvl})</span> ` : '';
+      signedInLine.innerHTML = `Signed in as ${rankBadge}${levelBadge}<span style="color:var(--text);font-weight:700">${name}</span>`;
+    };
+
+    buildSignedInText(username, level, rank);
+    if (!username) pollUsername(signedInLine, buildSignedInText);
+    footer.appendChild(signedInLine);
+    sidebar.appendChild(footer);
 
     const creditsBlock = div('about-block');
     creditsBlock.innerHTML = `
@@ -1568,7 +1295,7 @@ const SCRIPT_VERSION = '8';
 
     const aboutPanel = divId('waddle-about');
     show(aboutPanel, 'none');
-    aboutPanel.append(sysBlock, creditsBlock, linksBlock);
+    aboutPanel.append(creditsBlock, linksBlock);
     const panel = divId('waddle-panel');
     panel.append(
       divId('waddle-panel-title', null, state.activeCategory),
@@ -1625,45 +1352,10 @@ const SCRIPT_VERSION = '8';
     });
   }
 
-  const MIN_THREE_REVISION = 128;
-  function isThreeCompatible() {
-    return typeof THREE !== 'undefined' &&
-      typeof THREE.CubeTextureLoader === 'function' &&
-      parseInt(THREE.REVISION, 10) >= MIN_THREE_REVISION;
-  }
-
-  function initSpaceSky() {
-    const doApply = () => {
-      let attempts = 0;
-      const tryPatch = () => {
-        if (++attempts > 20) { showToast('Space Sky', 'info', 'Could not find game scene'); return; }
-        const gs = gameRef.get()?.gameScene;
-        if (!gs?.sky) { setTimeout(tryPatch, 500); return; }
-        new THREE.CubeTextureLoader()
-          .setPath('https://threejs.org/examples/textures/cube/MilkyWay/')
-          .load(
-            ['dark-s_px.jpg', 'dark-s_nx.jpg', 'dark-s_py.jpg', 'dark-s_ny.jpg', 'dark-s_pz.jpg', 'dark-s_nz.jpg'],
-            cubeTexture => {
-              gs.sky._waddleOriginalUpdate = gs.sky.update.bind(gs.sky);
-              gs.sky.update = function () { this._waddleOriginalUpdate(); this.gameScene.scene.background = cubeTexture; };
-              gs.scene.background = cubeTexture;
-            }
-          );
-      };
-      tryPatch();
-    };
-    if (isThreeCompatible()) { doApply(); return; }
-    const script = el('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js';
-    script.onload = () => isThreeCompatible() ? doApply() : showToast('Space Sky', 'info', 'Three.js version mismatch');
-    script.onerror = () => showToast('Space Sky', 'info', 'Failed to load Three.js');
-    document.head.appendChild(script);
-  }
   async function safeInit() {
     try {
       await ensureDOMReady();
       injectStyles();
-      patchLocalStorageForToken();
       document.body.appendChild(divId('waddle-badge', null, `🐧 Waddle v${SCRIPT_VERSION}`));
       restoreSavedState();
       createMenu();
@@ -1671,7 +1363,6 @@ const SCRIPT_VERSION = '8';
       initializeCrosshairModule();
       initHudCanvas();
       startTargetHUDLoop();
-      initSpaceSky();
       if (afkSettings.autoEnable) afkDetector.start();
       showToast('Welcome To Waddle!', 'info', 'Press \\ to open menu');
       setTimeout(() => {
