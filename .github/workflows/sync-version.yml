@@ -62,8 +62,8 @@ jobs:
 
       - name: Commit sync
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "WaddleSyncz[Bot]"
+          git config user.email "WaddleSyncz[Bot]@users.noreply.github.com"
           git add Waddle.user.js README.md
           git diff --cached --quiet || git commit -m "chore: sync version [skip ci]"
           git push
