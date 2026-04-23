@@ -31,7 +31,7 @@
       path: 'https://threejs.org/examples/textures/cube/Park2/',
       files: ['posx.jpg', 'negx.jpg', 'posy.jpg', 'negy.jpg', 'posz.jpg', 'negz.jpg'],
     },
-  }; 
+  };
 
   const lsGet = k => localStorage.getItem(k);
   const lsSet = (k, v) => localStorage.setItem(k, v);
@@ -48,7 +48,7 @@
 
   const MIN_THREE_REVISION = 128;
 
-  function isThreeCompatible() { // TODO: Three isnt defined here why?
+  function isThreeCompatible() {
     return typeof THREE !== 'undefined' &&
       typeof THREE.CubeTextureLoader === 'function' &&
       parseInt(THREE.REVISION, 10) >= MIN_THREE_REVISION;
