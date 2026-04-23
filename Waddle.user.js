@@ -9,7 +9,7 @@
 // @run-at       document-start
 // ==/UserScript==
 
-const SCRIPT_VERSION = '8.1';
+const SCRIPT_VERSION = '8.4';
 
 (function () {
   'use strict';
