@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Space Sky
+// @name         SkyBoxes 4 Waddle!
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
 // @version      v1
 // @description  Space sky addon for Waddle — replaces the Miniblox sky with a cubemap preset
@@ -15,7 +15,7 @@
   const STORAGE_KEY = 'waddle_skybox';
   const DEFAULT_PRESET = 'milkyway';
 
-  const PRESETS = { // TODO: Add more presets
+  const PRESETS = { // TODO: Add lots more presets
     milkyway: {
       label: '🌌 Milky Way',
       path: 'https://threejs.org/examples/textures/cube/MilkyWay/',
