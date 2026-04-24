@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Waddle
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
-// @version      8.4
+// @version      8.5
 // @description  The ULTIMATE miniblox.io enhancement suite! Have fun!
 // @author       Scripter, TheM1ddleM1n, heythereu
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/Waddle/refs/heads/main/Penguin.png
@@ -9,7 +9,7 @@
 // @run-at       document-start
 // ==/UserScript==
 
-const SCRIPT_VERSION = '8.4';
+const SCRIPT_VERSION = '8.5';
 
 (function () {
   'use strict';
