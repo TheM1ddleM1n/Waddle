@@ -1,5 +1,4 @@
 name: Sync Version
-
 on:
   push:
     branches: [main]
@@ -59,11 +58,10 @@ jobs:
             console.log('Updated Waddle.user.js to v' + readmeVersion);
           }
           "
-
       - name: Commit sync
         run: |
-          git config user.name "WaddleSyncz"
-          git config user.email "WaddleSyncz[Bot]@users.noreply.github.com"
+          git config user.name "WaddleSync"
+          git config user.email "WaddleSync@users.noreply.github.com"
           git add Waddle.user.js README.md
           git diff --cached --quiet || git commit -m "chore: sync version [skip ci]"
           git push
