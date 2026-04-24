@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🐧 Waddle
+# Waddle 
 ### The Ultimate Miniblox Enhancement Suite
 
 ![Version](https://img.shields.io/badge/version-8.4-39ff14?style=for-the-badge)
@@ -13,14 +13,14 @@
 
 ---
 
-## ⚡ Install
+## Install
 1. Install [Tampermonkey](https://www.tampermonkey.net/)
 2. Click **[→ Install Waddle](https://github.com/TheM1ddleM1n/Waddle/raw/main/Waddle.user.js)**
 3. Open Miniblox, press `\` (or any other keybind when you change it) and start playing
 
 ---
 
-## ✨ Features
+## Features
 
 ### Always On
 | Feature | Description |
@@ -33,17 +33,17 @@
 ### Toggleable via `\` menu
 | Feature | Description |
 |---------|-------------|
-| 📊 FPS & CPS | Color-coded performance counter with left/right click rate |
-| 📍 Coordinates | Live X Y Z position |
-| ⌨️ Key Display | WASD + space, lights up on press |
-| 🐧 Anti-AFK | Auto-jumps and sends an AFK message to prevent being kicked |
-| 🔇 Chat Mute | Hides all incoming chat messages |
+| FPS & CPS | Color-coded performance counter with left/right click rate |
+| Coordinates | Live X Y Z position |
+| Key Display | WASD + space, lights up on press |
+| Anti-AFK | Auto-jumps and sends an AFK message to prevent being kicked |
+| Chat Mute | Hides all incoming chat messages |
 
 > All draggable widgets **remember their position** across sessions
 
 ---
 
-## 👥 Credits
+## Credits
 | Role | Contributor |
 |------|-------------|
 | Original Creator | [@Scripter132132](https://github.com/Scripter132132) |
@@ -54,6 +54,6 @@
 
 <div align="center">
 
-🐧 **Made by the Waddle Team** — MIT License
+**Made by the Waddle Team** — MIT License
 
 </div>
