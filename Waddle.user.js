@@ -14,6 +14,61 @@ const SCRIPT_VERSION = '8.4';
 (function () {
   'use strict';
 
+  (function patchFetchEarly() {
+  const UNLEASH_URL = 'https://unleash.miniblox.io/api/frontend';
+  const TOGGLES = [
+    'skywars','kitpvp','pvp','eggwars','eggwars2','eggwars3','eggwars4',
+    'duels_bridge','spleef','oitq','murder','blockhunt','blitzbuild',
+    'require_account_for_creating_planets',
+  ].map(name => ({ name, enabled: true, variant: { name: 'disabled', enabled: false }, impressionData: false }));
+  TOGGLES.push({ name: 'ads', enabled: false, variant: { name: 'disabled', enabled: false }, impressionData: false });
+
+  const PAYLOAD = JSON.stringify({ toggles: TOGGLES });
+
+  const tryPatchFetch = () => {
+    if (!window.fetch) return false;
+    const _orig = window.fetch;
+    window.fetch = function (input, init) {
+      const url = typeof input === 'string' ? input : input?.url ?? '';
+      return url.startsWith(UNLEASH_URL)
+        ? Promise.resolve(new Response(PAYLOAD, { status: 200, headers: { 'Content-Type': 'application/json' } }))
+        : _orig.apply(this, arguments);
+    };
+    return true;
+  };
+
+  const patchClient = (c) => {
+    if (!c || c._waddlePatched) return;
+    c._waddlePatched = true;
+    c.toggles = TOGGLES;
+    c.isEnabled = (name) => name !== 'ads' && TOGGLES.some(t => t.name === name);
+    c.getVariant = () => ({ name: 'disabled', enabled: false });
+    c.getToggle = (name) => TOGGLES.find(t => t.name === name) ?? null;
+  };
+
+  const scan = () => {
+    try {
+      const props = Object.values(document.querySelector('#react') ?? {})?.[0]?.updateQueue?.baseState?.element?.props;
+      if (!props) return false;
+      for (const val of Object.values(props)) {
+        if (val?.toggles && typeof val.isEnabled === 'function') { patchClient(val); return true; }
+        if (val && typeof val === 'object') {
+          for (const sub of Object.values(val)) {
+            if (sub?.toggles && typeof sub.isEnabled === 'function') { patchClient(sub); return true; }
+          }
+        }
+      }
+    } catch (_) {}
+    return false;
+  };
+
+  if (!tryPatchFetch()) {
+    const ft = setInterval(() => { if (tryPatchFetch()) clearInterval(ft); }, 10);
+  }
+  const ct = setInterval(() => { if (scan()) clearInterval(ct); }, 200);
+  setTimeout(() => clearInterval(ct), 30000);
+})();
+
   document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
 
   const SETTINGS_KEY = 'waddle_settings';
@@ -1313,6 +1368,13 @@ const SCRIPT_VERSION = '8.4';
     return overlay;
   }
 
+    function initGamemodesAndNoAds() {
+  const sel = 'iframe[src*="ads"],iframe[src*="doubleclick"],iframe[src*="googlesyndication"],div[id*="google_ads"],div[class*="ad-container"],div[class*="adsbygoogle"],ins.adsbygoogle,script[src*="googlesyndication"],script[src*="adsbygoogle"]';
+  const removeAds = () => document.querySelectorAll(sel).forEach(e => e.remove());
+  new MutationObserver(removeAds).observe(document.documentElement, { childList: true, subtree: true });
+  removeAds();
+}
+
   function toggleMenu() { state.menuOverlay?.classList.toggle('show'); }
 
   function setupKeyboardHandler() {
@@ -1355,6 +1417,7 @@ const SCRIPT_VERSION = '8.4';
   async function safeInit() {
     try {
       await ensureDOMReady();
+      initGamemodesAndNoAds();
       injectStyles();
       document.body.appendChild(divId('waddle-badge', null, `🐧 Waddle v${SCRIPT_VERSION}`));
       restoreSavedState();
