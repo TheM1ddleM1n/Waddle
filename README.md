@@ -27,6 +27,8 @@
 |---------|-------------|
 | 🎯 Crosshair | Cyan crosshair, auto-hides in menu |
 | 👁️ Target HUD | Player faces, mob names, block names |
+| All GameModes | You can Play every minigame thanks to heythereu! |
+| NO ADS | Basically what it says on the tin |
 
 ### Toggleable via `\` menu
 | Feature | Description |
