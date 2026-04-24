@@ -1327,11 +1327,15 @@ const SCRIPT_VERSION = '8.4';
       <h3>Credits</h3>
       <div class="about-credit">
         <img src="https://avatars.githubusercontent.com/Scripter132132?s=56">
-        <div><div class="role">Original Creator</div><a href="https://github.com/Scripter132132" target="_blank">@Scripter132132</a></div>
+        <div><div class="role">OG Creator - NovaCore</div><a href="https://github.com/Scripter132132" target="_blank">@Scripter132132</a></div>
       </div>
       <div class="about-credit">
         <img src="https://avatars.githubusercontent.com/TheM1ddleM1n?s=56">
-        <div><div class="role" style="color:#f39c12">Enhanced By</div><a href="https://github.com/TheM1ddleM1n" target="_blank">@TheM1ddleM1n</a></div>
+        <div><div class="role" style="color:#f39c12">Enhancements</div><a href="https://github.com/TheM1ddleM1n" target="_blank">@TheM1ddleM1n</a></div>
+      </div>
+      <div class="about-credit">
+        <img src="https://avatars.githubusercontent.com/heythereu?s=56">
+        <div><div class="role" style="color:#e52100">Gamemodes</div><a href="https://github.com/heythereu" target="_blank">@heythereu</a></div>
       </div>
     `;
 
