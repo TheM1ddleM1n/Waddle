@@ -24,7 +24,6 @@ const SCRIPT_VERSION = '8.4';
   TOGGLES.push({ name: 'ads', enabled: false, variant: { name: 'disabled', enabled: false }, impressionData: false });
 
   const PAYLOAD = JSON.stringify({ toggles: TOGGLES });
-
   const tryPatchFetch = () => {
     if (!window.fetch) return false;
     const _orig = window.fetch;
@@ -1380,7 +1379,6 @@ const SCRIPT_VERSION = '8.4';
 }
 
   function toggleMenu() { state.menuOverlay?.classList.toggle('show'); }
-
   function setupKeyboardHandler() {
     window.addEventListener('keydown', e => {
       if (isTyping() || e.repeat) return;
