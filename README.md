@@ -52,6 +52,11 @@
 
 ---
 
+## Roadmap (4 now)
+- [ ] Remove anything else that is not important to Waddle
+- [ ] Improve Notifications
+- [ ] Consolidation of every feature so no bugs, bottlenecks etc
+
 <div align="center">
 
 **Made by the Waddle Team** — MIT License
