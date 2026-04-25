@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Waddle
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
-// @version      8.5
+// @version      9
 // @description  The ULTIMATE miniblox.io enhancement suite! Have fun!
 // @author       Scripter, TheM1ddleM1n, heythereu
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/Waddle/refs/heads/main/Penguin.png
@@ -9,7 +9,7 @@
 // @run-at       document-start
 // ==/UserScript==
 
-const SCRIPT_VERSION = '8.5';
+const SCRIPT_VERSION = '9';
 
 (function () {
   'use strict';
@@ -283,7 +283,7 @@ const SCRIPT_VERSION = '8.5';
       afkDetector._triggered = true;
       afkDetector._graceUntil = Date.now() + 2000;
       showToast('Auto Anti-AFK', 'enabled', 'You went idle');
-      if (afkSettings.sendChat) sendAfkChatMessage('I am currently AFK, be back soon 🕶️');
+      if (afkSettings.sendChat) sendChatMessage('I am currently AFK, be back soon 🕶️');
       afkDetector._wasOff = !state.features.antiAfk;
       if (afkDetector._wasOff) setAfkActive(true);
     },
@@ -936,54 +936,6 @@ const SCRIPT_VERSION = '8.5';
     } catch (_) { return false; }
   }
 
-  function sendAfkChatMessage(text) {
-    if (sendChatMessage(text)) return;
-    const game = gameRef.get();
-    if (game?.chat) {
-      for (const method of ['sendMessage', 'sendChat', 'send', 'submitMessage', 'submitChat']) {
-        try {
-          if (typeof game.chat[method] === 'function') { game.chat[method](text); return; }
-        } catch (_) {}
-      }
-    }
-
-    const tryViaInput = () => {
-      const chatInput = [...document.querySelectorAll('input')].find(i =>
-        i.placeholder?.toLowerCase().includes('chat') ||
-        i.placeholder?.toLowerCase().includes('say') ||
-        i.closest?.('[class*="chat"]')
-      );
-      if (!chatInput) return false;
-      const nativeSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-      if (nativeSetter) nativeSetter.call(chatInput, text);
-      else chatInput.value = text;
-      chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-      chatInput.focus();
-      setTimeout(() => {
-        chatInput.dispatchEvent(makeKeyEvent('keydown', 'Enter', 'Enter', 13));
-        setTimeout(() => {
-          chatInput.dispatchEvent(makeKeyEvent('keydown', 'Escape', 'Escape', 27));
-          chatInput.blur();
-        }, 50);
-      }, 80);
-      return true;
-    };
-
-    if (!tryViaInput()) {
-      document.body.dispatchEvent(makeKeyEvent('keydown', 'Enter', 'Enter', 13));
-      setTimeout(() => {
-        if (!tryViaInput()) {
-          try {
-            if (game?.chat) {
-              const fn = game.chat._orig_addChat ?? game.chat.addChat;
-              fn?.call(game.chat, { text });
-            }
-          } catch (_) {}
-        }
-      }, 200);
-    }
-  }
-
   function patchMethod(obj, key, replacement) {
     if (!obj || obj[`_orig_${key}`]) return false;
     obj[`_orig_${key}`] = obj[key].bind(obj);
@@ -1371,13 +1323,6 @@ const SCRIPT_VERSION = '8.5';
     return overlay;
   }
 
-    function initGamemodesAndNoAds() {
-  const sel = 'iframe[src*="ads"],iframe[src*="doubleclick"],iframe[src*="googlesyndication"],div[id*="google_ads"],div[class*="ad-container"],div[class*="adsbygoogle"],ins.adsbygoogle,script[src*="googlesyndication"],script[src*="adsbygoogle"]';
-  const removeAds = () => document.querySelectorAll(sel).forEach(e => e.remove());
-  new MutationObserver(removeAds).observe(document.documentElement, { childList: true, subtree: true });
-  removeAds();
-}
-
   function toggleMenu() { state.menuOverlay?.classList.toggle('show'); }
   function setupKeyboardHandler() {
     window.addEventListener('keydown', e => {
@@ -1419,7 +1364,6 @@ const SCRIPT_VERSION = '8.5';
   async function safeInit() {
     try {
       await ensureDOMReady();
-      initGamemodesAndNoAds();
       injectStyles();
       document.body.appendChild(divId('waddle-badge', null, `🐧 Waddle v${SCRIPT_VERSION}`));
       restoreSavedState();
