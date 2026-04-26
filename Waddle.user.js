@@ -1342,17 +1342,6 @@ const SCRIPT_VERSION = '9';
     } catch (_) {}
   }
 
-  function globalCleanup() {
-    Object.keys(state.features).forEach(f => { if (state.features[f]) featureManager[f]?.cleanup(); });
-    Object.values(state.intervals).forEach(id => { if (id != null) clearInterval(id); });
-    if (state.rafId) cancelAnimationFrame(state.rafId);
-    if (state._resizeHandler) window.removeEventListener('resize', state._resizeHandler);
-    state._crosshairObserver?.disconnect();
-    afkDetector.stop();
-  }
-
-  window.addEventListener('beforeunload', globalCleanup);
-
   function ensureDOMReady() {
     return new Promise(resolve => {
       if (document.body && document.head) { resolve(); return; }
