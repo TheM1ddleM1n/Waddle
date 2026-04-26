@@ -459,18 +459,11 @@ const SCRIPT_VERSION = '9';
 .toast-icon.enabled { background:#22c55e; color:#000; }
 .toast-icon.disabled { background:#ef4444; color:#fff; }
 .toast-icon.info { background:#3b82f6; color:#fff; }
-.toast-body { flex:1; }
 .toast-title { font-size:.78rem; font-weight:700; color:var(--text); }
 .toast-msg { font-size:.68rem; color:var(--text-dim); margin-top:1px; }
 .counter,.key-display-container { position:fixed; z-index:9998; user-select:none; }
 .counter { background:var(--bg); border:1px solid var(--c-border); color:var(--c); font-weight:var(--fw); font-size:.78rem; padding:5px 11px; border-radius:var(--r); box-shadow:var(--shadow); cursor:grab; width:max-content; }
-.counter.dragging { cursor:grabbing; transform:scale(1.05); }
-@keyframes afk-pulse {
-  0% { box-shadow:var(--shadow),0 0 0 0 rgba(0,255,255,.7); }
-  70% { box-shadow:var(--shadow),0 0 0 10px rgba(0,255,255,0); }
-  100% { box-shadow:var(--shadow),0 0 0 0 rgba(0,255,255,0); }
-}
-.counter.afk-pulse { animation:afk-pulse .45s ease; }
+.counter.dragging { cursor:grabbing; }
 .key-display-container { cursor:grab; }
 .key-display-grid { display:grid; gap:5px; }
 .key-box { background:var(--bg2); border:2px solid rgba(255,255,255,.12); border-radius:var(--r); display:flex; align-items:center; justify-content:center; font-weight:900; font-size:.72rem; color:var(--text-dim); width:44px; height:44px; }
