@@ -7,7 +7,7 @@
 ![License](https://img.shields.io/badge/license-MIT-39ff14?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-39ff14?style=for-the-badge)
 
-**[Install](#-install) • [Features](#-features) • [Report Bug](https://github.com/TheM1ddleM1n/Waddle/issues/new?template=bug_report.yml)**
+**[Install](#-install) • [Features](#-features) • [Open a Template](https://github.com/TheM1ddleM1n/Waddle/issues/new/choose)**
 
 </div>
 
