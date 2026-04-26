@@ -13,9 +13,8 @@
   'use strict';
 
   const STORAGE_KEY = 'waddle_skybox';
-  const DEFAULT_PRESET = 'milkyway';
 
-  const PRESETS = { // TODO: Add lots more presets
+  const PRESETS = {
     milkyway: {
       label: '🌌 Milky Way',
       path: 'https://threejs.org/examples/textures/cube/MilkyWay/',
@@ -132,6 +131,7 @@
       transition: 'opacity .25s ease, transform .25s ease',
     });
     t.textContent = `🌌 ${msg}`;
+    document.body.appendChild(tc);
     tc.appendChild(t);
     setTimeout(() => {
       Object.assign(t.style, { opacity: '0', transform: 'translateX(10px)' });
@@ -202,15 +202,10 @@
   function waitForBody() {
     if (document.body) {
       injectUI();
-      const saved = lsGet(STORAGE_KEY) || DEFAULT_PRESET;
-      loadThreeAndInit(saved);
     } else {
-      document.addEventListener('DOMContentLoaded', () => {
-        injectUI();
-        const saved = lsGet(STORAGE_KEY) || DEFAULT_PRESET;
-        loadThreeAndInit(saved);
-      }, { once: true });
+      document.addEventListener('DOMContentLoaded', injectUI, { once: true });
     }
   }
+
   waitForBody();
 })();
