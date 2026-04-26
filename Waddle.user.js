@@ -108,11 +108,8 @@ const SCRIPT_VERSION = '9';
   const setInt = (key, fn, ms) => { state.intervals[key] = setInterval(fn, ms); };
 
   function hideAllPanels() {
-    const { grid, title, about } = getPanelEls();
-    show(grid, 'none');
-    show(title, 'none');
-    show(about, 'none');
-  }
+  [byId('waddle-module-grid'), byId('waddle-panel-title'), byId('waddle-about')].forEach(e => show(e, 'none'));
+}
 
   function getPlayerUsername() {
     try {
@@ -395,7 +392,7 @@ const SCRIPT_VERSION = '9';
         clearInt('waitForGame');
         game.chat.addChat({ text: `\\${THEME_COLOR}\\[Waddle]\\reset\\ \\lime\\v${SCRIPT_VERSION} \\yellow\\is now running!` });
         game.chat.addChat({ text: `\\cyan\\Questions? \\magenta\\Visit \\royalblue\\GitHub: \\cyan\\TheM1ddleM1n/Waddle` });
-        game.chat.addChat({ text: `\\yellow\\Enjoying Waddle? \\orange\\Leave a \\red\\★ \\orange\\star on GitHub!` });
+        game.chat.addChat({ text: `\\yellow\\Enjoying Waddle? \\orange\\Leave a \\red\\★ on GitHub!` });
       }
     }, 500);
   })();
@@ -415,14 +412,14 @@ const SCRIPT_VERSION = '9';
 :root {
   --c:#00FFFF; --c-dim:rgba(0,255,255,.15); --c-border:rgba(0,255,255,.25);
   --bg:rgba(12,12,18,.96); --bg2:rgba(20,20,30,.98); --bg3:rgba(30,30,45,1);
-  --text:#e0e0e0; --text-dim:#666; --radius:6px; --fw:600;
+  --text:#e0e0e0; --text-dim:#666; --r:6px; --fw:600;
   --glow:0 0 12px rgba(0,255,255,.5); --shadow:0 8px 32px rgba(0,0,0,.8);
 }
 .css-xhoozx,[class*="crosshair"],img[src*="crosshair"],.css-1pj0jj0 { display:none !important; }
 #waddle-overlay { position:fixed; inset:0; background:rgba(0,0,0,.65); backdrop-filter:blur(8px); z-index:9999; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .15s ease; }
 #waddle-overlay.show { opacity:1; pointer-events:auto; }
 #waddle-window { display:flex; width:782px; height:483px; background:var(--bg); border:1px solid var(--c-border); border-radius:10px; box-shadow:var(--shadow),0 0 40px rgba(0,255,255,.08); overflow:hidden; user-select:none; }
-#waddle-sidebar { width:160px; min-width:160px; background:var(--bg2); border-right:1px solid var(--c-border); display:flex; flex-direction:column; padding:0; }
+#waddle-sidebar { width:160px; min-width:160px; background:var(--bg2); border-right:1px solid var(--c-border); display:flex; flex-direction:column; }
 #waddle-logo { padding:21px 16px 16px; font-size:1.25rem; font-weight:900; color:var(--c); text-shadow:var(--glow); border-bottom:1px solid var(--c-border); letter-spacing:1px; }
 .waddle-cat { padding:13px 16px; display:flex; align-items:center; gap:9px; font-size:.94rem; font-weight:var(--fw); color:var(--text-dim); cursor:pointer; border-left:3px solid transparent; transition:all .1s ease; }
 .waddle-cat:hover { color:var(--text); background:rgba(255,255,255,.04); }
@@ -434,13 +431,13 @@ const SCRIPT_VERSION = '9';
 #waddle-module-grid { flex:1; display:grid; grid-template-columns:1fr 1fr; gap:9px; padding:16px; align-content:start; overflow-y:auto; }
 #waddle-module-grid::-webkit-scrollbar { width:4px; }
 #waddle-module-grid::-webkit-scrollbar-thumb { background:var(--c-border); border-radius:2px; }
-.waddle-module { background:var(--bg3); border:1px solid rgba(255,255,255,.07); border-radius:var(--radius); cursor:pointer; font-weight:var(--fw); color:var(--text-dim); transition:all .12s ease; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; font-size:.92rem; }
+.waddle-module { background:var(--bg3); border:1px solid rgba(255,255,255,.07); border-radius:var(--r); cursor:pointer; font-weight:var(--fw); color:var(--text-dim); transition:all .12s ease; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; font-size:.92rem; }
 .waddle-module:hover { border-color:var(--c-border); color:var(--text); }
 .waddle-module.active { border-color:var(--c); background:var(--c-dim); color:var(--c); box-shadow:inset 0 0 8px rgba(0,255,255,.08); }
 .waddle-module-dot { width:8px; height:8px; border-radius:50%; background:var(--text-dim); flex-shrink:0; transition:background .12s ease; }
 .waddle-module.active .waddle-module-dot { background:var(--c); box-shadow:0 0 6px var(--c); }
 #waddle-about { flex:1; padding:18px; display:flex; flex-direction:column; gap:14px; overflow-y:auto; color:var(--text); }
-.about-block,#waddle-afk-settings { background:var(--bg3); border:1px solid rgba(255,255,255,.07); border-radius:var(--radius); }
+.about-block,#waddle-afk-settings { background:var(--bg3); border:1px solid rgba(255,255,255,.07); border-radius:var(--r); }
 .about-block { padding:14px; }
 .about-block h3,.afk-settings-title { font-weight:700; color:var(--c); text-transform:uppercase; }
 .about-block h3 { font-size:.75rem; letter-spacing:1px; margin:0 0 10px; }
@@ -451,11 +448,11 @@ const SCRIPT_VERSION = '9';
 .about-credit a:hover { color:var(--c); }
 .about-credit .role { font-size:.65rem; color:var(--c); font-weight:700; }
 .about-links { display:flex; gap:8px; flex-wrap:wrap; }
-.about-link-btn { background:var(--bg); border:1px solid var(--c-border); color:var(--c); border-radius:var(--radius); padding:6px 14px; font-size:.75rem; font-weight:var(--fw); cursor:pointer; transition:all .1s ease; }
+.about-link-btn { background:var(--bg); border:1px solid var(--c-border); color:var(--c); border-radius:var(--r); padding:6px 14px; font-size:.75rem; font-weight:var(--fw); cursor:pointer; transition:all .1s ease; }
 .about-link-btn:hover { background:var(--c-dim); }
 #waddle-badge { position:fixed; bottom:10px; right:10px; z-index:9998; background:rgba(12,12,18,.85); backdrop-filter:blur(4px); border:1px solid var(--c-border); border-radius:20px; padding:4px 10px; font:700 .7rem sans-serif; color:var(--c); pointer-events:none; user-select:none; }
 #waddle-toasts { position:fixed; bottom:70px; right:18px; z-index:10000; display:flex; flex-direction:column-reverse; gap:6px; pointer-events:none; }
-.waddle-toast { display:flex; align-items:center; gap:10px; background:var(--bg2); border:1px solid rgba(255,255,255,.1); border-radius:var(--radius); padding:9px 14px; min-width:200px; box-shadow:var(--shadow); animation:toast-in .2s ease; transition:opacity .25s ease,transform .25s ease; }
+.waddle-toast { display:flex; align-items:center; gap:10px; background:var(--bg2); border:1px solid rgba(255,255,255,.1); border-radius:var(--r); padding:9px 14px; min-width:200px; box-shadow:var(--shadow); animation:toast-in .2s ease; transition:opacity .25s ease,transform .25s ease; }
 .waddle-toast.hide { opacity:0; transform:translateX(10px); }
 @keyframes toast-in { from { opacity:0; transform:translateX(12px); } to { opacity:1; transform:none; } }
 .toast-icon { width:22px; height:22px; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:900; flex-shrink:0; }
@@ -466,9 +463,8 @@ const SCRIPT_VERSION = '9';
 .toast-title { font-size:.78rem; font-weight:700; color:var(--text); }
 .toast-msg { font-size:.68rem; color:var(--text-dim); margin-top:1px; }
 .counter,.key-display-container { position:fixed; z-index:9998; user-select:none; }
-.counter { background:var(--bg); border:1px solid var(--c-border); color:var(--c); font-weight:var(--fw); font-size:.78rem; padding:5px 11px; border-radius:var(--radius); box-shadow:var(--shadow); cursor:grab; width:max-content; }
+.counter { background:var(--bg); border:1px solid var(--c-border); color:var(--c); font-weight:var(--fw); font-size:.78rem; padding:5px 11px; border-radius:var(--r); box-shadow:var(--shadow); cursor:grab; width:max-content; }
 .counter.dragging { cursor:grabbing; transform:scale(1.05); }
-#real-time-counter { cursor:default !important; }
 @keyframes afk-pulse {
   0% { box-shadow:var(--shadow),0 0 0 0 rgba(0,255,255,.7); }
   70% { box-shadow:var(--shadow),0 0 0 10px rgba(0,255,255,0); }
@@ -477,7 +473,7 @@ const SCRIPT_VERSION = '9';
 .counter.afk-pulse { animation:afk-pulse .45s ease; }
 .key-display-container { cursor:grab; }
 .key-display-grid { display:grid; gap:5px; }
-.key-box { background:var(--bg2); border:2px solid rgba(255,255,255,.12); border-radius:var(--radius); display:flex; align-items:center; justify-content:center; font-weight:900; font-size:.72rem; color:var(--text-dim); width:44px; height:44px; }
+.key-box { background:var(--bg2); border:2px solid rgba(255,255,255,.12); border-radius:var(--r); display:flex; align-items:center; justify-content:center; font-weight:900; font-size:.72rem; color:var(--text-dim); width:44px; height:44px; }
 .key-box.active { background:var(--c-dim); border-color:var(--c); color:var(--c); box-shadow:var(--glow); }
 .key-box.space-box { width:100%; height:36px; margin-top:5px; }
 #waddle-crosshair-container { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:5000; pointer-events:none; }
@@ -491,48 +487,36 @@ const SCRIPT_VERSION = '9';
 .waddle-toggle-track::after { content:''; position:absolute; top:3px; left:3px; width:14px; height:14px; background:#fff; border-radius:50%; transition:transform .15s; }
 .waddle-toggle input:checked + .waddle-toggle-track { background:var(--c); }
 .waddle-toggle input:checked + .waddle-toggle-track::after { transform:translateX(16px); }
-.afk-delay-input { background:var(--bg2); color:var(--c); border:1px solid var(--c-border); border-radius:var(--radius); padding:3px 7px; font-size:.82rem; width:52px; text-align:center; outline:none; }
+.afk-delay-input { background:var(--bg2); color:var(--c); border:1px solid var(--c-border); border-radius:var(--r); padding:3px 7px; font-size:.82rem; width:52px; text-align:center; outline:none; }
 #waddle-signed-in-line { font-size:.68rem; margin-top:5px; color:var(--text-dim); }
 `;
     document.head.appendChild(style);
   }
 
   function showToast(title, type = 'info', message = '') {
-    if (!document.body) return;
-    if (!['enabled', 'disabled', 'info'].includes(type)) type = 'info';
-    if (!state.toastContainer || !document.contains(state.toastContainer)) {
-      state.toastContainer = byId('waddle-toasts') || divId('waddle-toasts');
-      document.body.appendChild(state.toastContainer);
-    }
-    const icon = Object.assign(div(`toast-icon ${type}`), {
-      textContent: { enabled: '✅', disabled: '❌', info: '❗' }[type]
-    });
-    const body = Object.assign(div('toast-body'), {
-      innerHTML: `<div class="toast-title">${title}</div>${message ? `<div class="toast-msg">${message}</div>` : ''}`
-    });
-    const toast = div('waddle-toast');
-    toast.append(icon, body);
-    state.toastContainer.appendChild(toast);
-    setTimeout(() => { toast.classList.add('hide'); setTimeout(() => toast.remove(), 280); }, 2800);
+  if (!document.body) return;
+  if (!['enabled', 'disabled', 'info'].includes(type)) type = 'info';
+  if (!state.toastContainer || !document.contains(state.toastContainer)) {
+    state.toastContainer = byId('waddle-toasts') || divId('waddle-toasts');
+    document.body.appendChild(state.toastContainer);
   }
-
-  function makeLine(styles) {
-    const d = div(null);
-    Object.assign(d.style, { position: 'absolute', backgroundColor: THEME_COLOR, pointerEvents: 'none' }, styles);
-    return d;
-  }
+  const toast = div('waddle-toast');
+  toast.innerHTML = `<span class="toast-icon ${type}">${{'enabled':'✅','disabled':'❌','info':'❗'}[type]}</span><div class="toast-body"><div class="toast-title">${title}</div>${message ? `<div class="toast-msg">${message}</div>` : ''}</div>`;
+  state.toastContainer.appendChild(toast);
+  setTimeout(() => { toast.classList.add('hide'); setTimeout(() => toast.remove(), 280); }, 2800);
+}
 
   function createCrosshair() {
-    const c = div(null);
-    const h = { width: '8px', height: '2px' }, v = { width: '2px', height: '8px' };
-    c.append(
-      makeLine({ ...v, top: '0', left: '50%', transform: 'translateX(-50%)' }),
-      makeLine({ ...v, bottom: '0', left: '50%', transform: 'translateX(-50%)' }),
-      makeLine({ ...h, left: '0', top: '50%', transform: 'translateY(-50%)' }),
-      makeLine({ ...h, right: '0', top: '50%', transform: 'translateY(-50%)' })
-    );
-    return c;
-  }
+  const c = div(null);
+  const s = `position:absolute;background:${THEME_COLOR};pointer-events:none`;
+  c.innerHTML = `
+    <div style="${s};width:2px;height:8px;top:0;left:50%;transform:translateX(-50%)"></div>
+    <div style="${s};width:2px;height:8px;bottom:0;left:50%;transform:translateX(-50%)"></div>
+    <div style="${s};width:8px;height:2px;left:0;top:50%;transform:translateY(-50%)"></div>
+    <div style="${s};width:8px;height:2px;right:0;top:50%;transform:translateY(-50%)"></div>
+  `;
+  return c;
+}
 
   function checkCrosshair() {
     if (!state.crosshairContainer) return;
@@ -1291,17 +1275,12 @@ const SCRIPT_VERSION = '9';
     `;
 
     const linksBlock = div('about-block');
-    linksBlock.innerHTML = '<h3>🔗 GitHub</h3>';
-    const linksRow = div('about-links');
-    [
-      ['Suggest Feature', 'https://github.com/TheM1ddleM1n/Waddle/issues/new?template=feature_request.yml'],
-      ['Report Bug', 'https://github.com/TheM1ddleM1n/Waddle/issues/new?template=bug_report.yml']
-    ].forEach(([text, url]) => {
-      const btn = el('button', 'about-link-btn', text);
-      btn.onclick = () => window.open(url, '_blank');
-      linksRow.appendChild(btn);
-    });
-    linksBlock.appendChild(linksRow);
+linksBlock.innerHTML = `
+  <h3>🔗 GitHub</h3>
+  <div class="about-links">
+    <button class="about-link-btn" onclick="window.open('https://github.com/TheM1ddleM1n/Waddle/issues/new/choose','_blank')">Open a Template/Form</button>
+  </div>
+`;
 
     const aboutPanel = divId('waddle-about');
     show(aboutPanel, 'none');
