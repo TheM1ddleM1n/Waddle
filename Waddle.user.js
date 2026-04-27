@@ -108,7 +108,7 @@ const SCRIPT_VERSION = '9';
   const setInt = (key, fn, ms) => { state.intervals[key] = setInterval(fn, ms); };
 
   function hideAllPanels() {
-  [byId('waddle-module-grid'), byId('waddle-panel-title'), byId('waddle-about')].forEach(e => show(e, 'none'));
+  ['waddle-module-grid','waddle-panel-title','waddle-about'].forEach(id => show(byId(id), 'none'));
 }
 
   function getPlayerUsername() {
@@ -913,19 +913,6 @@ const SCRIPT_VERSION = '9';
     } catch (_) { return false; }
   }
 
-  function patchMethod(obj, key, replacement) {
-    if (!obj || obj[`_orig_${key}`]) return false;
-    obj[`_orig_${key}`] = obj[key].bind(obj);
-    obj[key] = replacement;
-    return true;
-  }
-
-  function unpatchMethod(obj, key) {
-    if (!obj?.[`_orig_${key}`]) return;
-    obj[key] = obj[`_orig_${key}`];
-    delete obj[`_orig_${key}`];
-  }
-
   const featureManager = {
     performance: {
       start() {
@@ -1040,24 +1027,30 @@ const SCRIPT_VERSION = '9';
       }
     },
     muteChat: {
-      start() {
-        const tryMute = () => {
-          const chat = gameRef.get()?.chat;
-          if (chat !== state._mutedChat) unpatchMethod(state._mutedChat, 'addChat');
-          if (patchMethod(chat, 'addChat', () => {})) state._mutedChat = chat;
-          return !!state._mutedChat;
-        };
-        if (!tryMute()) showToast('Chat-Mute', 'info', 'Waiting for game.chat to load...');
-        else showToast('Chat-Mute', 'enabled', 'Chat messages will be hidden');
-        setInt('chatMuteRetry', tryMute, 2000);
-      },
-      cleanup() {
-        clearInt('chatMuteRetry');
-        unpatchMethod(state._mutedChat, 'addChat');
-        state._mutedChat = null;
-        showToast('Chat-Mute', 'disabled', 'You can now receive messages');
+  start() {
+    const tryMute = () => {
+      const chat = gameRef.get()?.chat;
+      if (chat && !chat._orig_addChat) {
+        chat._orig_addChat = chat.addChat.bind(chat);
+        chat.addChat = () => {};
+        state._mutedChat = chat;
       }
-    },
+      return !!state._mutedChat;
+    };
+    if (!tryMute()) showToast('Chat-Mute', 'info', 'Waiting for game.chat to load...');
+    else showToast('Chat-Mute', 'enabled', 'Chat messages will be hidden');
+    setInt('chatMuteRetry', tryMute, 2000);
+  },
+  cleanup() {
+    clearInt('chatMuteRetry');
+    if (state._mutedChat?._orig_addChat) {
+      state._mutedChat.addChat = state._mutedChat._orig_addChat;
+      delete state._mutedChat._orig_addChat;
+    }
+    state._mutedChat = null;
+    showToast('Chat-Mute', 'disabled', 'You can now receive messages');
+  }
+},
   };
 
   function updateKeyDisplay(key, pressed) {
@@ -1168,47 +1161,41 @@ const SCRIPT_VERSION = '9';
   }
 
   function buildModulePanel(categoryId) {
-    hideAllPanels();
-    const { grid, title, about } = getPanelEls();
-    if (categoryId === 'about') { show(about, 'flex'); return; }
-    show(grid, 'grid');
-    if (title) { show(title); title.textContent = categoryId; }
-    if (!state._panelCache[categoryId]) {
-      state._panelCache[categoryId] = (FEATURE_MAP[categoryId] || []).map(({ label, feature }) => {
-        const btn = div('waddle-module');
-        btn.dataset.feature = feature;
-        btn.append(el('span', null, label), div('waddle-module-dot'));
-        btn.addEventListener('click', () => {
-          const en = toggleFeature(feature);
-          btn.classList.toggle('active', en);
-          showToast(label, en ? 'enabled' : 'disabled', en ? 'Module enabled' : 'Module disabled');
-        });
-        return btn;
+  hideAllPanels();
+  const grid = byId('waddle-module-grid');
+  const title = byId('waddle-panel-title');
+  const about = byId('waddle-about');
+  if (categoryId === 'about') { show(about, 'flex'); return; }
+  show(grid, 'grid');
+  if (title) { show(title); title.textContent = categoryId; }
+  if (!state._panelCache[categoryId]) {
+    state._panelCache[categoryId] = (FEATURE_MAP[categoryId] || []).map(({ label, feature }) => {
+      const btn = div('waddle-module');
+      btn.dataset.feature = feature;
+      btn.append(el('span', null, label), div('waddle-module-dot'));
+      btn.addEventListener('click', () => {
+        const en = toggleFeature(feature);
+        btn.classList.toggle('active', en);
+        showToast(label, en ? 'enabled' : 'disabled', en ? 'Module enabled' : 'Module disabled');
       });
-    }
-    grid.innerHTML = '';
-    state._panelCache[categoryId].forEach(btn => {
-      btn.classList.toggle('active', !!state.features[btn.dataset.feature]);
-      grid.appendChild(btn);
+      return btn;
     });
-    if (categoryId === 'utilities') {
-      grid.appendChild(buildAfkSettingsBlock());
-      grid.appendChild(buildKeybindSettingsBlock());
-    }
   }
+  grid.innerHTML = '';
+  state._panelCache[categoryId].forEach(btn => {
+    btn.classList.toggle('active', !!state.features[btn.dataset.feature]);
+    grid.appendChild(btn);
+  });
+  if (categoryId === 'utilities') {
+    grid.appendChild(buildAfkSettingsBlock());
+    grid.appendChild(buildKeybindSettingsBlock());
+  }
+}
 
   function switchCategory(categoryId) {
     state.activeCategory = categoryId;
     document.querySelectorAll('.waddle-cat').forEach(e => e.classList.toggle('active', e.dataset.cat === categoryId));
     buildModulePanel(categoryId);
-  }
-
-  function getPanelEls() {
-    return {
-      grid: byId('waddle-module-grid'),
-      title: byId('waddle-panel-title'),
-      about: byId('waddle-about'),
-    };
   }
 
   function createMenu() {
