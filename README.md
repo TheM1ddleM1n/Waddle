@@ -53,8 +53,7 @@
 ---
 
 ## Roadmap (4 now)
-- [ ] Remove anything else that is not important to Waddle
-- [ ] Improve Notifications
+- [x] Remove anything else that is not important to Waddle
 - [ ] Consolidation of every feature so no bugs, bottlenecks etc
 
 <div align="center">
