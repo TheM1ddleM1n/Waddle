@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Waddle
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
-// @version      9.1
+// @version      9
 // @description  The ULTIMATE miniblox.io enhancement suite! Have fun!
 // @author       Scripter, TheM1ddleM1n, heythereu
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/Waddle/refs/heads/main/Penguin.png
@@ -9,12 +9,12 @@
 // @run-at       document-start
 // ==/UserScript==
 
-const SCRIPT_VERSION = '9.1';
+const SCRIPT_VERSION = '9';
 
 (function () {
   'use strict';
 
-  (function patchFetchEarly() {
+ (function patchFetchEarly() {
   const UNLEASH_URL = 'https://unleash.miniblox.io/api/frontend';
   const TOGGLES = [
     'skywars','kitpvp','pvp','eggwars','eggwars2','eggwars3','eggwars4',
@@ -24,48 +24,99 @@ const SCRIPT_VERSION = '9.1';
   TOGGLES.push({ name: 'ads', enabled: false, variant: { name: 'disabled', enabled: false }, impressionData: false });
 
   const PAYLOAD = JSON.stringify({ toggles: TOGGLES });
+  const AD_DOMAINS = ['adinplay.com','aipcdn.com','googletagmanager.com','googlesyndication.com','doubleclick.net','adnxs.com','prebid.org','adsafeprotected.com','moatads.com','amazon-adsystem.com'];
+  const isAd = url => typeof url === 'string' && AD_DOMAINS.some(d => url.includes(d));
+  const noop = () => {};
+  const noopObj = new Proxy({}, { get: () => noopObj, set: () => true, apply: () => noopObj, construct: () => noopObj });
+
+  ['adinplay','aipPlayer','aipConfig','__aip','googletag','google_tag_manager','__cmp','__tcfapi','adsbygoogle','prebid','pbjs']
+    .forEach(k => { try { Object.defineProperty(window, k, { get: () => noopObj, set: noop, configurable: true }); } catch (_) {} });
+
+  const _xhrOpen = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function(m, url, ...r) {
+    if (isAd(url)) { Object.defineProperty(this, 'send', { value: noop, configurable: true }); return; }
+    return _xhrOpen.call(this, m, url, ...r);
+  };
+
+  const _createElement = document.createElement.bind(document);
+  document.createElement = function(tag) {
+    const e = _createElement(tag);
+    const t = tag.toLowerCase();
+    if (t === 'script' || t === 'iframe') {
+      const desc = Object.getOwnPropertyDescriptor(t === 'iframe' ? HTMLIFrameElement.prototype : HTMLScriptElement.prototype, 'src')
+        || Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'src');
+      if (desc) {
+  Object.defineProperty(e, 'src', {
+    set(v) { if (!isAd(v)) desc.set.call(this, v); },
+    get() { return desc.get.call(this); },
+    configurable: true,
+  });
+}
+    return e;
+  };
+
   const tryPatchFetch = () => {
     if (!window.fetch) return false;
     const _orig = window.fetch;
-    window.fetch = function (input, init) {
+    window.fetch = function(input, init) {
       const url = typeof input === 'string' ? input : input?.url ?? '';
-      return url.startsWith(UNLEASH_URL)
-        ? Promise.resolve(new Response(PAYLOAD, { status: 200, headers: { 'Content-Type': 'application/json' } }))
-        : _orig.apply(this, arguments);
+      if (isAd(url)) return Promise.resolve(new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } }));
+      if (url.startsWith(UNLEASH_URL)) return Promise.resolve(new Response(PAYLOAD, { status: 200, headers: { 'Content-Type': 'application/json' } }));
+      return _orig.apply(this, arguments);
     };
     return true;
+  };
+
+  const getProps = () => {
+    try { return Object.values(document.querySelector('#react') ?? {})?.[0]?.updateQueue?.baseState?.element?.props; }
+    catch (_) { return null; }
   };
 
   const patchClient = (c) => {
     if (!c || c._waddlePatched) return;
     c._waddlePatched = true;
     c.toggles = TOGGLES;
-    c.isEnabled = (name) => name !== 'ads' && TOGGLES.some(t => t.name === name);
+    c.isEnabled = name => name !== 'ads' && TOGGLES.some(t => t.name === name);
     c.getVariant = () => ({ name: 'disabled', enabled: false });
-    c.getToggle = (name) => TOGGLES.find(t => t.name === name) ?? null;
+    c.getToggle = name => TOGGLES.find(t => t.name === name) ?? null;
+  };
+
+  const patchAdManager = (game) => {
+    if (!game?.adManager || game.adManager._waddlePatched) return;
+    game.adManager._waddlePatched = true;
+    ['showAd','showInterstitial','showRewarded','requestAd','playAd']
+      .forEach(fn => { if (typeof game.adManager[fn] === 'function') game.adManager[fn] = () => Promise.resolve(); });
   };
 
   const scan = () => {
-    try {
-      const props = Object.values(document.querySelector('#react') ?? {})?.[0]?.updateQueue?.baseState?.element?.props;
-      if (!props) return false;
-      for (const val of Object.values(props)) {
-        if (val?.toggles && typeof val.isEnabled === 'function') { patchClient(val); return true; }
-        if (val && typeof val === 'object') {
-          for (const sub of Object.values(val)) {
-            if (sub?.toggles && typeof sub.isEnabled === 'function') { patchClient(sub); return true; }
-          }
+    const props = getProps();
+    if (!props) return false;
+    for (const val of Object.values(props)) {
+      if (val?.toggles && typeof val.isEnabled === 'function') { patchClient(val); return true; }
+      if (val && typeof val === 'object') {
+        for (const sub of Object.values(val)) {
+          if (sub?.toggles && typeof sub.isEnabled === 'function') { patchClient(sub); return true; }
         }
       }
-    } catch (_) {}
+    }
     return false;
   };
 
-  if (!tryPatchFetch()) {
-    const ft = setInterval(() => { if (tryPatchFetch()) clearInterval(ft); }, 10);
-  }
+  const scanGame = () => {
+    const props = getProps();
+    if (!props) return false;
+    for (const val of Object.values(props)) {
+      if (val?.adManager) { patchAdManager(val); return true; }
+      if (val?.game?.adManager) { patchAdManager(val.game); return true; }
+    }
+    return false;
+  };
+
+  if (!tryPatchFetch()) { const ft = setInterval(() => { if (tryPatchFetch()) clearInterval(ft); }, 10); }
+
   const ct = setInterval(() => { if (scan()) clearInterval(ct); }, 200);
-  setTimeout(() => clearInterval(ct), 30000);
+  const gt = setInterval(() => { if (scanGame()) clearInterval(gt); }, 500);
+  setTimeout(() => { clearInterval(ct); clearInterval(gt); }, 30000);
 })();
 
   document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
@@ -390,9 +441,9 @@ const SCRIPT_VERSION = '9.1';
       const game = gameRef.get();
       if (game?.chat && typeof game.chat.addChat === 'function') {
         clearInt('waitForGame');
-        game.chat.addChat({ text: `\\${THEME_COLOR}\\[Waddle]\\reset\\ \\lime\\v${SCRIPT_VERSION} \\yellow\\is now running!` });
-        game.chat.addChat({ text: `\\cyan\\Questions? \\magenta\\Visit \\royalblue\\GitHub: \\cyan\\TheM1ddleM1n/Waddle` });
-        game.chat.addChat({ text: `\\yellow\\Enjoying Waddle? \\orange\\Leave a \\red\\★ on GitHub!` });
+        game.chat.addChat({ text: `\\${THEME_COLOR}\\━━━━━━━━━━━━━━━━━━━━━━━━━━━\\reset\\` });
+        game.chat.addChat({ text: `\\${THEME_COLOR}\\  🐧 Waddle v${SCRIPT_VERSION} \\reset\\— The ULTIMATE miniblox.io enhancement suite!` });
+        game.chat.addChat({ text: `\\yellow\\  ★ Star us on GitHub: \\cyan\\github.com/TheM1ddleM1n/Waddle` });
       }
     }, 500);
   })();
@@ -482,6 +533,14 @@ const SCRIPT_VERSION = '9.1';
 .waddle-toggle input:checked + .waddle-toggle-track::after { transform:translateX(16px); }
 .afk-delay-input { background:var(--bg2); color:var(--c); border:1px solid var(--c-border); border-radius:var(--r); padding:3px 7px; font-size:.82rem; width:52px; text-align:center; outline:none; }
 #waddle-signed-in-line { font-size:.68rem; margin-top:5px; color:var(--text-dim); }
+[id*="adinplay"],[class*="adinplay"],[id*="ad-container"],[class*="ad-banner"],
+iframe[src*="adinplay"],iframe[src*="doubleclick"],iframe[src*="googlesyndication"],
+div[id^="google_ads"],ins.adsbygoogle {
+  display:none !important;
+  width:0 !important;
+  height:0 !important;
+  pointer-events:none !important;
+}
 `;
     document.head.appendChild(style);
   }
@@ -1261,6 +1320,18 @@ linksBlock.innerHTML = `
     <button class="about-link-btn" onclick="window.open('https://github.com/TheM1ddleM1n/Waddle/issues/new/choose','_blank')">Open a Template/Form</button>
   </div>
 `;
+
+const shareBtn = el('button', 'about-link-btn', '📋 Copy Install Link');
+shareBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText('https://github.com/TheM1ddleM1n/Waddle')
+    .then(() => {
+      shareBtn.textContent = '✅ Copied!';
+      showToast('Link Copied!', 'enabled', 'Share Waddle with your friends');
+      setTimeout(() => { shareBtn.textContent = '📋 Copy Install Link'; }, 2000);
+    })
+    .catch(() => showToast('Copy Failed', 'info', 'Visit github.com/TheM1ddleM1n/Waddle'));
+});
+linksBlock.querySelector('.about-links').appendChild(shareBtn);
 
     const aboutPanel = divId('waddle-about');
     show(aboutPanel, 'none');
