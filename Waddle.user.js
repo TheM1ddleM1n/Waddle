@@ -132,6 +132,9 @@ document.createElement = function(tag) {
   const KEYBIND_KEY = 'waddle_keybind';
   const DEFAULT_KEYBIND = '\\';
 
+  const guestNameRe = /^[A-Z][a-z]+[A-Z][a-z]+\d*$/;
+  const isGuestName = name => guestNameRe.test(name);
+
   const el = (tag, cls, text, id) => {
     const e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -164,24 +167,33 @@ document.createElement = function(tag) {
 }
 
   function getPlayerUsername() {
-    try {
-      const game = gameRef.get();
-      const playerId = game?.player?.id;
-      const sorted = game?.playerList?.sortedPlayerData;
-      if (sorted?.length && playerId != null) {
-        for (let i = 0; i < sorted.length; i++) {
-          if (sorted[i]?.id === playerId) {
-            const { name, level, rank } = sorted[i];
-            if (name) lsSet(WADDLE_USERNAME_KEY, name);
-            if (level != null) lsSet(WADDLE_LEVEL_KEY, level);
-            if (rank != null) lsSet(WADDLE_RANK_KEY, rank);
-            return name;
+  try {
+    const game = gameRef.get();
+    const playerId = game?.player?.id;
+    const sorted = game?.playerList?.sortedPlayerData;
+    if (sorted?.length && playerId != null) {
+      for (let i = 0; i < sorted.length; i++) {
+        if (sorted[i]?.id === playerId) {
+          const { name, level, rank } = sorted[i];
+          if (name) {
+            if (!isGuestName(name)) {
+              lsSet(WADDLE_USERNAME_KEY, name);
+              if (level != null) lsSet(WADDLE_LEVEL_KEY, level);
+              if (rank != null) lsSet(WADDLE_RANK_KEY, rank);
+            } else {
+              localStorage.removeItem(WADDLE_USERNAME_KEY);
+              localStorage.removeItem(WADDLE_LEVEL_KEY);
+              localStorage.removeItem(WADDLE_RANK_KEY);
+            }
           }
+          return name || null;
         }
       }
-    } catch (_) {}
-    return lsGet(WADDLE_USERNAME_KEY) || null;
-  }
+    }
+  } catch (_) {}
+  const cached = lsGet(WADDLE_USERNAME_KEY);
+  return (cached && !isGuestName(cached)) ? cached : null;
+}
 
   function pollUsername(element, onFound) {
     const poll = setInterval(() => {
@@ -195,6 +207,23 @@ document.createElement = function(tag) {
       if (!document.contains(element)) clearInterval(poll);
     }, 1000);
   }
+    function watchServerJoin(signedInLine, buildSignedInText) {
+  if (state._serverJoinInterval) return;
+  let lastPlayerId = null;
+  state._serverJoinInterval = setInterval(() => {
+    const game = gameRef.get();
+    const playerId = game?.player?.id ?? null;
+    if (playerId !== null && playerId !== lastPlayerId) {
+      lastPlayerId = playerId;
+      localStorage.removeItem(WADDLE_USERNAME_KEY);
+      localStorage.removeItem(WADDLE_LEVEL_KEY);
+      localStorage.removeItem(WADDLE_RANK_KEY);
+      pollUsername(signedInLine, (name, lvl, rnk) => {
+        buildSignedInText(name, lvl, rnk);
+      });
+    }
+  }, 500);
+}
 
   const spanWidget = text => wrap => {
     const span = el('span', 'counter-time-text', text);
@@ -405,6 +434,8 @@ document.createElement = function(tag) {
     _crosshairRafPending: false,
     _mutedChat: null,
     _dragPositionsCache: null,
+    _lastInGame: false,
+    _serverJoinInterval: null,
   };
 
   const KNOWN_FEATURES = new Set(Object.keys(state.features));
@@ -1294,6 +1325,7 @@ div[id^="google_ads"],ins.adsbygoogle {
 
     buildSignedInText(username, level, rank);
     if (!username) pollUsername(signedInLine, buildSignedInText);
+    watchServerJoin(signedInLine, buildSignedInText);
     footer.appendChild(signedInLine);
     sidebar.appendChild(footer);
 
