@@ -39,21 +39,22 @@ const SCRIPT_VERSION = '9';
   };
 
   const _createElement = document.createElement.bind(document);
-  document.createElement = function(tag) {
-    const e = _createElement(tag);
-    const t = tag.toLowerCase();
-    if (t === 'script' || t === 'iframe') {
-      const desc = Object.getOwnPropertyDescriptor(t === 'iframe' ? HTMLIFrameElement.prototype : HTMLScriptElement.prototype, 'src')
-        || Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'src');
-      if (desc) {
-  Object.defineProperty(e, 'src', {
-    set(v) { if (!isAd(v)) desc.set.call(this, v); },
-    get() { return desc.get.call(this); },
-    configurable: true,
-  });
-}
-    return e;
-  };
+document.createElement = function(tag) {
+  const e = _createElement(tag);
+  const t = tag.toLowerCase();
+  if (t === 'script' || t === 'iframe') {
+    const desc = Object.getOwnPropertyDescriptor(t === 'iframe' ? HTMLIFrameElement.prototype : HTMLScriptElement.prototype, 'src')
+      || Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'src');
+    if (desc) {
+      Object.defineProperty(e, 'src', {
+        set(v) { if (!isAd(v)) desc.set.call(this, v); },
+        get() { return desc.get.call(this); },
+        configurable: true,
+      });
+    }
+  }
+  return e;
+};
 
   const tryPatchFetch = () => {
     if (!window.fetch) return false;
