@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SkyBoxes 4 Waddle!
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
-// @version      v1
+// @version      v2
 // @description  Space sky addon for Waddle — replaces the original Miniblox sky with a cubemap preset
 // @author       TheM1ddleM1n
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/Waddle/refs/heads/main/Penguin.png
