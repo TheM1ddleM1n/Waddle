@@ -53,9 +53,6 @@
 
 ---
 
-## Roadmap
-- [x] Remove anything else that is not important to Waddle
-
 <div align="center">
 
 **Made by the Waddle Team** — MIT License
