@@ -21,7 +21,6 @@
 ---
 
 ## Features
-
 ### Always On
 | Feature | Description |
 |---------|-------------|
