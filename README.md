@@ -50,7 +50,6 @@
 | Inspired By | Scripter's NovaCore Client |
 
 > - Please note I quit Miniblox scripting/and playing Miniblox.io eons ago but still left this client here for you to freely use!
-> - As this would not be updated now I am going to remove the feedback section on the UI
 > - As im moving on to better uses of my time - TheM1ddleM1n
 
 ---
