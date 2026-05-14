@@ -2,11 +2,11 @@
 
 # Waddle: The Ultimate Miniblox Enhancement Suite
 
-![Version](https://img.shields.io/badge/version-9.4-39ff14?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-10-39ff14?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-39ff14?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-39ff14?style=for-the-badge)
 
-**[Install](#-install) • [Features](#-features) • [Open a Template](https://github.com/TheM1ddleM1n/Waddle/issues/new/choose)**
+**[Install](#-install) • [Open a Template](https://github.com/TheM1ddleM1n/Waddle/issues/new/choose)**
 
 </div>
 
@@ -33,7 +33,6 @@ to get auto-complete for game-related variables from [@wq2/miniblox-sdk](https:/
 > Dynamic imports will work in both, but the package won't exist at runtime, thus causing an error when running the script.
 
 ## Features
-
 ### Always On
 
 | Feature | Description |
@@ -67,11 +66,10 @@ to get auto-complete for game-related variables from [@wq2/miniblox-sdk](https:/
 | Enhancement & Maintenance | [@TheM1ddleM1n](https://github.com/TheM1ddleM1n) |
 | Inspired By | Scripter's NovaCore Client |
 
----
+> - Please note I quit Miniblox scripting/and playing Miniblox.io eons ago but still left this client here for you to freely use!
+> - As im moving on to better uses of my time - TheM1ddleM1n
 
-## Roadmap
-- [x] Remove anything else that is not important to Waddle
-- [ ] Consolidation of every feature so no bugs, bottlenecks etc
+---
 
 <div align="center">
 
