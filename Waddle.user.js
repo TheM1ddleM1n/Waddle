@@ -9,7 +9,7 @@
 // @run-at       document-start
 // ==/UserScript==
 
-const SCRIPT_VERSION = '9.4';
+const SCRIPT_VERSION = "9.4"; // GM_info.script.version can be used, but I think dev console support is still wanted
 
 (function () {
   'use strict';
@@ -24,6 +24,7 @@ const SCRIPT_VERSION = '9.4';
     TOGGLES.push({ name: 'ads', enabled: false, variant: { name: 'disabled', enabled: false }, impressionData: false });
 
     const PAYLOAD = JSON.stringify({ toggles: TOGGLES });
+    // kid named https://ublockorigin.com/:
     const AD_DOMAINS = ['adinplay.com', 'aipcdn.com', 'googletagmanager.com', 'googlesyndication.com', 'doubleclick.net', 'adnxs.com', 'prebid.org', 'adsafeprotected.com', 'moatads.com', 'amazon-adsystem.com'];
     const isAd = url => typeof url === 'string' && AD_DOMAINS.some(d => url.includes(d));
     const noop = () => { };
@@ -135,6 +136,13 @@ const SCRIPT_VERSION = '9.4';
   const guestNameRe = /^[A-Z][a-z]+[A-Z][a-z]+\d*$/;
   const isGuestName = name => guestNameRe.test(name);
 
+  /**
+   * @param {string} tag
+   * @param {string?} cls
+   * @param {string | null} text
+   * @param {string?} id
+   * @returns {HTMLElement} created element
+   */
   const el = (tag, cls, text, id) => {
     const e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -142,24 +150,75 @@ const SCRIPT_VERSION = '9.4';
     if (id) e.id = id;
     return e;
   };
+  /**
+   * @param {string?} cls
+   * @param {string | null} text
+   * @param {string?} id
+   */
   const div = (cls, text, id) => el('div', cls, text, id);
+  /**
+   * @param {string?} id
+   * @param {string?} cls
+   * @param {string | null} text
+   */
   const divId = (id, cls, text) => div(cls, text, id);
+  /**
+   * @param {string} id
+   */
   const byId = id => document.getElementById(id);
+  /**
+   * @param {string} k
+   * @returns {string | null}
+   */
   const lsGet = k => localStorage.getItem(k);
+  /**
+   * @param {string} k
+   * @param {string} v
+   */
   const lsSet = (k, v) => localStorage.setItem(k, v);
+  /**
+   * @param {HTMLElement} el
+   * @param {string} display
+   */
   const show = (el, display = 'block') => { if (el) el.style.display = display; };
+  /**
+   * @param {string} type
+   * @param {string | undefined} key
+   * @param {string | undefined} code
+   * @param {number | undefined} keyCode 
+   * @returns {KeyboardEvent}
+   */
   const makeKeyEvent = (type, key, code, keyCode) =>
-    new KeyboardEvent(type, { key, code, keyCode, which: keyCode, bubbles: true, cancelable: true });
+    new KeyboardEvent(type, { key, code, keyCode, bubbles: true, cancelable: true });
   const makeListener = (target, evt, fn, opts) => {
     target.addEventListener(evt, fn, opts);
     return () => target.removeEventListener(evt, fn, opts);
   };
+  /**
+   * 
+   * @param {CanvasRenderingContext2D} ctx 
+   * @param {number} x 
+   * @param {number} y 
+   * @param {number} w 
+   * @param {number} h 
+   * @param {number?} r 
+   */
   const roundRect = (ctx, x, y, w, h, r) => {
     ctx.beginPath();
     ctx.roundRect(x, y, w, h, r);
     ctx.closePath();
   };
+  /**
+   * clear an interval
+   * @param {string} key
+   */
   const clearInt = (key) => { clearInterval(state.intervals[key]); state.intervals[key] = null; };
+  /**
+   * set an interval
+   * @param {string} key
+   * @param {() => void} fn
+   * @param {number} ms
+   */
   const setInt = (key, fn, ms) => { state.intervals[key] = setInterval(fn, ms); };
 
   function hideAllPanels() {
@@ -168,7 +227,7 @@ const SCRIPT_VERSION = '9.4';
 
   function getPlayerUsername() {
     try {
-      const game = gameRef.get();
+      const game = gameRef.game;
       const playerId = game?.player?.id;
       const sorted = game?.playerList?.sortedPlayerData;
       if (sorted?.length && playerId != null) {
@@ -211,7 +270,7 @@ const SCRIPT_VERSION = '9.4';
     if (state._serverJoinInterval) return;
     let lastPlayerId = null;
     state._serverJoinInterval = setInterval(() => {
-      const game = gameRef.get();
+      const game = gameRef.game;
       const playerId = game?.player?.id ?? null;
       if (playerId !== null && playerId !== lastPlayerId) {
         lastPlayerId = playerId;
@@ -282,23 +341,21 @@ const SCRIPT_VERSION = '9.4';
   };
 
   const gameRef = {
+    /**
+     * @type {import("@wq2/miniblox-sdk").Game}
+     */
     _game: null,
-    _lastValidation: 0,
-    _lastTry: 0,
-    get(now = performance.now()) {
-      if (this._game && !(this._game.player && this._game.resourceMonitor)) {
-        this._game = null;
-        this._lastValidation = 0;
-      }
-      if (!this._game || now - this._lastValidation > 2000) {
-        this._lastValidation = now;
-        this._resolve(now);
+    /**
+     * The game reference is never changed while the page is loaded, so we can cache it.
+     * @type {import("@wq2/miniblox-sdk").Game}
+     */
+    get game() {
+      if (this._game === null) {
+        this._resolve();
       }
       return this._game;
     },
-    _resolve(now) {
-      if (now - this._lastTry < 500) return;
-      this._lastTry = now;
+    _resolve() {
       try {
         const fiber = Object.values(document.querySelector('#react') ?? {})?.[0];
         const game = fiber?.updateQueue?.baseState?.element?.props?.game;
@@ -470,7 +527,7 @@ const SCRIPT_VERSION = '9.4';
     let attempts = 0;
     setInt('waitForGame', () => {
       if (++attempts > 40) { clearInt('waitForGame'); return; }
-      const game = gameRef.get();
+      const game = gameRef.game;
       if (game?.chat && typeof game.chat.addChat === 'function') {
         clearInt('waitForGame');
         game.chat.addChat({ text: `\\${THEME_COLOR}\\━━━━━━━━━━━━━━━━━━━━━━━━━━━\\reset\\` });
@@ -766,7 +823,7 @@ div[id^="google_ads"],ins.adsbygoogle {
           lastPauseCheck = now;
         }
         if (!document.pointerLockElement || cachedPauseMenu) { clearHUD(); requestAnimationFrame(tick); return; }
-        const game = gameRef.get(now);
+        const game = gameRef.game;
         const player = game?.player;
         if (game?.world && player?.pos) {
           if (now - lastEntityScan > ENTITY_SCAN_INTERVAL) {
@@ -945,7 +1002,7 @@ div[id^="google_ads"],ins.adsbygoogle {
     if (state.rafId) return;
     const loop = (t) => {
       if (!needsRaf()) { state.rafId = null; return; }
-      const game = gameRef.get(t);
+      const game = gameRef.game;
       if (t - state.lastPerformanceUpdate >= 500 && state.counters.performance) {
         updatePerformanceCounter(game);
         state.lastPerformanceUpdate = t;
@@ -992,9 +1049,14 @@ div[id^="google_ads"],ins.adsbygoogle {
     return active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable;
   }
 
+  /**
+   * 
+   * @param {string} text the message to send
+   * @returns {boolean} if it sent
+   */
   function sendChatMessage(text) {
     try {
-      const game = gameRef.get();
+      const game = gameRef.game;
       if (!game?.chat) return false;
       if (typeof game.chat.setInputValue !== 'function') return false;
       if (typeof game.chat.submit !== 'function') return false;
@@ -1009,7 +1071,7 @@ div[id^="google_ads"],ins.adsbygoogle {
       start() {
         if (!state.counters.performance) createWidget('performance');
         startPerformanceLoop();
-        updatePerformanceCounter(gameRef.get());
+        updatePerformanceCounter(gameRef.game);
         if (!state._cpsListeners) {
           const updateSvgFill = (buttons) => {
             const lEl = byId('cps-svg-lmb');
@@ -1120,7 +1182,7 @@ div[id^="google_ads"],ins.adsbygoogle {
     muteChat: {
       start() {
         const tryMute = () => {
-          const chat = gameRef.get()?.chat;
+          const chat = gameRef.game?.chat;
           if (chat && !chat._orig_addChat) {
             chat._orig_addChat = chat.addChat.bind(chat);
             chat.addChat = () => { };
