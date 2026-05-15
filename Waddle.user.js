@@ -14,111 +14,112 @@ const SCRIPT_VERSION = '10';
 (function () {
   'use strict';
 
- (function patchFetchEarly() {
-  const UNLEASH_URL = 'https://unleash.miniblox.io/api/frontend';
-  const TOGGLES = [
-    'skywars','kitpvp','pvp','eggwars','eggwars2','eggwars3','eggwars4',
-    'duels_bridge','spleef','oitq','murder','blockhunt','blitzbuild',
-    'require_account_for_creating_planets',
-  ].map(name => ({ name, enabled: true, variant: { name: 'disabled', enabled: false }, impressionData: false }));
-  TOGGLES.push({ name: 'ads', enabled: false, variant: { name: 'disabled', enabled: false }, impressionData: false });
+  (function patchFetchEarly() {
+    const UNLEASH_URL = 'https://unleash.miniblox.io/api/frontend';
+    const TOGGLES = [
+      'skywars', 'kitpvp', 'pvp', 'eggwars', 'eggwars2', 'eggwars3', 'eggwars4',
+      'duels_bridge', 'spleef', 'oitq', 'murder', 'blockhunt', 'blitzbuild',
+      'require_account_for_creating_planets',
+    ].map(name => ({ name, enabled: true, variant: { name: 'disabled', enabled: false }, impressionData: false }));
+    TOGGLES.push({ name: 'ads', enabled: false, variant: { name: 'disabled', enabled: false }, impressionData: false });
 
-  const PAYLOAD = JSON.stringify({ toggles: TOGGLES });
-  const AD_DOMAINS = ['adinplay.com','aipcdn.com','googletagmanager.com','googlesyndication.com','doubleclick.net','adnxs.com','prebid.org','adsafeprotected.com','moatads.com','amazon-adsystem.com'];
-  const isAd = url => typeof url === 'string' && AD_DOMAINS.some(d => url.includes(d));
-  const noop = () => {};
-  const noopObj = new Proxy({}, { get: () => noopObj, set: () => true, apply: () => noopObj, construct: () => noopObj });
+    const PAYLOAD = JSON.stringify({ toggles: TOGGLES });
+    // kid named https://ublockorigin.com/:
+    const AD_DOMAINS = ['adinplay.com', 'aipcdn.com', 'googletagmanager.com', 'googlesyndication.com', 'doubleclick.net', 'adnxs.com', 'prebid.org', 'adsafeprotected.com', 'moatads.com', 'amazon-adsystem.com'];
+    const isAd = url => typeof url === 'string' && AD_DOMAINS.some(d => url.includes(d));
+    const noop = () => { };
+    const noopObj = new Proxy({}, { get: () => noopObj, set: () => true, apply: () => noopObj, construct: () => noopObj });
 
-  ['adinplay','aipPlayer','aipConfig','__aip','googletag','google_tag_manager','__cmp','__tcfapi','adsbygoogle','prebid','pbjs']
-    .forEach(k => { try { Object.defineProperty(window, k, { get: () => noopObj, set: noop, configurable: true }); } catch (_) {} });
+    ['adinplay', 'aipPlayer', 'aipConfig', '__aip', 'googletag', 'google_tag_manager', '__cmp', '__tcfapi', 'adsbygoogle', 'prebid', 'pbjs']
+      .forEach(k => { try { Object.defineProperty(window, k, { get: () => noopObj, set: noop, configurable: true }); } catch (_) { } });
 
-  const _xhrOpen = XMLHttpRequest.prototype.open;
-  XMLHttpRequest.prototype.open = function(m, url, ...r) {
-    if (isAd(url)) { Object.defineProperty(this, 'send', { value: noop, configurable: true }); return; }
-    return _xhrOpen.call(this, m, url, ...r);
-  };
-
-  const _createElement = document.createElement.bind(document);
-document.createElement = function(tag) {
-  const e = _createElement(tag);
-  const t = tag.toLowerCase();
-  if (t === 'script' || t === 'iframe') {
-    const desc = Object.getOwnPropertyDescriptor(t === 'iframe' ? HTMLIFrameElement.prototype : HTMLScriptElement.prototype, 'src')
-      || Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'src');
-    if (desc) {
-      Object.defineProperty(e, 'src', {
-        set(v) { if (!isAd(v)) desc.set.call(this, v); },
-        get() { return desc.get.call(this); },
-        configurable: true,
-      });
-    }
-  }
-  return e;
-};
-
-  const tryPatchFetch = () => {
-    if (!window.fetch) return false;
-    const _orig = window.fetch;
-    window.fetch = function(input, init) {
-      const url = typeof input === 'string' ? input : input?.url ?? '';
-      if (isAd(url)) return Promise.resolve(new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } }));
-      if (url.startsWith(UNLEASH_URL)) return Promise.resolve(new Response(PAYLOAD, { status: 200, headers: { 'Content-Type': 'application/json' } }));
-      return _orig.apply(this, arguments);
+    const _xhrOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function (m, url, ...r) {
+      if (isAd(url)) { Object.defineProperty(this, 'send', { value: noop, configurable: true }); return; }
+      return _xhrOpen.call(this, m, url, ...r);
     };
-    return true;
-  };
 
-  const getProps = () => {
-    try { return Object.values(document.querySelector('#react') ?? {})?.[0]?.updateQueue?.baseState?.element?.props; }
-    catch (_) { return null; }
-  };
-
-  const patchClient = (c) => {
-    if (!c || c._waddlePatched) return;
-    c._waddlePatched = true;
-    c.toggles = TOGGLES;
-    c.isEnabled = name => name !== 'ads' && TOGGLES.some(t => t.name === name);
-    c.getVariant = () => ({ name: 'disabled', enabled: false });
-    c.getToggle = name => TOGGLES.find(t => t.name === name) ?? null;
-  };
-
-  const patchAdManager = (game) => {
-    if (!game?.adManager || game.adManager._waddlePatched) return;
-    game.adManager._waddlePatched = true;
-    ['showAd','showInterstitial','showRewarded','requestAd','playAd']
-      .forEach(fn => { if (typeof game.adManager[fn] === 'function') game.adManager[fn] = () => Promise.resolve(); });
-  };
-
-  const scan = () => {
-    const props = getProps();
-    if (!props) return false;
-    for (const val of Object.values(props)) {
-      if (val?.toggles && typeof val.isEnabled === 'function') { patchClient(val); return true; }
-      if (val && typeof val === 'object') {
-        for (const sub of Object.values(val)) {
-          if (sub?.toggles && typeof sub.isEnabled === 'function') { patchClient(sub); return true; }
+    const _createElement = document.createElement.bind(document);
+    document.createElement = function (tag) {
+      const e = _createElement(tag);
+      const t = tag.toLowerCase();
+      if (t === 'script' || t === 'iframe') {
+        const desc = Object.getOwnPropertyDescriptor(t === 'iframe' ? HTMLIFrameElement.prototype : HTMLScriptElement.prototype, 'src')
+          || Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'src');
+        if (desc) {
+          Object.defineProperty(e, 'src', {
+            set(v) { if (!isAd(v)) desc.set.call(this, v); },
+            get() { return desc.get.call(this); },
+            configurable: true,
+          });
         }
       }
-    }
-    return false;
-  };
+      return e;
+    };
 
-  const scanGame = () => {
-    const props = getProps();
-    if (!props) return false;
-    for (const val of Object.values(props)) {
-      if (val?.adManager) { patchAdManager(val); return true; }
-      if (val?.game?.adManager) { patchAdManager(val.game); return true; }
-    }
-    return false;
-  };
+    const tryPatchFetch = () => {
+      if (!window.fetch) return false;
+      const _orig = window.fetch;
+      window.fetch = function (input, init) {
+        const url = typeof input === 'string' ? input : input?.url ?? '';
+        if (isAd(url)) return Promise.resolve(new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } }));
+        if (url.startsWith(UNLEASH_URL)) return Promise.resolve(new Response(PAYLOAD, { status: 200, headers: { 'Content-Type': 'application/json' } }));
+        return _orig.apply(this, arguments);
+      };
+      return true;
+    };
 
-  if (!tryPatchFetch()) { const ft = setInterval(() => { if (tryPatchFetch()) clearInterval(ft); }, 10); }
+    const getProps = () => {
+      try { return Object.values(document.querySelector('#react') ?? {})?.[0]?.updateQueue?.baseState?.element?.props; }
+      catch (_) { return null; }
+    };
 
-  const ct = setInterval(() => { if (scan()) clearInterval(ct); }, 200);
-  const gt = setInterval(() => { if (scanGame()) clearInterval(gt); }, 500);
-  setTimeout(() => { clearInterval(ct); clearInterval(gt); }, 30000);
-})();
+    const patchClient = (c) => {
+      if (!c || c._waddlePatched) return;
+      c._waddlePatched = true;
+      c.toggles = TOGGLES;
+      c.isEnabled = name => name !== 'ads' && TOGGLES.some(t => t.name === name);
+      c.getVariant = () => ({ name: 'disabled', enabled: false });
+      c.getToggle = name => TOGGLES.find(t => t.name === name) ?? null;
+    };
+
+    const patchAdManager = (game) => {
+      if (!game?.adManager || game.adManager._waddlePatched) return;
+      game.adManager._waddlePatched = true;
+      ['showAd', 'showInterstitial', 'showRewarded', 'requestAd', 'playAd']
+        .forEach(fn => { if (typeof game.adManager[fn] === 'function') game.adManager[fn] = () => Promise.resolve(); });
+    };
+
+    const scan = () => {
+      const props = getProps();
+      if (!props) return false;
+      for (const val of Object.values(props)) {
+        if (val?.toggles && typeof val.isEnabled === 'function') { patchClient(val); return true; }
+        if (val && typeof val === 'object') {
+          for (const sub of Object.values(val)) {
+            if (sub?.toggles && typeof sub.isEnabled === 'function') { patchClient(sub); return true; }
+          }
+        }
+      }
+      return false;
+    };
+
+    const scanGame = () => {
+      const props = getProps();
+      if (!props) return false;
+      for (const val of Object.values(props)) {
+        if (val?.adManager) { patchAdManager(val); return true; }
+        if (val?.game?.adManager) { patchAdManager(val.game); return true; }
+      }
+      return false;
+    };
+
+    if (!tryPatchFetch()) { const ft = setInterval(() => { if (tryPatchFetch()) clearInterval(ft); }, 10); }
+
+    const ct = setInterval(() => { if (scan()) clearInterval(ct); }, 200);
+    const gt = setInterval(() => { if (scanGame()) clearInterval(gt); }, 500);
+    setTimeout(() => { clearInterval(ct); clearInterval(gt); }, 30000);
+  })();
 
   document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
 
@@ -135,6 +136,13 @@ document.createElement = function(tag) {
   const guestNameRe = /^[A-Z][a-z]+[A-Z][a-z]+\d*$/;
   const isGuestName = name => guestNameRe.test(name);
 
+  /**
+   * @param {string} tag
+   * @param {string?} cls
+   * @param {string | null} text
+   * @param {string?} id
+   * @returns {HTMLElement} created element
+   */
   const el = (tag, cls, text, id) => {
     const e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -142,58 +150,109 @@ document.createElement = function(tag) {
     if (id) e.id = id;
     return e;
   };
+  /**
+   * @param {string?} cls
+   * @param {string | null} text
+   * @param {string?} id
+   */
   const div = (cls, text, id) => el('div', cls, text, id);
+  /**
+   * @param {string?} id
+   * @param {string?} cls
+   * @param {string | null} text
+   */
   const divId = (id, cls, text) => div(cls, text, id);
+  /**
+   * @param {string} id
+   */
   const byId = id => document.getElementById(id);
+  /**
+   * @param {string} k
+   * @returns {string | null}
+   */
   const lsGet = k => localStorage.getItem(k);
+  /**
+   * @param {string} k
+   * @param {string} v
+   */
   const lsSet = (k, v) => localStorage.setItem(k, v);
+  /**
+   * @param {HTMLElement} el
+   * @param {string} display
+   */
   const show = (el, display = 'block') => { if (el) el.style.display = display; };
+  /**
+   * @param {string} type
+   * @param {string | undefined} key
+   * @param {string | undefined} code
+   * @param {number | undefined} keyCode 
+   * @returns {KeyboardEvent}
+   */
   const makeKeyEvent = (type, key, code, keyCode) =>
-    new KeyboardEvent(type, { key, code, keyCode, which: keyCode, bubbles: true, cancelable: true });
+    new KeyboardEvent(type, { key, code, keyCode, bubbles: true, cancelable: true });
   const makeListener = (target, evt, fn, opts) => {
     target.addEventListener(evt, fn, opts);
     return () => target.removeEventListener(evt, fn, opts);
   };
+  /**
+   * 
+   * @param {CanvasRenderingContext2D} ctx 
+   * @param {number} x 
+   * @param {number} y 
+   * @param {number} w 
+   * @param {number} h 
+   * @param {number?} r 
+   */
   const roundRect = (ctx, x, y, w, h, r) => {
     ctx.beginPath();
     ctx.roundRect(x, y, w, h, r);
     ctx.closePath();
   };
+  /**
+   * clear an interval
+   * @param {string} key
+   */
   const clearInt = (key) => { clearInterval(state.intervals[key]); state.intervals[key] = null; };
+  /**
+   * set an interval
+   * @param {string} key
+   * @param {() => void} fn
+   * @param {number} ms
+   */
   const setInt = (key, fn, ms) => { state.intervals[key] = setInterval(fn, ms); };
 
   function hideAllPanels() {
-  ['waddle-module-grid','waddle-panel-title','waddle-about'].forEach(id => show(byId(id), 'none'));
-}
+    ['waddle-module-grid', 'waddle-panel-title', 'waddle-about'].forEach(id => show(byId(id), 'none'));
+  }
 
   function getPlayerUsername() {
-  try {
-    const game = gameRef.get();
-    const playerId = game?.player?.id;
-    const sorted = game?.playerList?.sortedPlayerData;
-    if (sorted?.length && playerId != null) {
-      for (let i = 0; i < sorted.length; i++) {
-        if (sorted[i]?.id === playerId) {
-          const { name, level, rank } = sorted[i];
-          if (name) {
-            if (!isGuestName(name)) {
-              lsSet(WADDLE_USERNAME_KEY, name);
-              if (level != null) lsSet(WADDLE_LEVEL_KEY, level);
-              if (rank != null) lsSet(WADDLE_RANK_KEY, rank);
-            } else {
-              localStorage.removeItem(WADDLE_USERNAME_KEY);
-              localStorage.removeItem(WADDLE_LEVEL_KEY);
-              localStorage.removeItem(WADDLE_RANK_KEY);
+    try {
+      const game = gameRef.game;
+      const playerId = game?.player?.id;
+      const sorted = game?.playerList?.sortedPlayerData;
+      if (sorted?.length && playerId != null) {
+        for (let i = 0; i < sorted.length; i++) {
+          if (sorted[i]?.id === playerId) {
+            const { name, level, rank } = sorted[i];
+            if (name) {
+              if (!isGuestName(name)) {
+                lsSet(WADDLE_USERNAME_KEY, name);
+                if (level != null) lsSet(WADDLE_LEVEL_KEY, level);
+                if (rank != null) lsSet(WADDLE_RANK_KEY, rank);
+              } else {
+                localStorage.removeItem(WADDLE_USERNAME_KEY);
+                localStorage.removeItem(WADDLE_LEVEL_KEY);
+                localStorage.removeItem(WADDLE_RANK_KEY);
+              }
             }
+            return name || null;
           }
-          return name || null;
         }
       }
-    }
-  } catch (_) {}
-  const cached = lsGet(WADDLE_USERNAME_KEY);
-  return (cached && !isGuestName(cached)) ? cached : null;
-}
+    } catch (_) { }
+    const cached = lsGet(WADDLE_USERNAME_KEY);
+    return (cached && !isGuestName(cached)) ? cached : null;
+  }
 
   function pollUsername(element, onFound) {
     const poll = setInterval(() => {
@@ -207,23 +266,23 @@ document.createElement = function(tag) {
       if (!document.contains(element)) clearInterval(poll);
     }, 1000);
   }
-    function watchServerJoin(signedInLine, buildSignedInText) {
-  if (state._serverJoinInterval) return;
-  let lastPlayerId = null;
-  state._serverJoinInterval = setInterval(() => {
-    const game = gameRef.get();
-    const playerId = game?.player?.id ?? null;
-    if (playerId !== null && playerId !== lastPlayerId) {
-      lastPlayerId = playerId;
-      localStorage.removeItem(WADDLE_USERNAME_KEY);
-      localStorage.removeItem(WADDLE_LEVEL_KEY);
-      localStorage.removeItem(WADDLE_RANK_KEY);
-      pollUsername(signedInLine, (name, lvl, rnk) => {
-        buildSignedInText(name, lvl, rnk);
-      });
-    }
-  }, 500);
-}
+  function watchServerJoin(signedInLine, buildSignedInText) {
+    if (state._serverJoinInterval) return;
+    let lastPlayerId = null;
+    state._serverJoinInterval = setInterval(() => {
+      const game = gameRef.game;
+      const playerId = game?.player?.id ?? null;
+      if (playerId !== null && playerId !== lastPlayerId) {
+        lastPlayerId = playerId;
+        localStorage.removeItem(WADDLE_USERNAME_KEY);
+        localStorage.removeItem(WADDLE_LEVEL_KEY);
+        localStorage.removeItem(WADDLE_RANK_KEY);
+        pollUsername(signedInLine, (name, lvl, rnk) => {
+          buildSignedInText(name, lvl, rnk);
+        });
+      }
+    }, 500);
+  }
 
   const spanWidget = text => wrap => {
     const span = el('span', 'counter-time-text', text);
@@ -282,28 +341,26 @@ document.createElement = function(tag) {
   };
 
   const gameRef = {
+    /**
+     * @type {import("@wq2/miniblox-sdk").Game}
+     */
     _game: null,
-    _lastValidation: 0,
-    _lastTry: 0,
-    get(now = performance.now()) {
-      if (this._game && !(this._game.player && this._game.resourceMonitor)) {
-        this._game = null;
-        this._lastValidation = 0;
-      }
-      if (!this._game || now - this._lastValidation > 2000) {
-        this._lastValidation = now;
-        this._resolve(now);
+    /**
+     * The game reference is never changed while the page is loaded, so we can cache it.
+     * @type {import("@wq2/miniblox-sdk").Game}
+     */
+    get game() {
+      if (this._game === null) {
+        this._resolve();
       }
       return this._game;
     },
-    _resolve(now) {
-      if (now - this._lastTry < 500) return;
-      this._lastTry = now;
+    _resolve() {
       try {
         const fiber = Object.values(document.querySelector('#react') ?? {})?.[0];
         const game = fiber?.updateQueue?.baseState?.element?.props?.game;
         if (game?.resourceMonitor && game?.player) this._game = game;
-      } catch (_) {}
+      } catch (_) { }
     }
   };
 
@@ -470,7 +527,7 @@ document.createElement = function(tag) {
     let attempts = 0;
     setInt('waitForGame', () => {
       if (++attempts > 40) { clearInt('waitForGame'); return; }
-      const game = gameRef.get();
+      const game = gameRef.game;
       if (game?.chat && typeof game.chat.addChat === 'function') {
         clearInt('waitForGame');
         game.chat.addChat({ text: `\\${THEME_COLOR}\\━━━━━━━━━━━━━━━━━━━━━━━━━━━\\reset\\` });
@@ -578,29 +635,29 @@ div[id^="google_ads"],ins.adsbygoogle {
   }
 
   function showToast(title, type = 'info', message = '') {
-  if (!document.body) return;
-  if (!['enabled', 'disabled', 'info'].includes(type)) type = 'info';
-  if (!state.toastContainer || !document.contains(state.toastContainer)) {
-    state.toastContainer = byId('waddle-toasts') || divId('waddle-toasts');
-    document.body.appendChild(state.toastContainer);
+    if (!document.body) return;
+    if (!['enabled', 'disabled', 'info'].includes(type)) type = 'info';
+    if (!state.toastContainer || !document.contains(state.toastContainer)) {
+      state.toastContainer = byId('waddle-toasts') || divId('waddle-toasts');
+      document.body.appendChild(state.toastContainer);
+    }
+    const toast = div('waddle-toast');
+    toast.innerHTML = `<span class="toast-icon ${type}">${{ 'enabled': '✅', 'disabled': '❌', 'info': '❗' }[type]}</span><div class="toast-body"><div class="toast-title">${title}</div>${message ? `<div class="toast-msg">${message}</div>` : ''}</div>`;
+    state.toastContainer.appendChild(toast);
+    setTimeout(() => { toast.classList.add('hide'); setTimeout(() => toast.remove(), 280); }, 2800);
   }
-  const toast = div('waddle-toast');
-  toast.innerHTML = `<span class="toast-icon ${type}">${{'enabled':'✅','disabled':'❌','info':'❗'}[type]}</span><div class="toast-body"><div class="toast-title">${title}</div>${message ? `<div class="toast-msg">${message}</div>` : ''}</div>`;
-  state.toastContainer.appendChild(toast);
-  setTimeout(() => { toast.classList.add('hide'); setTimeout(() => toast.remove(), 280); }, 2800);
-}
 
   function createCrosshair() {
-  const c = div(null);
-  const s = `position:absolute;background:${THEME_COLOR};pointer-events:none`;
-  c.innerHTML = `
+    const c = div(null);
+    const s = `position:absolute;background:${THEME_COLOR};pointer-events:none`;
+    c.innerHTML = `
     <div style="${s};width:2px;height:8px;top:0;left:50%;transform:translateX(-50%)"></div>
     <div style="${s};width:2px;height:8px;bottom:0;left:50%;transform:translateX(-50%)"></div>
     <div style="${s};width:8px;height:2px;left:0;top:50%;transform:translateY(-50%)"></div>
     <div style="${s};width:8px;height:2px;right:0;top:50%;transform:translateY(-50%)"></div>
   `;
-  return c;
-}
+    return c;
+  }
 
   function checkCrosshair() {
     if (!state.crosshairContainer) return;
@@ -766,7 +823,7 @@ div[id^="google_ads"],ins.adsbygoogle {
           lastPauseCheck = now;
         }
         if (!document.pointerLockElement || cachedPauseMenu) { clearHUD(); requestAnimationFrame(tick); return; }
-        const game = gameRef.get(now);
+        const game = gameRef.game;
         const player = game?.player;
         if (game?.world && player?.pos) {
           if (now - lastEntityScan > ENTITY_SCAN_INTERVAL) {
@@ -804,7 +861,7 @@ div[id^="google_ads"],ins.adsbygoogle {
         }
       } catch (err) {
         console.warn('[Waddle] Target HUD tick error:', err);
-        try { clearHUD(true); } catch (_) {}
+        try { clearHUD(true); } catch (_) { }
         setTimeout(() => requestAnimationFrame(tick), 2000);
         return;
       }
@@ -945,7 +1002,7 @@ div[id^="google_ads"],ins.adsbygoogle {
     if (state.rafId) return;
     const loop = (t) => {
       if (!needsRaf()) { state.rafId = null; return; }
-      const game = gameRef.get(t);
+      const game = gameRef.game;
       if (t - state.lastPerformanceUpdate >= 500 && state.counters.performance) {
         updatePerformanceCounter(game);
         state.lastPerformanceUpdate = t;
@@ -992,9 +1049,14 @@ div[id^="google_ads"],ins.adsbygoogle {
     return active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable;
   }
 
+  /**
+   * 
+   * @param {string} text the message to send
+   * @returns {boolean} if it sent
+   */
   function sendChatMessage(text) {
     try {
-      const game = gameRef.get();
+      const game = gameRef.game;
       if (!game?.chat) return false;
       if (typeof game.chat.setInputValue !== 'function') return false;
       if (typeof game.chat.submit !== 'function') return false;
@@ -1009,7 +1071,7 @@ div[id^="google_ads"],ins.adsbygoogle {
       start() {
         if (!state.counters.performance) createWidget('performance');
         startPerformanceLoop();
-        updatePerformanceCounter(gameRef.get());
+        updatePerformanceCounter(gameRef.game);
         if (!state._cpsListeners) {
           const updateSvgFill = (buttons) => {
             const lEl = byId('cps-svg-lmb');
@@ -1118,30 +1180,30 @@ div[id^="google_ads"],ins.adsbygoogle {
       }
     },
     muteChat: {
-  start() {
-    const tryMute = () => {
-      const chat = gameRef.get()?.chat;
-      if (chat && !chat._orig_addChat) {
-        chat._orig_addChat = chat.addChat.bind(chat);
-        chat.addChat = () => {};
-        state._mutedChat = chat;
+      start() {
+        const tryMute = () => {
+          const chat = gameRef.game?.chat;
+          if (chat && !chat._orig_addChat) {
+            chat._orig_addChat = chat.addChat.bind(chat);
+            chat.addChat = () => { };
+            state._mutedChat = chat;
+          }
+          return !!state._mutedChat;
+        };
+        if (!tryMute()) showToast('Chat-Mute', 'info', 'Waiting for game.chat to load...');
+        else showToast('Chat-Mute', 'enabled', 'Chat messages will be hidden');
+        setInt('chatMuteRetry', tryMute, 2000);
+      },
+      cleanup() {
+        clearInt('chatMuteRetry');
+        if (state._mutedChat?._orig_addChat) {
+          state._mutedChat.addChat = state._mutedChat._orig_addChat;
+          delete state._mutedChat._orig_addChat;
+        }
+        state._mutedChat = null;
+        showToast('Chat-Mute', 'disabled', 'You can now receive messages');
       }
-      return !!state._mutedChat;
-    };
-    if (!tryMute()) showToast('Chat-Mute', 'info', 'Waiting for game.chat to load...');
-    else showToast('Chat-Mute', 'enabled', 'Chat messages will be hidden');
-    setInt('chatMuteRetry', tryMute, 2000);
-  },
-  cleanup() {
-    clearInt('chatMuteRetry');
-    if (state._mutedChat?._orig_addChat) {
-      state._mutedChat.addChat = state._mutedChat._orig_addChat;
-      delete state._mutedChat._orig_addChat;
-    }
-    state._mutedChat = null;
-    showToast('Chat-Mute', 'disabled', 'You can now receive messages');
-  }
-},
+    },
   };
 
   function updateKeyDisplay(key, pressed) {
@@ -1252,36 +1314,36 @@ div[id^="google_ads"],ins.adsbygoogle {
   }
 
   function buildModulePanel(categoryId) {
-  hideAllPanels();
-  const grid = byId('waddle-module-grid');
-  const title = byId('waddle-panel-title');
-  const about = byId('waddle-about');
-  if (categoryId === 'about') { show(about, 'flex'); return; }
-  show(grid, 'grid');
-  if (title) { show(title); title.textContent = categoryId; }
-  if (!state._panelCache[categoryId]) {
-    state._panelCache[categoryId] = (FEATURE_MAP[categoryId] || []).map(({ label, feature }) => {
-      const btn = div('waddle-module');
-      btn.dataset.feature = feature;
-      btn.append(el('span', null, label), div('waddle-module-dot'));
-      btn.addEventListener('click', () => {
-        const en = toggleFeature(feature);
-        btn.classList.toggle('active', en);
-        showToast(label, en ? 'enabled' : 'disabled', en ? 'Module enabled' : 'Module disabled');
+    hideAllPanels();
+    const grid = byId('waddle-module-grid');
+    const title = byId('waddle-panel-title');
+    const about = byId('waddle-about');
+    if (categoryId === 'about') { show(about, 'flex'); return; }
+    show(grid, 'grid');
+    if (title) { show(title); title.textContent = categoryId; }
+    if (!state._panelCache[categoryId]) {
+      state._panelCache[categoryId] = (FEATURE_MAP[categoryId] || []).map(({ label, feature }) => {
+        const btn = div('waddle-module');
+        btn.dataset.feature = feature;
+        btn.append(el('span', null, label), div('waddle-module-dot'));
+        btn.addEventListener('click', () => {
+          const en = toggleFeature(feature);
+          btn.classList.toggle('active', en);
+          showToast(label, en ? 'enabled' : 'disabled', en ? 'Module enabled' : 'Module disabled');
+        });
+        return btn;
       });
-      return btn;
+    }
+    grid.innerHTML = '';
+    state._panelCache[categoryId].forEach(btn => {
+      btn.classList.toggle('active', !!state.features[btn.dataset.feature]);
+      grid.appendChild(btn);
     });
+    if (categoryId === 'utilities') {
+      grid.appendChild(buildAfkSettingsBlock());
+      grid.appendChild(buildKeybindSettingsBlock());
+    }
   }
-  grid.innerHTML = '';
-  state._panelCache[categoryId].forEach(btn => {
-    btn.classList.toggle('active', !!state.features[btn.dataset.feature]);
-    grid.appendChild(btn);
-  });
-  if (categoryId === 'utilities') {
-    grid.appendChild(buildAfkSettingsBlock());
-    grid.appendChild(buildKeybindSettingsBlock());
-  }
-}
 
   function switchCategory(categoryId) {
     state.activeCategory = categoryId;
@@ -1347,24 +1409,24 @@ div[id^="google_ads"],ins.adsbygoogle {
     `;
 
     const linksBlock = div('about-block');
-linksBlock.innerHTML = `
+    linksBlock.innerHTML = `
   <h3>🔗 GitHub</h3>
   <div class="about-links">
     <button class="about-link-btn" onclick="window.open('https://github.com/TheM1ddleM1n/Waddle/issues/new/choose','_blank')">Open a Template/Form</button>
   </div>
 `;
 
-const shareBtn = el('button', 'about-link-btn', '📋 Copy Install Link');
-shareBtn.addEventListener('click', () => {
-  navigator.clipboard.writeText('https://github.com/TheM1ddleM1n/Waddle')
-    .then(() => {
-      shareBtn.textContent = '✅ Copied!';
-      showToast('Link Copied!', 'enabled', 'Share Waddle with your friends');
-      setTimeout(() => { shareBtn.textContent = '📋 Copy Install Link'; }, 2000);
-    })
-    .catch(() => showToast('Copy Failed', 'info', 'Visit github.com/TheM1ddleM1n/Waddle'));
-});
-linksBlock.querySelector('.about-links').appendChild(shareBtn);
+    const shareBtn = el('button', 'about-link-btn', '📋 Copy Install Link');
+    shareBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText('https://github.com/TheM1ddleM1n/Waddle')
+        .then(() => {
+          shareBtn.textContent = '✅ Copied!';
+          showToast('Link Copied!', 'enabled', 'Share Waddle with your friends');
+          setTimeout(() => { shareBtn.textContent = '📋 Copy Install Link'; }, 2000);
+        })
+        .catch(() => showToast('Copy Failed', 'info', 'Visit github.com/TheM1ddleM1n/Waddle'));
+    });
+    linksBlock.querySelector('.about-links').appendChild(shareBtn);
 
     const aboutPanel = divId('waddle-about');
     show(aboutPanel, 'none');
@@ -1402,7 +1464,7 @@ linksBlock.querySelector('.about-links').appendChild(shareBtn);
     try {
       const raw = JSON.parse(lsGet(SETTINGS_KEY) || 'null');
       if (raw) Object.assign(state.features, migrateSettings(raw));
-    } catch (_) {}
+    } catch (_) { }
   }
 
   function ensureDOMReady() {
@@ -1429,7 +1491,7 @@ linksBlock.querySelector('.about-links').appendChild(shareBtn);
       setTimeout(() => {
         Object.entries(state.features).forEach(([feature, enabled]) => {
           if (!enabled) return;
-          try { featureManager[feature]?.start(); } catch (_) {}
+          try { featureManager[feature]?.start(); } catch (_) { }
         });
       }, 100);
     } catch (err) {
