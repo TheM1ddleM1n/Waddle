@@ -18,6 +18,9 @@
 3. Open Miniblox, press `\` (or any other keybind when you change it) and start playing
 
 ---
+### 🌇 **SUNSET FOR WADDLE**
+- **I just wanted to say thank you all so much for supporting this client in game and on github**
+- **But I'm now moving on from miniblox to python coding etc - TheM1ddleM1n**
 
 ## Development
 
@@ -65,9 +68,6 @@ to get auto-complete for game-related variables from [@wq2/miniblox-sdk](https:/
 | Original Creator | [@Scripter132132](https://github.com/Scripter132132) |
 | Enhancement & Maintenance | [@TheM1ddleM1n](https://github.com/TheM1ddleM1n) |
 | Inspired By | Scripter's NovaCore Client |
-
-> - Please note I quit Miniblox scripting/and playing Miniblox.io eons ago but still left this client here for you to freely use!
-> - As im moving on to better uses of my time - TheM1ddleM1n
 
 ---
 
