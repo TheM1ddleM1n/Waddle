@@ -533,7 +533,7 @@ const SCRIPT_VERSION = '10';
       game.chat.addChat({ text: `\\${THEME_COLOR}\\━━━━━━━━━━━━━━━━━━━━━━━━━━━\\reset\\` });
       game.chat.addChat({ text: `\\${THEME_COLOR}\\  🐧 Waddle v${SCRIPT_VERSION} \\reset\\— The ULTIMATE miniblox.io enhancement suite!` });
       game.chat.addChat({ text: `\\yellow\\  ★ Star us on GitHub: \\cyan\\github.com/TheM1ddleM1n/Waddle` });
-      game.chat.addChat({ text: `\\red\\  ⚠ Waddle is no longer being updated. — TheM1ddleM1n` });
+      game.chat.addChat({ text: `\\red\\  ⚠ Sunset 4 Waddle. This client is no longer being updated. — TheM1ddleM1n` });
     }
   }, 500);
 })();
@@ -1409,15 +1409,15 @@ div[id^="google_ads"],ins.adsbygoogle {
       </div>
     `;
 
-      const sunsetBlock = div('about-block');
-sunsetBlock.innerHTML = `
-  <h3>⚠️ Sunset Notice</h3>
-  <p style="font-size:.82rem;color:var(--text);line-height:1.6;margin:0">
-    Waddle is no longer being updated. Thank you to everyone who used and supported it.
-    The script will remain available but no further development will be made.
-    — TheM1ddleM1n
-  </p>
-`;
+        const sunsetBlock = div('about-block');
+    sunsetBlock.innerHTML = `
+      <h3>⚠️ Sunset Notice</h3>
+      <p style="font-size:.82rem;color:var(--text);line-height:1.6;margin:0">
+        Waddle is no longer being updated. ♥ Thank you to everyone who used and supported it. ♥
+        The script will remain available but no further development will be made.
+        — TheM1ddleM1n
+      </p>
+    `;
 
     const linksBlock = div('about-block');
     linksBlock.innerHTML = `
