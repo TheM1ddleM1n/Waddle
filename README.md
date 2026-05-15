@@ -18,9 +18,10 @@
 3. Open Miniblox, press `\` (or any other keybind when you change it) and start playing
 
 ---
-### 🌇 **SUNSET FOR WADDLE**
-- **I just wanted to say thank you all so much for supporting this client in game and on github**
-- **But I'm now moving on from miniblox to python coding etc - TheM1ddleM1n**
+> [!IMPORTANT]
+> ### 🌇 **SUNSET FOR WADDLE**
+> **I just wanted to say thank you all so much for supporting this client in game and on github**
+> **But I'm now moving on from miniblox to python coding etc - TheM1ddleM1n**
 
 ## Development
 
@@ -43,7 +44,7 @@ to get auto-complete for game-related variables from [@wq2/miniblox-sdk](https:/
 | Crosshair | Cyan crosshair, auto-hides in menu |
 | Target HUD | Player faces, mob names, block names |
 | All Gamemodes | You can play every minigame thanks to heythereu! |
-| NO ADS | Basically what it says on the tin (only works with user-script managers) (kid named https://ublockorigin.com/) |
+| NO ADS | Basically what it says on the tin (only works with user-script managers) (or just use https://ublockorigin.com/) |
 
 ### Toggleable via `\` menu
 
