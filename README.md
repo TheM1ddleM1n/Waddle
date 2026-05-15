@@ -20,7 +20,7 @@
 ---
 > [!IMPORTANT]
 > ### 🌇 **SUNSET FOR WADDLE**
-> **I just wanted to say thank you all so much for supporting this client in game and on github**
+> **I just wanted to say thank you all so much for supporting this client in game and on github!**
 > **But I'm now moving on from miniblox to python coding etc - TheM1ddleM1n**
 
 ## Development
