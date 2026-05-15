@@ -3,7 +3,7 @@
 // @namespace    https://github.com/TheM1ddleM1n/Waddle
 // @version      10
 // @description  The ULTIMATE miniblox.io enhancement suite! Have fun!
-// @author       Scripter, TheM1ddleM1n, heythereu
+// @author       Scripter, TheM1ddleM1n, heythereu, 6x68
 // @icon         https://raw.githubusercontent.com/TheM1ddleM1n/Waddle/refs/heads/main/Penguin.png
 // @match        https://miniblox.io/
 // @run-at       document-start
