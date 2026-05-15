@@ -6,7 +6,7 @@
         "email": "a@a.aa",
         "url": "https://github.com/TheM1ddleM1n"
     },
-    "contributors": ["6x68", "Scripter132132"],
+    "contributors": ["6x68", "heythereu", "Scripter132132"],
     "devDependencies": {
         "@wq2/miniblox-sdk": "^0.0.1"
     }
