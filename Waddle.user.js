@@ -185,7 +185,7 @@ const SCRIPT_VERSION = '10';
    * @param {string} type
    * @param {string | undefined} key
    * @param {string | undefined} code
-   * @param {number | undefined} keyCode 
+   * @param {number | undefined} keyCode
    * @returns {KeyboardEvent}
    */
   const makeKeyEvent = (type, key, code, keyCode) =>
@@ -195,13 +195,13 @@ const SCRIPT_VERSION = '10';
     return () => target.removeEventListener(evt, fn, opts);
   };
   /**
-   * 
-   * @param {CanvasRenderingContext2D} ctx 
-   * @param {number} x 
-   * @param {number} y 
-   * @param {number} w 
-   * @param {number} h 
-   * @param {number?} r 
+   *
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {number} x
+   * @param {number} y
+   * @param {number} w
+   * @param {number} h
+   * @param {number?} r
    */
   const roundRect = (ctx, x, y, w, h, r) => {
     ctx.beginPath();
@@ -524,18 +524,19 @@ const SCRIPT_VERSION = '10';
   }
 
   (function () {
-    let attempts = 0;
-    setInt('waitForGame', () => {
-      if (++attempts > 40) { clearInt('waitForGame'); return; }
-      const game = gameRef.game;
-      if (game?.chat && typeof game.chat.addChat === 'function') {
-        clearInt('waitForGame');
-        game.chat.addChat({ text: `\\${THEME_COLOR}\\━━━━━━━━━━━━━━━━━━━━━━━━━━━\\reset\\` });
-        game.chat.addChat({ text: `\\${THEME_COLOR}\\  🐧 Waddle v${SCRIPT_VERSION} \\reset\\— The ULTIMATE miniblox.io enhancement suite!` });
-        game.chat.addChat({ text: `\\yellow\\  ★ Star us on GitHub: \\cyan\\github.com/TheM1ddleM1n/Waddle` });
-      }
-    }, 500);
-  })();
+  let attempts = 0;
+  setInt('waitForGame', () => {
+    if (++attempts > 40) { clearInt('waitForGame'); return; }
+    const game = gameRef.game;
+    if (game?.chat && typeof game.chat.addChat === 'function') {
+      clearInt('waitForGame');
+      game.chat.addChat({ text: `\\${THEME_COLOR}\\━━━━━━━━━━━━━━━━━━━━━━━━━━━\\reset\\` });
+      game.chat.addChat({ text: `\\${THEME_COLOR}\\  🐧 Waddle v${SCRIPT_VERSION} \\reset\\— The ULTIMATE miniblox.io enhancement suite!` });
+      game.chat.addChat({ text: `\\yellow\\  ★ Star us on GitHub: \\cyan\\github.com/TheM1ddleM1n/Waddle` });
+      game.chat.addChat({ text: `\\red\\  ⚠ Waddle is no longer being updated. — TheM1ddleM1n` });
+    }
+  }, 500);
+})();
 
   function saveSettings() {
     clearTimeout(state._saveTimer);
@@ -1050,7 +1051,7 @@ div[id^="google_ads"],ins.adsbygoogle {
   }
 
   /**
-   * 
+   *
    * @param {string} text the message to send
    * @returns {boolean} if it sent
    */
@@ -1408,6 +1409,16 @@ div[id^="google_ads"],ins.adsbygoogle {
       </div>
     `;
 
+      const sunsetBlock = div('about-block');
+sunsetBlock.innerHTML = `
+  <h3>⚠️ Sunset Notice</h3>
+  <p style="font-size:.82rem;color:var(--text);line-height:1.6;margin:0">
+    Waddle is no longer being updated. Thank you to everyone who used and supported it.
+    The script will remain available but no further development will be made.
+    — TheM1ddleM1n
+  </p>
+`;
+
     const linksBlock = div('about-block');
     linksBlock.innerHTML = `
   <h3>🔗 GitHub</h3>
@@ -1430,7 +1441,7 @@ div[id^="google_ads"],ins.adsbygoogle {
 
     const aboutPanel = divId('waddle-about');
     show(aboutPanel, 'none');
-    aboutPanel.append(creditsBlock, linksBlock);
+    aboutPanel.append(sunsetBlock, creditsBlock, linksBlock);
     const panel = divId('waddle-panel');
     panel.append(
       divId('waddle-panel-title', null, state.activeCategory),
