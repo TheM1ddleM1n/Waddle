@@ -24,7 +24,6 @@ const SCRIPT_VERSION = '10';
     TOGGLES.push({ name: 'ads', enabled: false, variant: { name: 'disabled', enabled: false }, impressionData: false });
 
     const PAYLOAD = JSON.stringify({ toggles: TOGGLES });
-    // kid named https://ublockorigin.com/:
     const AD_DOMAINS = ['adinplay.com', 'aipcdn.com', 'googletagmanager.com', 'googlesyndication.com', 'doubleclick.net', 'adnxs.com', 'prebid.org', 'adsafeprotected.com', 'moatads.com', 'amazon-adsystem.com'];
     const isAd = url => typeof url === 'string' && AD_DOMAINS.some(d => url.includes(d));
     const noop = () => { };
@@ -135,7 +134,6 @@ const SCRIPT_VERSION = '10';
 
   const guestNameRe = /^[A-Z][a-z]+[A-Z][a-z]+\d*$/;
   const isGuestName = name => guestNameRe.test(name);
-
   /**
    * @param {string} tag
    * @param {string?} cls
@@ -339,7 +337,6 @@ const SCRIPT_VERSION = '10';
       { label: 'ChatMute', feature: 'muteChat' }
     ]
   };
-
   const gameRef = {
     /**
      * @type {import("@wq2/miniblox-sdk").Game}
@@ -363,7 +360,6 @@ const SCRIPT_VERSION = '10';
       } catch (_) { }
     }
   };
-
   const afkSettings = {
     get autoEnable() { return lsGet('waddle_afk_auto') === 'true'; },
     set autoEnable(v) { lsSet('waddle_afk_auto', v ? 'true' : 'false'); },
@@ -380,7 +376,6 @@ const SCRIPT_VERSION = '10';
       lsSet('waddle_afk_delay', v);
     },
   };
-
   const keybindSettings = {
     get key() {
       return lsGet(KEYBIND_KEY) || DEFAULT_KEYBIND;
@@ -391,7 +386,6 @@ const SCRIPT_VERSION = '10';
       }
     },
   };
-
   const afkDetector = {
     _timer: null,
     _triggered: false,
@@ -532,7 +526,7 @@ const SCRIPT_VERSION = '10';
       clearInt('waitForGame');
       game.chat.addChat({ text: `\\${THEME_COLOR}\\━━━━━━━━━━━━━━━━━━━━━━━━━━━\\reset\\` });
       game.chat.addChat({ text: `\\${THEME_COLOR}\\  🐧 Waddle v${SCRIPT_VERSION} \\reset\\— The ULTIMATE miniblox.io enhancement suite!` });
-      game.chat.addChat({ text: `\\yellow\\  ★ Star us on GitHub: \\cyan\\github.com/TheM1ddleM1n/Waddle` });
+      game.chat.addChat({ text: `\\yellow\\  ★ us on GitHub: \\cyan\\github.com/TheM1ddleM1n/Waddle` });
       game.chat.addChat({ text: `\\red\\  ⚠ Sunset 4 Waddle. This client is no longer being updated. — TheM1ddleM1n` });
     }
   }, 500);
@@ -1419,14 +1413,7 @@ div[id^="google_ads"],ins.adsbygoogle {
       </p>
     `;
 
-    const linksBlock = div('about-block');
-linksBlock.innerHTML = `
-  <h3>🔗 GitHub</h3>
-  <div class="about-links">
-  </div>
-`;
-
-const shareBtn = el('button', 'about-link-btn', '📋 Copy Install Link');
+    const shareBtn = el('button', 'about-link-btn', '📋 Copy Install Link');
 shareBtn.addEventListener('click', () => {
   navigator.clipboard.writeText('https://github.com/TheM1ddleM1n/Waddle')
     .then(() => {
@@ -1436,11 +1423,10 @@ shareBtn.addEventListener('click', () => {
     })
     .catch(() => showToast('Copy Failed', 'info', 'Visit github.com/TheM1ddleM1n/Waddle'));
 });
-linksBlock.querySelector('.about-links').appendChild(shareBtn);
 
     const aboutPanel = divId('waddle-about');
     show(aboutPanel, 'none');
-    aboutPanel.append(sunsetBlock, creditsBlock, linksBlock);
+    aboutPanel.append(sunsetBlock, creditsBlock, shareBtn);
     const panel = divId('waddle-panel');
     panel.append(
       divId('waddle-panel-title', null, state.activeCategory),
