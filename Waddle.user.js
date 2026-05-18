@@ -120,7 +120,7 @@ const SCRIPT_VERSION = '10';
     setTimeout(() => { clearInterval(ct); clearInterval(gt); }, 30000);
   })();
 
-  document.title = `🐧 Waddle v${SCRIPT_VERSION}`;
+  document.title = `🐧 Waddle v${SCRIPT_VERSION} - Sunset`;
 
   const SETTINGS_KEY = 'waddle_settings';
   const DRAG_POSITIONS_KEY = 'waddle_positions';
@@ -525,9 +525,10 @@ const SCRIPT_VERSION = '10';
     if (game?.chat && typeof game.chat.addChat === 'function') {
       clearInt('waitForGame');
       game.chat.addChat({ text: `\\${THEME_COLOR}\\━━━━━━━━━━━━━━━━━━━━━━━━━━━\\reset\\` });
-      game.chat.addChat({ text: `\\${THEME_COLOR}\\  🐧 Waddle v${SCRIPT_VERSION} \\reset\\— The ULTIMATE miniblox.io enhancement suite!` });
-      game.chat.addChat({ text: `\\yellow\\  ★ us on GitHub: \\cyan\\github.com/TheM1ddleM1n/Waddle` });
-      game.chat.addChat({ text: `\\red\\  ⚠ Sunset 4 Waddle. This client is no longer being updated. — TheM1ddleM1n` });
+      game.chat.addChat({ text: `\\${THEME_COLOR}\\  🐧 Waddle v${SCRIPT_VERSION} \\reset\\— Sunset Edition` });
+      game.chat.addChat({ text: `\\yellow\\  ♥ Thank you to everyone who used and supported Waddle. ♥` });
+      game.chat.addChat({ text: `\\red\\  This is the final version. No further updates will be made. — TheM1ddleM1n` });
+      game.chat.addChat({ text: `\\${THEME_COLOR}\\━━━━━━━━━━━━━━━━━━━━━━━━━━━\\reset\\` });
     }
   }, 500);
 })();
@@ -1483,7 +1484,7 @@ shareBtn.addEventListener('click', () => {
       initHudCanvas();
       startTargetHUDLoop();
       if (afkSettings.autoEnable) afkDetector.start();
-      showToast('Welcome To Waddle!', 'info', 'Press \\ to open menu');
+      showToast('Welcome To Waddle!', 'info', 'Final version — Press \\ to open menu');
       setTimeout(() => {
         Object.entries(state.features).forEach(([feature, enabled]) => {
           if (!enabled) return;
