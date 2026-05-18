@@ -1413,31 +1413,30 @@ div[id^="google_ads"],ins.adsbygoogle {
     sunsetBlock.innerHTML = `
       <h3>⚠️ Sunset Notice</h3>
       <p style="font-size:.82rem;color:var(--text);line-height:1.6;margin:0">
-        Waddle is no longer being updated. ♥ Thank you to everyone who used and supported it. ♥
+        Waddle will no longer be updated. ♥ Thank you to everyone who used and supported it. ♥
         The script will remain available but no further development will be made.
         — TheM1ddleM1n
       </p>
     `;
 
     const linksBlock = div('about-block');
-    linksBlock.innerHTML = `
+linksBlock.innerHTML = `
   <h3>🔗 GitHub</h3>
   <div class="about-links">
-    <button class="about-link-btn" onclick="window.open('https://github.com/TheM1ddleM1n/Waddle/issues/new/choose','_blank')">Open a Template/Form</button>
   </div>
 `;
 
-    const shareBtn = el('button', 'about-link-btn', '📋 Copy Install Link');
-    shareBtn.addEventListener('click', () => {
-      navigator.clipboard.writeText('https://github.com/TheM1ddleM1n/Waddle')
-        .then(() => {
-          shareBtn.textContent = '✅ Copied!';
-          showToast('Link Copied!', 'enabled', 'Share Waddle with your friends');
-          setTimeout(() => { shareBtn.textContent = '📋 Copy Install Link'; }, 2000);
-        })
-        .catch(() => showToast('Copy Failed', 'info', 'Visit github.com/TheM1ddleM1n/Waddle'));
-    });
-    linksBlock.querySelector('.about-links').appendChild(shareBtn);
+const shareBtn = el('button', 'about-link-btn', '📋 Copy Install Link');
+shareBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText('https://github.com/TheM1ddleM1n/Waddle')
+    .then(() => {
+      shareBtn.textContent = '✅ Copied!';
+      showToast('Link Copied!', 'enabled', 'Share Waddle with your friends');
+      setTimeout(() => { shareBtn.textContent = '📋 Copy Install Link'; }, 2000);
+    })
+    .catch(() => showToast('Copy Failed', 'info', 'Visit github.com/TheM1ddleM1n/Waddle'));
+});
+linksBlock.querySelector('.about-links').appendChild(shareBtn);
 
     const aboutPanel = divId('waddle-about');
     show(aboutPanel, 'none');
