@@ -6,7 +6,7 @@
 ![License](https://img.shields.io/badge/license-MIT-39ff14?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-39ff14?style=for-the-badge)
 
-**[Install](#-install) • [Open a Template](https://github.com/TheM1ddleM1n/Waddle/issues/new/choose)**
+**[Install](#-install)**
 
 </div>
 
@@ -20,12 +20,11 @@
 ---
 > [!IMPORTANT]
 > ### 🌇 **SUNSET FOR WADDLE**
-> **I just wanted to say thank you all so much for supporting this client in game and on github!**
-> **But I'm now moving on from miniblox to python coding etc - TheM1ddleM1n**
+> **I just wanted to say thank you all so much for supporting this client in Miniblox and on Github!**
 
 ## Development
 
-Waddle is made using plain JS, and the source is literally just in one file (cluttered ahh).
+Waddle is made using plain JS, and the source is literally just in one file.
 While it can be edited directly from the source code,
 we recommend using GitHub Codespaces or anywhere that can install NPM packages.
 Simply install NPM packages using your preferred package manager (npm, bun, etc.)
@@ -44,7 +43,7 @@ to get auto-complete for game-related variables from [@wq2/miniblox-sdk](https:/
 | Crosshair | Cyan crosshair, auto-hides in menu |
 | Target HUD | Player faces, mob names, block names |
 | All Gamemodes | You can play every minigame thanks to heythereu! |
-| NO ADS | Basically what it says on the tin (only works with user-script managers) (or just use https://ublockorigin.com/) |
+| NO ADS | Basically what it says on the tin (only works with user-script managers) (use https://ublockorigin.com/) |
 
 ### Toggleable via `\` menu
 
@@ -74,6 +73,6 @@ to get auto-complete for game-related variables from [@wq2/miniblox-sdk](https:/
 
 <div align="center">
 
-**Made by the Waddle Team** — MIT License
+**Made by the Waddle Team** — MIT Licence
 
 </div>
