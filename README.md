@@ -65,6 +65,8 @@ to get auto-complete for game-related variables from [@wq2/miniblox-sdk](https:/
 |------|-------------|
 | Original Creator | [@Scripter132132](https://github.com/Scripter132132) |
 | Enhancement & Maintenance | [@TheM1ddleM1n](https://github.com/TheM1ddleM1n) |
+| Adding JSDoc stuff | [@6x68](https://github.com/6x68) |
+| Providing the hidden gamemodes | [@heythereu](https://github.com/heythereu) |
 | Inspired By | Novacore |
 
 ## Other Clients!
