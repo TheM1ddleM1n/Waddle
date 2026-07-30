@@ -6,8 +6,6 @@
 ![License](https://img.shields.io/badge/license-MIT-39ff14?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Miniblox-39ff14?style=for-the-badge)
 
-**[Install](#-install)**
-
 </div>
 
 ---
@@ -43,7 +41,7 @@ to get auto-complete for game-related variables from [@wq2/miniblox-sdk](https:/
 | Crosshair | Cyan crosshair, auto-hides in menu |
 | Target HUD | Player faces, mob names, block names |
 | All Gamemodes | You can play every minigame thanks to heythereu! |
-| NO ADS | Basically what it says on the tin (only works with user-script managers) (use https://ublockorigin.com/) |
+| NO ADS | Basically what it says on the tin (only works with user-script managers) (or use https://ublockorigin.com/) |
 
 ### Toggleable via `\` menu
 
@@ -67,12 +65,17 @@ to get auto-complete for game-related variables from [@wq2/miniblox-sdk](https:/
 |------|-------------|
 | Original Creator | [@Scripter132132](https://github.com/Scripter132132) |
 | Enhancement & Maintenance | [@TheM1ddleM1n](https://github.com/TheM1ddleM1n) |
-| Inspired By | Scripter's NovaCore Client |
+| Inspired By | Novacore |
+
+## Other Clients!
+- Unverified V2 (The only active utility client)
+- Back 2 Basics
+- SmoothDude's texture packs (look on github)
 
 ---
 
 <div align="center">
 
-**Made by the Waddle Team** — MIT Licence
+**Made by the Waddle Team**
 
 </div>
