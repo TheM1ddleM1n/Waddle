@@ -1,6 +1,7 @@
 <div align="center">
 
 # Waddle: The Ultimate Miniblox Enhancement Suite
+# 2025 - 2026
 
 ![Version](https://img.shields.io/badge/version-10-39ff14?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-39ff14?style=for-the-badge)
@@ -19,6 +20,8 @@
 > [!IMPORTANT]
 > ### 🌇 **SUNSET FOR WADDLE**
 > **I just wanted to say thank you all so much for supporting this client in Miniblox and on Github!**
+> **This client no longer works due to the react scope changing (Vector remapped stuff which broke most features)**
+> **I'm now working on Unverified V2! Use that client instead**
 
 ## Development
 
