@@ -74,6 +74,7 @@ to get auto-complete for game-related variables from [@wq2/miniblox-sdk](https:/
 
 ## Other Clients!
 - Unverified V2 (The only active utility client)
+- MiniFeather (NEW CLIENT!)
 - Back 2 Basics
 - SmoothDude's texture packs (look on github)
 
