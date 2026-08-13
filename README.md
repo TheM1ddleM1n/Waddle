@@ -20,8 +20,7 @@
 > [!IMPORTANT]
 > ### 🌇 **SUNSET FOR WADDLE**
 > **I just wanted to say thank you all so much for supporting this client in Miniblox and on Github!**
-> **This client no longer works due to the react scope changing (Vector remapped stuff which broke most features)**
-> **I'm now working on Unverified V2! Use that client instead**
+> **I'm now working on Unverified V2!**
 
 ## Development
 
@@ -72,10 +71,10 @@ to get auto-complete for game-related variables from [@wq2/miniblox-sdk](https:/
 | Providing the hidden gamemodes | [@heythereu](https://github.com/heythereu) |
 | Inspired By | Novacore |
 
-## Other Clients!
+## Other Miniblox Clients
 - Unverified V2 (The only active utility client)
-- MiniFeather (NEW CLIENT!)
-- Back 2 Basics
+- MiniFeather (2nd utility client!)
+- Back 2 Basics (Old Texture Pack)
 - SmoothDude's texture packs (look on github)
 
 ---
