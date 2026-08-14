@@ -1,6 +1,7 @@
 <div align="center">
 
 # Waddle: The Ultimate Miniblox Enhancement Suite
+
 # 2025 - 2026
 
 ![Version](https://img.shields.io/badge/version-10-39ff14?style=for-the-badge)
