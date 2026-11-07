@@ -19,9 +19,8 @@
 
 ---
 > [!IMPORTANT]
-> ### 🌇 **SUNSET FOR WADDLE**
+> ### 🌇 **SUNSET FOR WADDLE CLIENT**
 > **I just wanted to say thank you all so much for supporting this client in Miniblox and on Github!**
-> **I'm now working on Unverified V2!**
 
 ## Development
 
@@ -56,8 +55,6 @@ to get auto-complete for game-related variables from [@wq2/miniblox-sdk](https:/
 | Anti-AFK | Auto-jumps and sends an AFK message to prevent being kicked |
 | Chat Mute | Hides all incoming chat messages |
 
-<!-- https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#alerts -->
-
 > [!TIP]
 > All draggable widgets **remember their position** across sessions
 
@@ -70,13 +67,10 @@ to get auto-complete for game-related variables from [@wq2/miniblox-sdk](https:/
 | Enhancement & Maintenance | [@TheM1ddleM1n](https://github.com/TheM1ddleM1n) |
 | Adding JSDoc stuff | [@6x68](https://github.com/6x68) |
 | Providing the hidden gamemodes | [@heythereu](https://github.com/heythereu) |
-| Inspired By | Novacore |
 
 ## Other Miniblox Clients
 - Unverified V2 (The only active utility client)
-- MiniFeather (2nd utility client!)
 - Back 2 Basics (Old Texture Pack)
-- SmoothDude's texture packs (look on github)
 
 ---
 
