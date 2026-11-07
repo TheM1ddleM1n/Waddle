@@ -6,16 +6,8 @@
 
 ![Version](https://img.shields.io/badge/version-10-39ff14?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-39ff14?style=for-the-badge)
-![Platform](https://img.shields.io/badge/platform-Miniblox-39ff14?style=for-the-badge)
 
 </div>
-
----
-
-## Install
-1. Install [Tampermonkey](https://www.tampermonkey.net/)
-2. Click **[→ Install Waddle](https://github.com/TheM1ddleM1n/Waddle/raw/main/Waddle.user.js)**
-3. Open Miniblox, press `\` (or any other keybind when you change it) and start playing
 
 ---
 > [!IMPORTANT]
